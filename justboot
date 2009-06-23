@@ -565,7 +565,7 @@ clean_env() {
 
 # Livecd environment clean up script.
 cat >> ${CLEANUP_SCRIPT} << CLEANUP
-#!/bin/bash -x
+#!/bin/bash
   trap 'echo "User Interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
   #  Cleans up the environment if script interrupted by control-c.
 
@@ -573,7 +573,6 @@ cat >> ${CLEANUP_SCRIPT} << CLEANUP
   env-update 1>/dev/null && source /etc/profile
 
   for i in ${REMOVE_PACKAGES[@]}; do
-  while read ebuild; do
     echo "Removing \${i} from livecd"
     emerge -Cq \${i} 
   done
