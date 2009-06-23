@@ -1,0 +1,69 @@
+#!/bin/sh
+
+PATH="/usr/sbin:/usr/bin:/sbin:/bin"
+NEW_ROOT=/newroot
+CONSOLE=/dev/console
+
+do_modprobe_group() {
+  local var_group="/etc/modules/$1"
+
+  if [ -f "${var_group}" ]; then
+    for module in $(cat ${var_group}); do
+      echo -e "Autoloading ${module}\n"
+      modprobe "${module}" > /dev/null 2>&1
+    done
+  fi
+}
+
+  # Clean input/output
+  exec >${CONSOLE} <${CONSOLE} 2>&1
+  clear
+  echo "Welcome to the JustBOOT(tm) livecd"
+
+  umask 0077
+
+  for i in dev sys proc tmp; do
+    [ ! -d "/${i}" ] && mkdir -p "/${i}"
+  done
+
+  mount -t sysfs none /sys
+  mount -t proc  none /proc
+  mount -t tmpfs tmpfs /dev
+
+  echo "/sbin/modprobe" > /proc/sys/kernel/modprobe
+  mdev -s
+  echo "/sbin/mdev" > /proc/sys/kernel/hotplug
+
+  do_modprobe_group boot
+
+  for x in /dev/hd*; do
+    mount -t iso9660 ${x} /mnt/livecd/image
+      if [ "$?" == "0" ]
+        then
+          CDROM=${x}
+          break
+      fi
+  done
+
+  if [ "${CDROM}" == "" ]
+    then
+      echo "FATAL --- LIVECD NOT FOUND"
+      exec /bin/sh
+      exit
+  fi
+
+  echo "LiveCD found in ${CDROM}"
+
+  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs  /mnt/livecd/static
+  mount -t tmpfs -o size=300M none /mnt/livecd/dynamic
+  mount -t aufs -o dirs=/mnt/livecd/dynamic=rw:/mnt/livecd/static=ro aufs /new-root
+
+  >/proc/sys/kernel/hotplug
+  umount /sys /dev /proc
+
+  echo "Starting init"
+  exec switch_root /new-root /sbin/init
+
+  echo "Failed to switch root!!"
+  echo "Dropping to minimal shell"
+  exec /bin/sh

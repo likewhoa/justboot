@@ -1,0 +1,9 @@
+# Enter a list of directories or files to remove from the livecd
+var/{cache,empty,lock,run,spool,tmp}/*
+tmp/*
+var/db
+usr/portage
+usr/share/doc
+var/log
+root
+etc/{make.conf,resolv.conf}

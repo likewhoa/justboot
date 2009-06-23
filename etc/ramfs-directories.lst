@@ -1,0 +1,5 @@
+# Directories to mount in ramfs (--ramfs)
+var/tmp
+var/log
+usr/src
+tmp

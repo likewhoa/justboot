@@ -1,0 +1,9 @@
+# A list of directories to exclude from livecd
+boot
+usr/src
+usr/include
+usr/share/info
+usr/share/man
+usr/share/doc
+usr/share/gtk-doc
+usr/X11R6/man

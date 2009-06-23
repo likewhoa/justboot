@@ -1,0 +1,992 @@
+#!/bin/bash 
+# justboot.sh v0.3 - JustBOOT(tm) Gentoo Based Linux Livecd Generator.
+##
+# Copyright (C) 2009-2012 Mission Accomplish, Inc.
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
+###
+
+# Declare global arrays
+declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/excluded-directories.lst | grep -vE '^#') )
+declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/remove-packages.lst | grep -vE '^#') )
+declare -a REMOVE_FILES=( $(cat /etc/justboot/remove-files.lst | grep -vE '^#') )
+declare -a RAMFS_DIR=( $(cat /etc/justboot/ramfs-directories.lst | grep -vE '^#') )
+
+# Set colors
+BLACK='\e[1;48;30m'
+BLUE='\e[1;48;34m'
+RED='\e[1;48;31m'
+NOCOLOR='\e[0m'
+
+if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
+
+USER_INTERRUPT=13
+trap 'release_env now; exit $USER_INTERRUPT' TERM INT
+#  Cleans up the livecd environment if script is interrupted by control-c.
+
+einfo() {
+  echo -e "\a${BLACK}.: ${1} :."${NOCOLOR}
+  sleep 1
+}
+
+ewarn() {
+  echo -e "\a${RED}.: ${1} :."${NOCOLOR}
+}
+
+error() {
+  echo -e "\a${RED}.: ${1} :."${NOCOLOR}
+  exit 1
+}
+
+exec_chkdir() {
+  local DIR="${1}"
+  [[ ! -d ${DIR} ]] && mkdir -p ${DIR}
+}
+
+exec_chklink() {
+  local SRC="${1}" DEST="${2}"
+  [[ -h ${DEST} ]] && unlink ${DEST}
+  ln -s ${SRC} ${DEST}
+}
+
+do_exec() {
+  if [ ${DEBUG} ]; then
+    echo -e "\a${RED}debug:${NOCOLOR}${BLUE} (${@})"${NOCOLOR}
+    ${@} 
+  elif [ ${VERBOSE} ]; then
+    ${@} 
+  else
+    ${@} &>/dev/null 
+  fi
+}
+
+# Help menu - TODO add moar examples!
+run_help() {
+cat << HELP
+JustBOOT(tm) - Gentoo Linux LiveCD Generator
+Usage: justboot.sh [options]
+
+Options:
+
+--arch=	                - Set arch for livecd build i.e --arch=x86_64
+--kernel=               - Kernel sources for livecd (Currently on zen-sources is supported)
+--root-passwd=          - ROOT password for the livecd
+--init-compression      - Currently only gzip and lzma compression is supported
+--volid=		- Set a label for the livecd image.
+--ramfs			- Compile in RAMFS "Must have ~4GB of available RAM"
+--force-toolchain	- Force a rebuilt of the toolchain
+--skip-toolchain	- Skips toolchain built for those in a hurry
+--data-directory=	- Set the data directory for compiles
+--keywords=             - make.conf specific KEYWORDS
+--jobs=			- Set numbers of jobs for emerge threads
+--use=                  - make.conf specific USE flags
+--ldflags=              - make.conf specific LDFLAGS
+--features=             - make.conf specific FEATURES
+--make-opts=            - make.conf specific MAKEOPTS
+--niceness=		- make.conf specific PORTAGE_NICENESS
+--letmein		- Will run /bin/bash at end of chroot stage for self maintanance
+--verbose		- Run in verbose mode - lots of output
+--purge			- Purge old data and start fresh
+--debug                 - Turn on debugging
+
+Usage examples:
+ Generate a 64bit livecd using gentoo-sources and set 'gentoo' for root password
+# justboot.sh --arch=x86_64 --kernel=gentoo-sources --root-passwd="gentoo"
+ Generate a i686 livecd using zen-sources, with 'let me in!' as password with 'gentoo' for livecd label
+# justboot.sh --arch=i686 --kernel=zen-sources --volid="gentoo rocks" --root-passwd="let me in!"
+ Generate a x86_64 livecd with optional gzip compression (Default is to use lzma)
+# justboot.sh --arch=x86_64 --init-compression lzma
+ Generate a livecd but compile packages in ram
+# justboot.sh --arch=x86_64 -ramfs -L "Fast is good"
+ Generate a livecd but delete old data directories first.
+# justboot.sh --arch=x86_64 --kernel=gentoo-sources --purge
+ Generate a livecd for x86_64 using -j8 for makeopts and -19 for portage niceness
+# justboot.sh --arch=x86_64 --kernel=gentoo-sources --make-opts="-j8" --niceness="-19"
+ Change the data directory for livecd creation
+# justboot.sh --arch=x86_64 --kernel=zen-sources --data-directory=/home/username
+
+HELP
+exit 1
+}
+
+einfo "${BLUE}JustBOOT(tm)${BLACK} Gentoo Linux LiveCD Generator Started..."
+
+# Parse Command Line Arguments.
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --arch=*)
+      ARCH="${1##*=}"
+      einfo "${BLUE}${ARCH}${BLACK} set for build"
+      ;;
+    --kernel=*)
+      KERNEL_SOURCES="${1##*=}"
+      einfo "${BLUE}${KERNEL_SOURCES} set"
+      ;;
+    --root-passwd=*)
+      ROOT_PASSWD="${1##*=}"
+      einfo "Setting ${RED}\"${ROOT_PASSWD}\"${BLACK} as livecd root password"
+      ;;
+    --keywords=*)
+      ACCEPT_KEYWORDS="${1##*=}"
+      einfo "Setting ${BLUE}${ACCEPT_KEYWORDS}${BLACK} for make.conf"
+      ;;
+    --ramfs|-ricer)
+      RAMFS=0
+      einfo "${RED}RAMFS${BLACK} compiles enabled!!!"
+      ;;
+    --init-compression)
+      INIT_COMPRESSION="${2}"
+      einfo "Using ${BLUE}${INIT_COMPRESSION}${BLACK} for initramfs compression"
+      shift
+      ;;
+    --volid=*|-L)
+      # We force underscore on Volume ID for compatibility.
+      if [ ${1%%=*} = -L ]; then
+        VOLID="${2// /_}"
+        [ ${#VOLID} -gt 32 ] && error "${BLACK}Volume label ${RED}\"${VOLID//_/ }\"${BLACK} is greater than the 32 allowed characters"
+        shift
+      else
+        ARG=${1##*=}
+        VOLID="${ARG// /_}"
+        [ ${#VOLID} -gt 32 ] && error "${BLACK}Volume label ${RED}\"${VOLID//_/ }\"${BLACK} is greater than the 32 allowed characters"
+      fi
+      einfo "Using ${RED}\"${VOLID//_/ }\"${BLACK} for livecd label"
+      ;;
+    --data-directory=*)                 
+      DIR="${1##*=}"                        
+      LIVEDIR="${DIR/%\//}/justboot" # Remove leading slash
+      einfo "Livecd Data directory set to ${BLUE}\"${LIVEDIR}\""
+      ;;
+    --force-toolchain) YES_TOOL=0;;
+    --skip-toolchain) NO_TOOL=0;;
+    --lang=*) LINGUAS="${1##*=}";;
+    --niceness=*) PNICE="${1##*=}";;
+    --use=*) USE="${1##*=}";;
+    --make-opts=*) MAKEOPTS="${1##*=}";;
+    --jobs=*) JOBS="${1##*=}";;
+    --ldflags=*) LDFLAGS="${1##*=}";;
+    --features=*) FEATURES="${1##*=}";;
+    --letmein) LETMEIN=0;;
+    --purge) PURGE=0;;
+    --verbose) VERBOSE=0;;
+    --debug|-db) DEBUG=0; einfo "Running in debug mode";;
+    --help|-h) run_help;;
+    *) error "${BLUE}Invalid argument ${RED}${1}!${BLACK}, run \"$0 --help\" for help."
+  esac
+  shift
+done
+
+# First check/set required runtime options
+[[ ! ${ARCH} ]] && error "Missing --arch argument. i.e --arch=x86_64"
+[[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
+[[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma
+[[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
+
+# Convert ARCH value for /etc/make.conf 
+case ${ARCH} in
+  x86_64)
+    MAKE_ARCH=x86-64
+    [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86 ~amd64"
+    ;;
+  i[4,5,6]86)
+    [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86";;
+esac
+
+# Source configuration file before we begin 
+. /etc/justboot/justboot.conf
+
+# Remove old data directories (--purge)
+if [ ${PURGE} ]; then
+  einfo "${RED}--purge flag used.${BLACK} Removing old ${RED}${ARCH}${BLACK} data directories and starting fresh"
+  if [[ -h /usr/share/justboot/${ARCH} ]]; then
+    do_exec rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
+    do_exec rm -rf $(readlink /usr/share/justboot/${ARCH})
+      for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do
+        do_exec unlink ${i}
+      done
+  else
+    do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
+  fi
+fi
+
+# Beginning of global and chroot functions.
+prepare_stage() {
+  # Make sure squashfs-tools is emerged on system before continuing
+  if ! which mksquashfs &>/dev/null; then
+    einfo "Emerging squashfs-tools${BLUE}."
+    do_exec emerge -q squashfs-tools 
+  fi
+
+  # Check if data directory changed.
+  if [[ ! -d ${ARCH_DIR} ]]; then
+    # Make sure we are not following a symbolic link
+    if [[ -h /usr/share/justboot/${ARCH} ]]; then
+      # Save real paths.
+      local REAL_ARCH_DIR=$(readlink /usr/share/justboot/${ARCH})
+      local REAL_EXCLUDES_DIR=$(readlink /usr/share/justboot/excludes/${ARCH})
+
+      einfo "Moving data directory from ${RED}${REAL_ARCH_DIR}${BLACK} to ${RED}${LIVEDIR}/${ARCH}..${BLACK} please wait..."
+      # Remove old symbolic links
+      for i in /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}; do
+        do_exec unlink ${i} 
+      done
+      
+      # Move to new data directory
+      exec_chkdir ${LIVEDIR}/excludes
+      do_exec mv ${REAL_ARCH_DIR} ${ARCH_DIR}
+      do_exec mv ${REAL_EXCLUDES_DIR} ${EXCLUDES_DIR}
+      
+      if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
+        # Create new symbolic links
+        exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
+        exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
+        exec_chklink /usr/share/justboot/data ${DATA_DIR}
+      fi
+
+      # Lets make sure we don't delete other sources.
+      for i in i{4,5,6}86 x86_64; do
+        # Skip own arch
+        [[ ${i} = ${ARCH} ]] && continue 2
+        # If arch found, don't remove parent directory
+        if [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]]; then
+          REMOVAL=0;break
+        fi
+      done
+      if [[ ${REMOVAL} ]]; then
+        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
+        do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR}
+      else
+        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
+        do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
+        do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}} 
+      fi        
+    elif [[ /usr/share/justboot != ${LIVEDIR} && -d /usr/share/justboot/${ARCH} ]]; then 
+      einfo "Moving data directory from ${RED}/usr/share/justboot/${ARCH}${BLACK} to ${RED}${LIVEDIR}/${ARCH}.${BLACK} please wait..."
+
+      # Move to new data directory
+      exec_chkdir ${LIVEDIR}/excludes
+      do_exec mv /usr/share/justboot/${ARCH} ${ARCH_DIR}
+      do_exec mv /usr/share/justboot/excludes/${ARCH} ${EXCLUDES_DIR}
+
+      # Create new symbolic links
+      exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
+      exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
+      exec_chklink /usr/share/justboot/data ${DATA_DIR}
+    fi
+  fi  
+ 
+  # Convert x86_64 arch for proper usage in Gentoo.
+  case ${ARCH} in
+    x86_64) local GENTOO_ARCH=amd64 STAGE=amd64;;
+    i[4,5,6]86)
+      # Fall i586 to i486 since there are no i586 tarballs for gentoo
+      if [[ ${ARCH} = i586 ]]; then
+        local STAGE=i486
+        local GENTOO_ARCH=x86
+      else
+        local STAGE=${ARCH}
+        local GENTOO_ARCH=x86
+      fi
+  esac
+
+  # Check if we are starting a fresh build (--purge maybe).
+  if [[ ! -d ${ARCH_DIR} ]]; then
+    einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${BLACK}. please wait..."
+    #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
+    local GENTOO_MIRROR="http://gentoo.mirrors.tds.net/gentoo"
+
+    # Retrieve latest gentoo autobuild stage
+    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds
+    local GENTOO_STAGE_SRC_URI=$(grep folder index.html | cut -d\> -f3 | cut -d/ -f1 | tail -n1)
+    do_exec rm index.html
+
+    exec_chkdir ${ARCH_DIR}
+    do_exec cd ${ARCH_DIR}
+
+    einfo "Fetching gentoo stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2 autobuild stage"
+    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds/${GENTOO_STAGE_SRC_URI}/stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2
+
+    einfo "Extracting stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2"
+    do_exec tar xjpf stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2 
+    do_exec rm stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2
+
+    einfo "Fetching portage tree snapshot"
+    do_exec wget -q ${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2
+
+    einfo "Extracting  portage-latest.tar.bz2"
+    do_exec tar xjpf portage-latest.tar.bz2 -C usr/ 
+    do_exec rm portage-latest.tar.bz2
+
+    exec_chkdir ${EXCLUDES_DIR} 
+    exec_chkdir /usr/share/justboot/excludes
+
+    for i in "${LIVECD_EXCLUDES[@]}"; do
+      exec_chkdir ${EXCLUDES_DIR}/${i//\//:}
+      do_exec mv ${i}/* ${EXCLUDES_DIR}/${i//\//:} &>/dev/null
+    done
+
+    einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}."
+
+    if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
+      # Create new symbolic links
+      exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
+      exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
+      exec_chklink /usr/share/justboot/data ${DATA_DIR}
+    fi
+  fi
+  prepare_env
+}
+
+prepare_env() {
+  do_exec cd ${LIVEDIR}
+  exec_chkdir ${ARCH_DIR}${DATA_DIR}
+  exec_chkdir ${ARCH_DIR}/mnt/gentoo
+
+  # Bind local livecd folders
+  do_exec mount -o bind /proc ${ARCH}/proc 2>/dev/null
+  do_exec mount -o bind /dev ${ARCH}/dev 2>/dev/null
+  do_exec mount -o bind ${DATA_DIR} ${ARCH}${DATA_DIR} 2>/dev/null
+
+  # Detect new livecd exclude directories
+  for x in "${LIVECD_EXCLUDES[@]}"; do
+    # Directory have contents?
+    if [[ $(ls ${ARCH}/${x//://} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
+      einfo "Detected newly added ${BLUE}${x}${BLACK} for livecd excludes, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
+      exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
+      do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:}
+      do_exec rm -rf ${ARCH}/${x}/*
+    fi
+  done
+
+  if [ ${RAMFS} ]; then
+    # Compare directories against a ramfs list
+    for x in "${LIVECD_EXCLUDES[@]}"; do
+      for y in "${RAMFS_DIR[@]}"; do
+        if [[ ${x} = ${y} ]]; then
+          einfo "Mounting ${BLUE}${x}${BLACK} in memory.. please wait"
+          do_exec mount -t ramfs ${x} ${ARCH}/${x} 2>/dev/null
+
+          [[ ! -d ${EXCLUDES_DIR}/${x//\//:} ]] && exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
+          do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 2>/dev/null
+
+          einfo "${RED}${x}${BLACK} copied to RAMFS" 
+          continue 2
+        fi
+      done
+      # No matches found, mount livecd excluded directories.
+      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 2>/dev/null
+    done
+
+    # Mount the RAMFS directories that are not part of the livecd excludes
+    for x in "${RAMFS_DIR[@]}"; do
+      for y in "${LIVECD_EXCLUDES[@]}"; do
+        # Skip matches then mount the rest.
+        [[ ${x} = ${y} ]] && continue 2
+      done
+      einfo "Mounting ${BLUE}${x}${BLACK} in memory.. please wait."
+
+      # Check for existing contents in ramfs directories, then move data if true.
+      if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
+        exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
+        einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
+        do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null
+      else
+        # Create the directories for the ramfs mounts
+        for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
+      fi
+      do_exec mount -t ramfs ${x} ${ARCH}/${x}
+
+      # If old RAMFS dir exist, then transfer files
+      if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
+        do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 2>/dev/null
+        einfo "${RED}${x}${BLACK} copied to RAMFS"
+      fi
+    done
+    # Move any orphan directories to the livecd environment.
+    declare -a DIRS
+    DIRS=( $(ls --color=never ${EXCLUDES_DIR}) )
+    for y in "${DIRS[@]}"; do
+      for z in "${LIVECD_EXCLUDES[@]}" "${RAMFS_DIR[@]}"; do
+        # Skip matches
+        [[ ${y} = ${z//\//:} ]] && continue 2
+      done
+      einfo "${BLUE}${y}${BLACK} is an orphan directory."
+      einfo "Moving data to ${RED}${ARCH}/${y//://}.${BLACK} please wait..."
+      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} 
+      do_exec rm -rf ${EXCLUDES_DIR}/${y}
+    done
+  else
+    # Move any orphan excluded directories
+    declare -a DIRS
+    DIRS=( $(ls --color=never ${EXCLUDES_DIR}) )
+    for y in "${DIRS[@]}"; do
+      for z in "${LIVECD_EXCLUDES[@]}"; do
+        # Skip matches
+        [[ ${y} = ${z//\//:} ]] && continue 2
+      done
+      einfo "${BLUE}${y}${BLACK} is either an orphan directory or part of an old ${BLUE}ramfs (--ramfs)${BLACK} run."
+      einfo "Moving data to ${RED}${ARCH}/${y//://}.${BLACK} please wait..."
+      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://}
+      do_exec rm -rf ${EXCLUDES_DIR}/${y}
+    done
+
+    # Mount livecd excluded directories
+    einfo "Mounting livecd data files"
+    for x in "${LIVECD_EXCLUDES[@]}"; do
+      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 2>/dev/null
+    done
+  fi
+
+  # Create directories for aufs union mounts
+  if [[ ! -d ${ARCH_DIR}/mnt/livecd ]]; then
+    do_exec mkdir -p ${ARCH_DIR}/mnt/livecd/{static,image,dynamic}
+  fi
+
+  einfo "Entering the livecd chroot environment."
+  do_exec chmod +x ${CHROOT_SCRIPT} && do_exec mv ${CHROOT_SCRIPT} ${ARCH_DIR}/tmp
+  do_exec cp /etc/resolv.conf ${ARCH_DIR}/etc
+  
+  if [[ ${ARCH} =~ i[4,5,6]86 ]]; then
+    do_exec linux32 chroot ${ARCH_DIR} ${CHROOT_SCRIPT} && do_exec rm ${ARCH_DIR}${CHROOT_SCRIPT}
+  else
+    do_exec linux64 chroot ${ARCH_DIR} ${CHROOT_SCRIPT} && do_exec rm ${ARCH_DIR}${CHROOT_SCRIPT}
+  fi
+
+  # Has user interrupt script?
+  [[ $? = 13 ]] && do_exec release_env now
+
+  einfo "Exiting livecd chroot environment."
+  do_exec env-update 1>/dev/null && do_exec source /etc/profile
+  do_exec release_env 
+}
+
+release_env() {
+  einfo "Releasing livecd environment, please wait..."
+  do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
+
+  # Umount local livecd folders
+  do_exec umount ${ARCH_DIR}/proc 2>/dev/null
+  do_exec umount ${ARCH_DIR}/dev 2>/dev/null
+  do_exec umount ${ARCH}${DATA_DIR} 2>/dev/null
+
+  # Umount RAMFS & Livecd excluded directories
+  if [ ${RAMFS} ]; then
+    # Compare directories against a list to umount from ramfs (--ramfs)
+    for x in "${LIVECD_EXCLUDES[@]}"; do
+      for y in "${RAMFS_DIR[@]}"; do
+        if [[ ${x} = ${y} ]]; then
+          einfo "Removing ${RED}${x}${BLACK} from memory.. please wait"
+          do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null
+          do_exec umount ${ARCH}/${x} 2>/dev/null
+          einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${BLACK}"
+          continue 2
+        fi
+      done
+      # Umount livecd excluded directories
+        do_exec umount ${ARCH}/${x} 2>/dev/null
+    done
+
+    # Umount the RAMFS directories that are not equal to livecd excludes
+    for x in "${RAMFS_DIR[@]}"; do
+      for y in "${LIVECD_EXCLUDES[@]}"; do
+        # Skip matches
+        [[ ${x} = ${y} ]] && continue 2
+      done
+      einfo "Removing ${RED}${x}${BLACK} from memory.. please wait."
+      do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null
+      do_exec umount ${ARCH}/${x} 2>/dev/null
+      einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
+    done
+  else
+    # Umount livecd excluded directories
+    for x in "${LIVECD_EXCLUDES[@]}"; do
+      do_exec umount ${ARCH}/${x} 2>/dev/null
+    done 
+  fi
+
+  # Did we trap an interrupt? 
+  [[ ! $1 ]] && do_exec clean_env
+}
+
+clean_env() {
+  local TARGET=${LIVEDIR}/target/files/${ARCH}
+  local CLEANUP_SCRIPT=$(mktemp /tmp/XXX)
+
+  [[ -d ${LIVEDIR}/target ]] && do_exec rm -rf ${LIVEDIR}/{boot,target}
+  exec_chkdir ${TARGET}
+
+  # Copying livecd environment before clean up and iso image build
+  einfo "Performing livecd cleanup, please wait..."
+  do_exec rsync -caq --delete-before ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} 
+
+  # Make sure we are moving a valid /boot directory
+  if [[ -d ${EXCLUDES_DIR}/boot ]]; then
+    do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/boot ${LIVEDIR}/target 
+    do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/boot ${LIVEDIR} 
+  else
+    do_exec rsync -caq --delete-before ${ARCH_DIR}/boot ${LIVEDIR}/target 
+    do_exec rsync -caq --delete-before ${ARCH_DIR}/boot ${LIVEDIR} 
+  fi
+
+  # Move environment data before packages removal.
+  for i in "${LIVECD_EXCLUDES[@]}"; do
+    # Only sync directories with data.
+    if [[ $(ls ${EXCLUDES_DIR}/${i//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
+      einfo "Moving ${BLUE}${i}${BLACK} to ${RED}${TARGET}/${i}.${BLACK} please wait..."
+      do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${i//\//:}/* ${TARGET}/${i}  
+    fi
+  done
+
+  if [ ${RAMFS} ]; then
+    for x in "${RAMFS_DIR[@]}"; do
+      for y in "${LIVECD_EXCLUDES[@]}"; do
+        # Skip matches
+        [[ ${x} = ${y} ]] && continue 2
+      done
+        # Only sync directories with data.
+        if [[ $(ls ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
+          einfo "Moving ${BLUE}${x}${BLACK} to ${RED}${TARGET}/${x}.${BLACK} please wait..."
+          do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${x//\//:}/* ${TARGET}/${x}         
+        fi
+    done
+  fi
+
+# Livecd environment clean up script.
+cat >> ${CLEANUP_SCRIPT} << CLEANUP
+#!/bin/bash -x
+  trap 'echo "User Interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
+  #  Cleans up the environment if script interrupted by control-c.
+
+  echo "Entering livecd environment"
+  env-update 1>/dev/null && source /etc/profile
+
+  for i in ${REMOVE_PACKAGES[@]}; do
+  while read ebuild; do
+    echo "Removing \${i} from livecd"
+    emerge -Cq \${i} 
+  done
+
+  echo "${#REMOVE_PACKAGES[@]} Packages removed."
+  exit
+CLEANUP
+  do_exec chmod +x ${CLEANUP_SCRIPT} && do_exec mv ${CLEANUP_SCRIPT} ${TARGET}/tmp
+
+  # Eventually this will be a case for multiple arches.
+  if [[ ${ARCH} =~ i[4,5,6]86 ]]; then
+    do_exec linux32 chroot ${TARGET} ${CLEANUP_SCRIPT} 
+  else
+    do_exec linux64 chroot ${TARGET} ${CLEANUP_SCRIPT}
+  fi
+
+  # Has user interrupt script?
+  [[ $? = 13 ]] && do_exec release_env now
+
+  # Clean up livecd environment files
+  do_exec cd ${TARGET}
+  do_exec rm -rf ${REMOVE_FILES[@]} ${LIVECD_EXCLUDES[@]}
+
+  # Create required directories.
+  for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb var/cache/hald var/log root var/log; do
+    do_exec exec_chkdir ${i}
+  done
+
+  # Create mtab file
+  >etc/mtab
+
+  do_exec create_livecd
+}
+
+create_livecd() {
+  do_exec touch ${LIVEDIR}/target/livecd
+
+  einfo "Building SquashFS."
+  do_exec mksquashfs ${LIVEDIR}/target/files/${ARCH}/ ${LIVEDIR}/target/livecd.squashfs
+  einfo "Generating bootable JustBOOT(tm) livecd image."
+  do_exec mkisofs -volid \"${VOLID}\" -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table \
+-iso-level 4 -hide-rr-moved -c boot.catalog -o ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-$(date +%m%d%Y-%H%M).iso -x files ${LIVEDIR}/target/
+  
+  do_exec rm -rf ${LIVEDIR}/{target,boot}
+  einfo "All Done. ${ARCH} livecd located at ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-$(date +%m%d%Y-%H%M).iso"
+}
+
+cat >> ${CHROOT_SCRIPT} << CHROOT
+#!/bin/bash
+ARCH=${ARCH}
+UCLIBC="${DATA_DIR}/uclibc"
+UCLIBC_SCRIPT=\$(mktemp /tmp/XXX)
+UCLIBC_SRC_URI="http://gentoo.mirrors.tds.net/gentoo/experimental/x86/embedded/stages/stage3-x86-uclibc-2008.0.tar.bz2"
+BUSYBOX_SRC_URI="http://www.busybox.net/downloads/busybox-1.14.0.tar.gz"
+BUSYBOX_ARCHIVE=\$(echo \${BUSYBOX_SRC_URI} | cut -d/ -f5)
+BUSYBOX_CONF="${DATA_DIR}/busybox/.config"
+BUSYBOX=\${BUSYBOX_ARCHIVE/.tar.gz/}
+BLACK='\e[1;48;30m'
+BLUE='\e[1;48;34m'
+RED='\e[1;48;31m'
+NOCOLOR='\e[0m'
+
+trap 'echo "User Interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
+#  Cleans up the environment if script interrupted by control-c.
+
+  env-update 1>/dev/null && source /etc/profile
+
+exec_chklink() {
+  local SRC="\${1}" DEST="\${2}"
+  [[ -h \${DEST} ]] && unlink \${DEST}
+  ln -s \${SRC} \${DEST}
+}
+
+do_exec() {
+  if [ ${DEBUG} ]; then
+    echo -e "\a\${RED}debug:\${NOCOLOR}\${BLUE} (\${@})"\${NOCOLOR}
+    \${@}
+  elif [ ${VERBOSE} ]; then
+    \${@}
+  else
+    \${@} &>/dev/null
+  fi
+}
+
+einfo() {
+  echo -e "\a\${BLACK}.: \${1} :."\${NOCOLOR}
+  sleep 1
+}
+
+ewarn() {
+  echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}
+}
+
+error() {
+  echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}
+  exit 1
+}
+
+prepare_configs() {
+  do_exec cp -a ${DATA_DIR}/etc/fstab /etc
+  do_exec cp -a ${DATA_DIR}/etc/portage /etc
+  do_exec cp -a ${DATA_DIR}/etc/conf.d/{hostname,net,clock} /etc/conf.d
+
+  if [[ ! \$(grep JustBOOT /etc/make.conf &>/dev/null) ]]; then
+    >/etc/make.conf
+# Generate our make.conf if this is a new livecd build.
+cat >> /etc/make.conf << MAKECONF
+# /etc/make.conf generated by the JustBOOT(tm) livecd generator
+#
+CFLAGS="${CFLAGS}"
+CHOST="${CHOST}"
+CXXFLAGS="${CFLAGS}"
+MAKEOPTS="${MAKEOPTS}"
+LDFLAGS="${LDFLAGS}"
+USE="${USE}"
+LINGUAS="${LINGUAS}"
+FEATURES="${FEATURES}"
+PORTAGE_NICENESS="${PNICE}"
+ACCEPT_KEYWORDS="${ACCEPT_KEYWORDS}"
+PORT_LOGDIR=/var/log/portage
+CLEAN_DELAY="2"
+EMERGE_WARNING_DELAY="1"
+MAKECONF
+  fi
+}
+  
+prepare_packages() {
+  # Livecd required packages - binary:category/package
+  local -a GLOBAL_PACKAGES=( 'grub:sys-boot/grub' 'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw' \
+'mkfs.reiser4:sys-fs/reiser4progs' 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' \
+'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'lvm:sys-fs/lvm2' 'screen:app-misc/screen' \
+'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' )
+
+  for i in \${GLOBAL_PACKAGES[@]}; do
+    if ! which \${i/:*/} &>/dev/null; then
+      einfo "Emerging \${BLUE}\${i/*:/}."
+      do_exec emerge -q \${i/*:/}  
+    fi
+  done
+  do_exec emerge memtest86+ -q 
+}
+
+prepare_bootloader() {
+  [[ -h /boot/grub/menu.lst ]] && do_exec unlink /boot/grub/menu.lst
+
+  # Always a fresh grub.conf, eventually we parse for changes then merge.
+  >/boot/grub/menu.lst
+cat >> /boot/grub/menu.lst << GRUB
+default 0
+timeout 3
+splashimage=/boot/grub/splash.xpm.gz
+
+title=JustBOOT
+        kernel /boot/vmlinuz root=/dev/loop0 vga=ask
+        initrd /boot/${ARCH}-initramfs_data.cpio.lzma
+title=JustBOOT NO-FB
+        kernel /boot/vmlinuz root=/dev/loop0
+        initrd /boot/${ARCH}-initramfs_data.cpio.lzma
+title=Memtest86+
+        kernel /boot/memtest86plus/memtest.bin
+GRUB
+  do_exec cp /boot/grub/menu.lst /boot/grub/grub.conf
+}
+
+prepare_busybox() {
+  if [[ ! -d \${UCLIBC} ]]; then
+    do_exec mkdir -p \${UCLIBC}
+    do_exec cd \${UCLIBC}
+
+    einfo "Fetching Gentoo UCLIBC stage3 tarball"
+    do_exec wget -q \${UCLIBC_SRC_URI}
+    
+    einfo "Extracting Gentoo UCLIBC stage3 tarball"
+    do_exec tar xjpf stage*
+
+    einfo "Fetching Busybox sources"
+    do_exec wget -q \${BUSYBOX_SRC_URI}
+    
+    einfo "Extracting Busybox sources"
+    do_exec tar zxf \${BUSYBOX_ARCHIVE}
+  fi
+
+  do_exec cp -a ${DATA_DIR}/busybox/.config \${UCLIBC}/\${BUSYBOX}
+
+  einfo "Entering UCLIBC environment"
+  do_exec chmod +x \${UCLIBC_SCRIPT} && do_exec mv \${UCLIBC_SCRIPT} \${UCLIBC}/tmp
+
+  if [[ ${ARCH} =~ i[4,5,6]86 ]]; then
+    do_exec linux32 chroot \${UCLIBC} \${UCLIBC_SCRIPT}
+  else
+    do_exec chroot \${UCLIBC} \${UCLIBC_SCRIPT}
+  fi
+
+  einfo "Done with busybox build"
+}
+
+prepare_initramfs() {
+  local INITRAMFS_DIR=/tmp/initramfs
+  KERNEL_SRC=\$(readlink /usr/src/linux)
+  KERNEL_MODULE_SRC=\$(echo \${KERNEL_SRC} | cut -d- -f2-)
+
+  # Prepare busybox applets
+  [[ -d \${INITRAMFS_DIR} ]] && do_exec rm -rf \${INITRAMFS_DIR}
+  do_exec mkdir \${INITRAMFS_DIR} && do_exec cd \${UCLIBC}/\${BUSYBOX}
+  ./applets/install.sh \${INITRAMFS_DIR} --symlinks 1>/dev/null
+
+  do_exec cd \${INITRAMFS_DIR}
+  do_exec mkdir -p proc sys dev mnt new-root lib mnt/livecd mnt/livecd/{static,dynamic,image} lib/modules
+  do_exec cp -a ${DATA_DIR}/initramfs/etc .
+
+  # Copy JustBOOT(tm) /init script and create require nodes
+  do_exec cp ${DATA_DIR}/initramfs/init .
+  do_exec chmod 755 init
+  do_exec mknod dev/console c 5 1
+  do_exec mknod dev/null c 1 3
+  do_exec mknod dev/tty1 c 4 1
+
+  do_exec cp -a /lib/modules/\${KERNEL_MODULE_SRC} lib/modules/
+
+  # Generate the initramfs image
+  [[ -f /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION} ]] && do_exec rm /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
+  find | cpio --quiet -o -H newc | ${INIT_COMPRESSION} -9 >/boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
+}
+
+prepare_kernel() {
+  local DATE=$(date +%Y%m%d-%H%m)
+
+  # Convert x86 arch for proper usage in kernel.
+  case ${ARCH} in
+    i[4,5,6]86) local ARCH=x86
+  esac
+
+  # Is this is a fresh kernel?
+  if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
+    # Is layman compiled?
+    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* 2>/dev/null; then
+      einfo "Emerging \${BLUE}layman"
+      do_exec emerge layman  
+      do_exec layman -Sa zen-overlay 
+      echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
+    fi  
+    einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
+    echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
+    do_exec emerge ${KERNEL_SOURCES} 
+
+    einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
+    do_exec cp ${DATA_DIR}/kernel/\${ARCH}/.config /usr/src/linux
+    do_exec cd /usr/src/linux
+    do_exec make ${MAKEOPTS} 
+    do_exec make modules_install 
+    einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image."
+    do_exec prepare_initramfs
+  else
+    # Backup old kernel config
+    if [[ -f /usr/src/linux/.config ]]; then
+      einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}"
+      do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\${DATE}
+    fi
+
+    # Prepare initramfs then recompile kernel.
+    einfo "Compiling \${RED}\${ARCH}\${BLACK} kernel image."
+    do_exec cd /usr/src/linux
+    do_exec make ${MAKEOPTS} 
+    do_exec make modules_install 
+    einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image"
+    do_exec prepare_initramfs
+  fi
+
+    do_exec cd /usr/src/linux
+    do_exec cp arch/\${ARCH}/boot/bzImage /boot/vmlinuz
+    do_exec update-modules 
+
+    einfo "Emerging \${BLUE}lvm2"
+    do_exec emerge lvm2 -q 
+
+    einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
+    if [ ${LETMEIN} ]; then
+      einfo "--letmein flag used!!, having don't break me!"
+      do_exec /bin/bash
+    fi
+}
+
+prepare_useropts() {
+  einfo "Setting root password to \"\${RED}${ROOT_PASSWD:-gentoo}\""
+
+  # Set the livecd root password according to --root-passwd otherwise use "gentoo" for root
+  echo "root:${ROOT_PASSWD:-gentoo}" | chpasswd 1>/dev/null
+  einfo "Root passwd set to \${RED}\"${ROOT_PASSWD:-gentoo}\""
+}
+
+diff () {
+  printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) -
+    \$(date -u -d"\$CURRENT" +%s)))
+}
+
+check_toolchain_days() {
+  if [ ${NO_TOOL} ]; then
+    ewarn "Skipping toolchain build"
+    return 1
+  elif [ ${YES_TOOL} ]; then
+    ewarn "Forcing a toolchain build"
+    >/etc/toolchain_age
+    return 0
+  else
+    # Set first start of toolchain build 
+    [ ! -f /etc/toolchain_age ] && date -u -d 'now' '+%F %T.%N %Z'>/etc/toolchain_age
+
+    local CURRENT=\$(date -u -d 'now' '+%F %T.%N %Z') TARGET=\$(</etc/toolchain_age)
+    local MPHR=60 HPD=24 LIMIT=60
+    # CURRENT = now, TARGET = Last time the toolchain was rebuild.
+    # %F = full date, %T = %H:%M:%S, %N = nanoseconds, %Z = time zone.
+    # MPHR = Minutes per hour, HPD = Hours per day, LIMIT = Days before a toolchain rebuild.
+  
+    DAYS=\$(( \$(diff) / \$MPHR / \$MPHR / \$HPD ))
+    CURRENT=\$(date -d"\$CURRENT +\$DAYS days" '+%F %T.%N %Z')
+    TOOLCHAIN_DAYS=\$(printf '%s' "\$DAYS")
+    DAYS_LEFT=\$((LIMIT-TOOLCHAIN_DAYS))
+      
+    # If this is the first day of the build, increment date by 2 days to skip toolchain rebuild.
+    if ((TOOLCHAIN_DAYS>LIMIT)); then
+      ewarn "Your toolchain is \${TOOLCHAIN_DAYS} days old passed the \${LIMIT} days limit."
+      date -u -d '1 day' '+%F %T.%N %Z'>/etc/toolchain_age
+      einfo "Preparing to rebuild the toolchain."
+      return 0
+    elif ((TOOLCHAIN_DAYS==0)); then
+      date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
+      ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap."
+      einfo "Preparing to build the toolchain."
+      return 0
+    else
+      ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap."
+      return 1
+    fi
+  fi
+}
+
+bootstrap() {
+  if [[ ! \$(grep '#en_US' /etc/locale.gen &>/dev/null) ]]; then
+    einfo "Setting global locales"
+    local -a GLOBAL_LOCALES=( 'en_US ISO-8859-1' 'en_US.UTF-8 UTF-8' )
+
+    # Enable locales
+    for i in "\${GLOBAL_LOCALES[@]}"; do
+      sed -i "s/#\${i}/\${i}/" /etc/locale.gen
+    done
+  fi
+
+  # Generate locales
+  do_exec locale-gen 
+
+  # Set localtime
+  einfo "Setting localtime"
+  [[ -e /etc/localtime ]] && do_exec rm /etc/localtime
+  do_exec cp -a /usr/share/zoneinfo/UTC /etc/localtime
+
+  einfo "Running emerge --sync"
+  do_exec emerge --sync -q 
+
+  # Compile toolchain if --skip-toolchain is not set
+  if [ ! ${NO_TOOL} ]; then
+    # Begin the bootstrap
+    einfo "Compiling the toolchain, this maybe take a while depending on hardware."
+    do_exec emerge gcc-config linux-headers glibc binutils gcc portage -1q 
+    do_exec gcc-config 1  && do_exec env-update 1>/dev/null && do_exec source /etc/profile
+  
+    # Enable new gnu hash style
+    [[ ! \$(grep "\-\-hash\-style\=gnu" /etc/make.conf) ]] && sed -i 's/once/once,--hash-style=gnu/' /etc/make.conf 
+
+    # Recompile toolchain
+    do_exec emerge linux-headers glibc binutils gcc -1q 
+    einfo "Toolchain finished, compiling system packages against the new toolchain"
+
+    while read ebuild; do
+      einfo "Emerging \${BLUE}\"\${ebuild}\""
+      do_exec emerge -v1 "\${ebuild}"  || echo "\${ebuild}" >>failed
+      einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
+    done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)"|sed '1,4d') 
+
+    while read ebuild; do
+      einfo "Emerging \${BLUE}\"\${ebuild}\""
+      do_exec emerge -v1 "\${ebuild}" 
+      einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
+    done < <(cat failed)
+    do_exec rm failed
+
+    einfo "Toolchain build completed, compiling livecd packages."
+  else
+    einfo "Toolchain built skipped, compiling livecd packages."
+  fi
+}
+
+# Script to build busybox binary inside uclibc environment
+cat >> \${UCLIBC_SCRIPT} << BUSYBOX
+#!/bin/bash
+  env-update 1>/dev/null && source /etc/profile
+
+  echo "Compiling Busybox."
+  cd \${BUSYBOX} && make -s
+  [[ ! -f busybox.links ]] && make busybox.links
+
+  echo "Busybox has been compiled."
+  exit
+BUSYBOX
+  do_exec prepare_configs
+  do_exec check_toolchain_days && bootstrap
+  do_exec prepare_packages
+  do_exec prepare_bootloader
+  do_exec prepare_busybox
+  do_exec prepare_kernel
+  do_exec prepare_useropts
+CHROOT
+
+# Lets go already!
+[[ ! -d ${LIVEDIR} ]] && exec_chkdir ${LIVEDIR}
+do_exec cd ${LIVEDIR} || error "Failed to switch to livecd data directory, Exiting."
+do_exec prepare_stage

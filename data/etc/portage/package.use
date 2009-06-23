@@ -1,0 +1,153 @@
+dev-libs/klibc -n32 
+app-admin/eselect bash-completion
+net-p2p/gnunet guile ipv6 ncurses nls
+app-admin/kedpm 
+app-admin/pwgen livecd
+app-arch/sharutils nls
+app-arch/zip crypt
+app-cdr/cdrdao encode
+app-cdr/cdrkit hfs unicode
+app-crypt/gnupg bzip2 nls
+app-crypt/johntheripper mmx sse2
+app-crypt/mdcrack ncurses
+app-crypt/pinentry caps ncurses
+app-editors/emacs alsa gif gzip-el jpeg motif png sound spell tiff xpm
+app-editors/geresh spell
+app-editors/jed gpm truetype
+app-editors/vim acl bash-completion gpm nls perl python
+app-editors/vim-core acl bash-completion gpm nls perl python
+app-editors/xemacs gdbm gif gpm jpeg mule png pop tiff
+app-misc/devtodo bash-completion
+app-misc/screen nethack pam
+app-misc/tdl readline
+app-pda/pilot-link perl png python readline
+app-portage/conf-update colordiff
+app-text/aspell gpm nls
+dev-lang/ocaml gdbm latex ncurses
+dev-lang/php cli crypt ipv6 ncurses nls pcre readline ssl truetype unicode gd ftp
+dev-lang/ruby ipv6 threads
+dev-lang/swig ocaml perl python
+dev-lang/yasm nls
+dev-libs/libdnet python
+dev-libs/libgcrypt nls idea
+dev-libs/libgpg-error nls
+dev-libs/libxslt crypt python
+dev-libs/opensc openct
+dev-libs/popt nls
+dev-libs/stfl perl ruby
+dev-libs/xmlsec gnutls ssl
+dev-perl/HTML-Parser unicode
+dev-perl/Net-DNS ipv6
+dev-perl/libwww-perl ssl
+dev-perl/perl-ldap ssl
+dev-python/twisted unicode
+dev-util/dialog unicode
+dev-util/strace aio
+games-board/gnuchess readline
+mail-mta/ssmtp ipv6 mailwrapper md5sum ssl
+media-gfx/exiv2 nls unicode zlib
+media-gfx/graphviz nls perl python ruby
+media-gfx/imagemagick bzip2 doc graphviz jpeg jpeg2k lcms mpeg perl png tiff truetype xml zlib
+media-gfx/splashutils gpm png truetype mng
+media-libs/a52dec oss
+media-libs/alsa-lib midi
+media-libs/flac 3dnow ogg sse
+media-libs/fontconfig xml
+media-libs/gd jpeg png truetype
+media-libs/jasper jpeg
+media-libs/lcms jpeg python tiff zlib
+media-libs/libao alsa
+media-libs/libcaca ncurses
+media-libs/libdca oss
+media-libs/libmpeg3 mmx
+media-libs/libsndfile alsa flac
+media-libs/ploticusflash gd nls truetype 
+media-sound/alsaplayer alsa audiofile flac ogg oss
+media-sound/cmus aac alsa ao flac mad mp3 mp4 oss wma
+media-sound/herrie alsa ao mp3 nls oss unicode
+media-sound/moc alsa curl ffmpeg flac mad
+media-sound/mpg123 3dnow 3dnowext mmx sse alsa oss 
+media-sound/sox alsa ao encode ffmpeg flac mad ogg oss
+media-sound/sox alsa encode ffmpeg flac mad ogg oss
+media-video/dvd-slideshow mp3
+media-video/ffmpeg a52 aac encode ieee1394 imlib mmx ogg oss threads truetype v4l vorbis x264 xvid zlib
+media-video/mjpegtools dv mmx png
+media-video/mplayer 3dnow 3dnowext a52 aac alsa cdparanoia cpudetection custom-cflags doc dts dv dvd encode ftp gif iconv ipv6 jpeg libcaca livecd lzo mad md5sum mmx mmxext mp2 mp3 oss png pvr quicktime radio rar sse sse2 svga truetype unicode v4l win32codecs x264 xvid
+media-video/transcode 3dnow dv dvdread extrafilters iconv imagemagick jpeg lzo mjpeg mmx mp3 mpeg network ogg oss sse sse2 truetype xml xvid
+media-video/x264-encoder threads -gtk
+net-analyzer/iptraf ipv6 unicode
+net-analyzer/iptraf unicode ipv6
+net-analyzer/nast ncurses
+net-analyzer/net-snmp ipv6 perl python ssl
+net-analyzer/netcat crypt ipv6
+net-analyzer/nmap ssl
+net-analyzer/ntop ipv6 nls ssl zlib
+net-analyzer/rrdtool perl python rrdcgi ruby
+net-analyzer/snort dynamicplugin flexresp2 gre inline linux-smp-stats perfprofiling prelude react sguil snortsam timestats
+net-analyzer/ssldump ssl
+net-analyzer/tcpdump ipv6 ssl
+net-dialup/mingetty unicode
+net-dialup/ppp activefilter atm dhcp ipv6 pam radius
+net-firewall/iptables ipv6 
+net-ftp/ftp ipv6 ssl
+net-ftp/ftpbase pam
+net-ftp/lftp gnutls nls socks5 ssl
+net-ftp/ncftp ipv6
+net-ftp/netkit-ftpd ssl
+net-ftp/tnftp ipv6 socks5
+net-ftp/vsftpd caps logrotate pam ssl
+net-im/centerim aim bidi crypt gadu icq irc jabber lj msn nls rss ssl yahoo
+net-im/climm ssl
+net-im/ekg2 gif gpm gsm jabber jpeg perl python spell ssl unicode
+net-im/pork perl
+net-irc/irssi-svn ipv6 perl socks5 ssl
+net-irc/scrollz ipv6 socks5
+net-libs/gnutls lzo nls zlib
+net-libs/gnutls nls zlib
+net-libs/libpcap ipv6
+net-mail/mailbase pam
+net-mail/sendEmail ssl
+net-misc/aria2 ares gnutls metalink nls ssl
+net-misc/dhcpcd vram
+net-misc/openssh X509 chroot hpn kerberos pam skey smartcard
+net-misc/sipsak gnutls
+net-p2p/dbhub nls perl
+net-p2p/ghostwhitecrab ipv6 threads zlib
+net-p2p/gift ares fasttrack gnutella imagemagick
+net-p2p/gift-gnutella xml
+net-p2p/giftcurs gpm nls unicode
+net-p2p/microdc2 nls
+net-p2p/mldonkey fasttrack gd gnutella magic
+net-p2p/opendchub perl
+net-proxy/dante pam
+net-wireless/wepattack john
+net-wireless/wireless-tools nls 
+net-wireless/wpa_supplicant gnutls gsm madwifi readline ssl
+sci-libs/netcdf fortran
+sys-apps/acl nls
+sys-apps/baselayout livecd
+sys-apps/hwsetup zlib
+sys-apps/less unicode
+sys-apps/parted device-mapper nls readline
+sys-apps/pciutils 
+sys-apps/xinetd perl
+sys-cluster/heartbeat snmp
+sys-devel/gcc fortran mudflap nls openmp objc++
+sys-fs/e2fsprogs nls
+sys-fs/evms hb2 ncurses nls
+sys-fs/lvm2 clvm readline
+sys-fs/ntfsprogs crypt fuse
+sys-libs/glibc nls nptl nptlonly
+sys-libs/slang unicode
+sys-power/cpufreqd lm_sensors nforce2 nvidia
+sys-power/cpufrequtils nls
+sys-power/powertop unicode
+sys-power/suspend fbsplash
+sys-process/psmisc ipv6 nls 
+www-client/links gpm javascript png ssl unicode livecd  
+www-client/lynx bzip2 ipv6 nls ssl unicode
+www-client/surfraw bash-completion
+app-accessibility/speech-dispatcher alsa python
+app-portage/layman git subversion
+dev-util/subversion -dso
+net-misc/dropbear -pam

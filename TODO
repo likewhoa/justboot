@@ -1,0 +1,11 @@
+1. Automatic stage/snapshot builds
+2. HybridISO
+3. Support more kernel sources
+4. Encryption options for livecd
+5. Xorg support
+6. KVM image generator
+7. Burn to cd/dvd media option
+8. PPC,ARM support
+9. Gentoo ebuild
+10. Extra /init features:
+

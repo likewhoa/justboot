@@ -1,0 +1,12 @@
+05/25/2009 - JustBOOT is born
+05/27/2009 - Arrays for various options
+05/28/2009 - Custom make.conf and misc additions
+05/30/2009 - Debugging mode
+06/00/2009 - x86_64/x86 support
+06/06/2009 - CTRL+C Clean up
+06/07/2009 - Flags for various options added
+06/09/2009 - Compile from RAM option
+06/10/2009 - Code clean up and tunning
+06/11/2009 - Purge option for clean builds
+06/14/2009 - --help menu and usage examples
+
