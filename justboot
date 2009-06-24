@@ -68,7 +68,7 @@ do_exec() {
   elif [ ${VERBOSE} ]; then
     ${@} 
   else
-    ${@} &>/dev/null 
+    ${@} 2>/dev/null 
   fi
 }
 
@@ -659,7 +659,7 @@ do_exec() {
   elif [ ${VERBOSE} ]; then
     \${@}
   else
-    \${@} &>/dev/null
+    \${@} 2>/dev/null
   fi
 }
 
