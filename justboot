@@ -362,7 +362,6 @@ prepare_stage() {
 }
 
 prepare_env() {
-  do_exec cd ${LIVEDIR}
   exec_chkdir ${ARCH_DIR}${DATA_DIR}
   exec_chkdir ${ARCH_DIR}/mnt/gentoo
 
