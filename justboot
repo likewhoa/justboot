@@ -204,6 +204,13 @@ case ${ARCH} in
     [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86";;
 esac
 
+if [[ ${LIVEDIR} && -h /usr/share/justboot/${ARCH} ]]; then
+  LINK=$(readlink /usr/share/justboot/${ARCH})
+  LIVEDIR=${LINK/\/${ARCH}/}
+  ewarn "LIVEDIR = ${LIVEDIR}"
+  sleep 342434
+fi
+
 # Source configuration file before we begin 
 . /etc/justboot/justboot.conf
 
@@ -230,7 +237,7 @@ prepare_stage() {
   fi
 
   # Check if data directory changed.
-  if [[ ! -d ${ARCH_DIR} ]]; then
+  if [[ ! -d ${ARCH_DIR} || ${LIVEDIR} = /usr/share/justboot ]]; then
     # Make sure we are not following a symbolic link
     if [[ -h /usr/share/justboot/${ARCH} ]]; then
       # Save real paths.
