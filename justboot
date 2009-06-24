@@ -1,5 +1,5 @@
 #!/bin/bash 
-# justboot.sh v0.3 - JustBOOT(tm) Gentoo Based Linux Livecd Generator.
+# justboot v0.3 - JustBOOT(tm) Gentoo Based Linux Livecd Generator.
 ##
 # Copyright (C) 2009-2012 Mission Accomplish, Inc.
 #
@@ -76,7 +76,7 @@ do_exec() {
 run_help() {
 cat << HELP
 JustBOOT(tm) - Gentoo Linux LiveCD Generator
-Usage: justboot.sh [options]
+Usage: justboot [options]
 
 Options:
 
@@ -105,19 +105,19 @@ Options:
 
 Usage examples:
  Generate a 64bit livecd using gentoo-sources and set 'gentoo' for root password
-# justboot.sh --arch=x86_64 --kernel=gentoo-sources --root-passwd="gentoo"
+# justboot --arch=x86_64 --kernel=gentoo-sources --root-passwd="gentoo"
  Generate a i686 livecd using zen-sources, with 'let me in!' as password with 'gentoo' for livecd label
-# justboot.sh --arch=i686 --kernel=zen-sources --volid="gentoo rocks" --root-passwd="let me in!"
+# justboot --arch=i686 --kernel=zen-sources --volid="gentoo rocks" --root-passwd="let me in!"
  Generate a x86_64 livecd with optional gzip compression (Default is to use lzma)
-# justboot.sh --arch=x86_64 --init-compression lzma
+# justboot --arch=x86_64 --init-compression lzma
  Generate a livecd but compile packages in ram
-# justboot.sh --arch=x86_64 -ramfs -L "Fast is good"
+# justboot --arch=x86_64 -ramfs -L "Fast is good"
  Generate a livecd but delete old data directories first.
-# justboot.sh --arch=x86_64 --kernel=gentoo-sources --purge
+# justboot --arch=x86_64 --kernel=gentoo-sources --purge
  Generate a livecd for x86_64 using -j8 for makeopts and -19 for portage niceness
-# justboot.sh --arch=x86_64 --kernel=gentoo-sources --make-opts="-j8" --niceness="-19"
+# justboot --arch=x86_64 --kernel=gentoo-sources --make-opts="-j8" --niceness="-19"
  Change the data directory for livecd creation
-# justboot.sh --arch=x86_64 --kernel=zen-sources --data-directory=/home/username
+# justboot --arch=x86_64 --kernel=zen-sources --data-directory=/home/username
 
 HELP
 exit 1
