@@ -817,7 +817,7 @@ prepare_kernel() {
   esac
 
   # Remove kernel sources when --purge-kernel is used
-  if [[ ${PURGE_KERNEL} ]]; then
+  if [ ${PURGE_KERNEL} ]; then
     ewarn "--purge-kernel used,.. removing sources."
     do_exec unlink /usr/src/linux
     do_exec rm -rf /usr/src/* /lib/modules/*
