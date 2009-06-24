@@ -688,7 +688,7 @@ prepare_configs() {
   do_exec cp -a ${DATA_DIR}/etc/portage /etc
   do_exec cp -a ${DATA_DIR}/etc/conf.d/{hostname,net,clock} /etc/conf.d
 
-  if [[ ! \$(grep JustBOOT /etc/make.conf &>/dev/null) ]]; then
+  if [[ ! \$(grep JustBOOT /etc/make.conf 2>/dev/null) ]]; then
     >/etc/make.conf
 # Generate our make.conf if this is a new livecd build.
 cat >> /etc/make.conf << MAKECONF
