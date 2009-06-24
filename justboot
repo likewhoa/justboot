@@ -204,7 +204,7 @@ case ${ARCH} in
     [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86";;
 esac
 
-if [[ ${LIVEDIR} && -h /usr/share/justboot/${ARCH} ]]; then
+if [[ ! ${LIVEDIR} && -h /usr/share/justboot/${ARCH} ]]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
   ewarn "LIVEDIR = ${LIVEDIR}"
