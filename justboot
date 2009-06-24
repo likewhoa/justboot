@@ -208,7 +208,6 @@ if [[ ! ${LIVEDIR} && -h /usr/share/justboot/${ARCH} ]]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
   ewarn "LIVEDIR = ${LIVEDIR}"
-  sleep 342434
 fi
 
 # Source configuration file before we begin 
