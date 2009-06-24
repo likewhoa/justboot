@@ -95,6 +95,7 @@ Options:
 --ldflags=              - make.conf specific LDFLAGS
 --features=             - make.conf specific FEATURES
 --make-opts=            - make.conf specific MAKEOPTS
+--gentoo-mirrors=	- JustBOOT and make.conf specific source download mirrors separated by commas
 --niceness=		- make.conf specific PORTAGE_NICENESS
 --letmein		- Will run /bin/bash at end of chroot stage for self maintanance
 --verbose		- Run in verbose mode - lots of output
@@ -169,6 +170,10 @@ while [ $# -gt 0 ]; do
       LIVEDIR="${DIR/%\//}/justboot" # Remove leading slash
       einfo "Livecd Data directory set to ${BLUE}\"${LIVEDIR}\""
       ;;
+    --gentoo-mirrors=*)
+      GENTOO_MIRROR=$(echo $1 | awk '{print$1}')
+      GENTOO_MIRRORS="${1##*=}"
+      ;;
     --force-toolchain) YES_TOOL=0;;
     --skip-toolchain) NO_TOOL=0;;
     --lang=*) LINGUAS="${1##*=}";;
@@ -204,13 +209,13 @@ case ${ARCH} in
     [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86";;
 esac
 
+# Make sure our $LIVEDIR variable is never null
 if [[ ! ${LIVEDIR} && -h /usr/share/justboot/${ARCH} ]]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
-  ewarn "LIVEDIR = ${LIVEDIR}"
 fi
 
-# Source configuration file before we begin 
+# Source JustBOOT configuration options
 . /etc/justboot/justboot.conf
 
 # Remove old data directories (--purge)
@@ -272,7 +277,7 @@ prepare_stage() {
       done
       if [[ ${REMOVAL} ]]; then
         ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
-        do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR}
+        do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
       else
         ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
         do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
@@ -311,7 +316,6 @@ prepare_stage() {
   if [[ ! -d ${ARCH_DIR} ]]; then
     einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${BLACK}. please wait..."
     #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
-    local GENTOO_MIRROR="http://gentoo.mirrors.tds.net/gentoo"
 
     # Retrieve latest gentoo autobuild stage
     do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds
@@ -340,7 +344,7 @@ prepare_stage() {
 
     for i in "${LIVECD_EXCLUDES[@]}"; do
       exec_chkdir ${EXCLUDES_DIR}/${i//\//:}
-      do_exec mv ${i}/* ${EXCLUDES_DIR}/${i//\//:} &>/dev/null
+      do_exec mv ${i}/* ${EXCLUDES_DIR}/${i//\//:} 1>/dev/null
     done
 
     einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}."
@@ -361,9 +365,9 @@ prepare_env() {
   exec_chkdir ${ARCH_DIR}/mnt/gentoo
 
   # Bind local livecd folders
-  do_exec mount -o bind /proc ${ARCH}/proc 2>/dev/null
-  do_exec mount -o bind /dev ${ARCH}/dev 2>/dev/null
-  do_exec mount -o bind ${DATA_DIR} ${ARCH}${DATA_DIR} 2>/dev/null
+  do_exec mount -o bind /proc ${ARCH}/proc
+  do_exec mount -o bind /dev ${ARCH}/dev 
+  do_exec mount -o bind ${DATA_DIR} ${ARCH}${DATA_DIR} 
 
   # Detect new livecd exclude directories
   for x in "${LIVECD_EXCLUDES[@]}"; do
@@ -371,8 +375,8 @@ prepare_env() {
     if [[ $(ls ${ARCH}/${x//://} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
       einfo "Detected newly added ${BLUE}${x}${BLACK} for livecd excludes, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
       exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
-      do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:}
-      do_exec rm -rf ${ARCH}/${x}/*
+      do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
+      do_exec rm -rf ${ARCH}/${x}/* 
     fi
   done
 
@@ -382,17 +386,17 @@ prepare_env() {
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
           einfo "Mounting ${BLUE}${x}${BLACK} in memory.. please wait"
-          do_exec mount -t ramfs ${x} ${ARCH}/${x} 2>/dev/null
+          do_exec mount -t ramfs ${x} ${ARCH}/${x} 
 
           [[ ! -d ${EXCLUDES_DIR}/${x//\//:} ]] && exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
-          do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 2>/dev/null
+          do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 
 
           einfo "${RED}${x}${BLACK} copied to RAMFS" 
           continue 2
         fi
       done
       # No matches found, mount livecd excluded directories.
-      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 2>/dev/null
+      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 
     done
 
     # Mount the RAMFS directories that are not part of the livecd excludes
@@ -407,7 +411,7 @@ prepare_env() {
       if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
         exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
         einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
-        do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null
+        do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
       else
         # Create the directories for the ramfs mounts
         for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
@@ -416,7 +420,7 @@ prepare_env() {
 
       # If old RAMFS dir exist, then transfer files
       if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
-        do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 2>/dev/null
+        do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 
         einfo "${RED}${x}${BLACK} copied to RAMFS"
       fi
     done
@@ -451,7 +455,7 @@ prepare_env() {
     # Mount livecd excluded directories
     einfo "Mounting livecd data files"
     for x in "${LIVECD_EXCLUDES[@]}"; do
-      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 2>/dev/null
+      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 
     done
   fi
 
@@ -483,9 +487,9 @@ release_env() {
   do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
 
   # Umount local livecd folders
-  do_exec umount ${ARCH_DIR}/proc 2>/dev/null
-  do_exec umount ${ARCH_DIR}/dev 2>/dev/null
-  do_exec umount ${ARCH}${DATA_DIR} 2>/dev/null
+  do_exec umount ${ARCH_DIR}/proc 
+  do_exec umount ${ARCH_DIR}/dev 
+  do_exec umount ${ARCH}${DATA_DIR} 
 
   # Umount RAMFS & Livecd excluded directories
   if [ ${RAMFS} ]; then
@@ -494,14 +498,14 @@ release_env() {
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
           einfo "Removing ${RED}${x}${BLACK} from memory.. please wait"
-          do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null
-          do_exec umount ${ARCH}/${x} 2>/dev/null
+          do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
+          do_exec umount ${ARCH}/${x} 
           einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${BLACK}"
           continue 2
         fi
       done
       # Umount livecd excluded directories
-        do_exec umount ${ARCH}/${x} 2>/dev/null
+        do_exec umount ${ARCH}/${x} 
     done
 
     # Umount the RAMFS directories that are not equal to livecd excludes
@@ -511,14 +515,14 @@ release_env() {
         [[ ${x} = ${y} ]] && continue 2
       done
       einfo "Removing ${RED}${x}${BLACK} from memory.. please wait."
-      do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null
-      do_exec umount ${ARCH}/${x} 2>/dev/null
+      do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
+      do_exec umount ${ARCH}/${x} 
       einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
     done
   else
     # Umount livecd excluded directories
     for x in "${LIVECD_EXCLUDES[@]}"; do
-      do_exec umount ${ARCH}/${x} 2>/dev/null
+      do_exec umount ${ARCH}/${x} 
     done 
   fi
 
