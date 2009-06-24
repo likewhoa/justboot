@@ -346,7 +346,7 @@ prepare_stage() {
 
     for i in "${LIVECD_EXCLUDES[@]}"; do
       exec_chkdir ${EXCLUDES_DIR}/${i//\//:}
-      do_exec mv ${i}/* ${EXCLUDES_DIR}/${i//\//:} 1>/dev/null
+      do_exec mv ${i}/* ${EXCLUDES_DIR}/${i//\//:} &>/dev/null
     done
 
     einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}."
