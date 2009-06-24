@@ -860,8 +860,8 @@ prepare_kernel() {
 
     einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
     if [ ${LETMEIN} ]; then
-      einfo "--letmein flag used!!, having don't break me!"
-      do_exec /bin/bash
+      einfo "--letmein flag used, type ${RED}exit${NOCOLOR} when finished to continue with build."
+      exec /bin/bash
     fi
 }
 
