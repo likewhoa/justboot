@@ -813,11 +813,11 @@ prepare_kernel() {
   esac
 
   # Is this is a fresh kernel?
-  if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
+  if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* &>/dev/null) ]]; then
     # Is layman compiled?
-    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* 2>/dev/null; then
+    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
       einfo "Emerging \${BLUE}layman"
-      do_exec emerge layman  
+      do_exec emerge layman -q
       do_exec layman -Sa zen-overlay 
       echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
     fi  
