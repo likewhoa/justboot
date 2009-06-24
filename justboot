@@ -100,6 +100,7 @@ Options:
 --letmein		- Will run /bin/bash at end of chroot stage for self maintanance
 --verbose		- Run in verbose mode - lots of output
 --purge			- Purge old data and start fresh
+--purge-kernel		- Purge any kernel sources and start fresh
 --debug                 - Turn on debugging
 
 Usage examples:
@@ -185,6 +186,7 @@ while [ $# -gt 0 ]; do
     --features=*) FEATURES="${1##*=}";;
     --letmein) LETMEIN=0;;
     --purge) PURGE=0;;
+    --purge-kernel) PURGE_KERNEL=0;;
     --verbose) VERBOSE=0;;
     --debug|-db) DEBUG=0; einfo "Running in debug mode";;
     --help|-h) run_help;;
@@ -312,7 +314,7 @@ prepare_stage() {
       fi
   esac
 
-  # Check if we are starting a fresh build (--purge maybe).
+  # Check if we are starting a fresh build (--purge maybe)
   if [[ ! -d ${ARCH_DIR} ]]; then
     einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${BLACK}. please wait..."
     #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
@@ -814,6 +816,13 @@ prepare_kernel() {
   case ${ARCH} in
     i[4,5,6]86) local ARCH=x86
   esac
+
+  # Remove kernel sources when --purge-kernel is used
+  if [[ ${PURGE_KERNEL} ]]; then
+    ewarn "--purge-kernel used,.. removing sources."
+    do_exec unlink /usr/src/linux
+    do_exec rm -rf /usr/src/* /lib/modules/*
+  fi
 
   # Is this is a fresh kernel?
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* &>/dev/null) ]]; then
