@@ -829,12 +829,10 @@ prepare_kernel() {
     if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
       einfo "Emerging \${BLUE}layman"
       do_exec emerge layman -q
-      echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
+    elfi [[ ${KERNEL_SOURCES} = zen-sources ]]; then
+      do_exec layman -Sa zen-overlay && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
     fi  
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
-      if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
-        do_exec layman -Sa zen-overlay
-      fi
     echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     do_exec emerge ${KERNEL_SOURCES} 
 
