@@ -713,9 +713,8 @@ MAKECONF
   
 prepare_packages() {
   # Livecd required packages - binary:category/package
-  local -a GLOBAL_PACKAGES=( 'grub:sys-boot/grub' 'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw' \
-'mkfs.reiser4:sys-fs/reiser4progs' 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' \
-'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'lvm:sys-fs/lvm2' 'screen:app-misc/screen' \
+  local -a GLOBAL_PACKAGES=( 'grub:sys-boot/grub' 'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/reiser4progs' \
+'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'screen:app-misc/screen' \
 'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' )
 
   for i in \${GLOBAL_PACKAGES[@]}; do
@@ -838,7 +837,7 @@ prepare_kernel() {
     do_exec emerge ${KERNEL_SOURCES} 
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
-    do_exec cp ${DATA_DIR}/kernel/\${ARCH}/.config /usr/src/linux
+    do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     do_exec cd /usr/src/linux
     do_exec make ${MAKEOPTS} 
     do_exec make modules_install 
@@ -848,7 +847,7 @@ prepare_kernel() {
     # Backup old kernel config
     if [[ -f /usr/src/linux/.config ]]; then
       einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}"
-      do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\${DATE}
+      do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\${KERNEL_SOURCES}-\${DATE}
     fi
 
     # Prepare initramfs then recompile kernel.
