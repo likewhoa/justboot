@@ -845,7 +845,7 @@ prepare_kernel() {
     do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     do_exec cd /usr/src/linux
 
-    if [[ ${MENUCONFIG} ]]; then
+    if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 
     else
@@ -866,7 +866,7 @@ prepare_kernel() {
     einfo "Compiling \${RED}\${ARCH}\${BLACK} kernel image."
     do_exec cd /usr/src/linux
 
-    if [[ ${MENUCONFIG} ]]; then
+    if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 
     else                      
