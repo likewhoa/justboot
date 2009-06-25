@@ -377,7 +377,7 @@ prepare_env() {
     if [[ $(ls ${ARCH}/${x//://} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
       einfo "Detected newly added ${BLUE}${x}${BLACK} for livecd excludes, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
       exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
-      do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
+      do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
       do_exec rm -rf ${ARCH}/${x}/* 
     fi
   done
@@ -391,7 +391,7 @@ prepare_env() {
           do_exec mount -t ramfs ${x} ${ARCH}/${x} 
 
           [[ ! -d ${EXCLUDES_DIR}/${x//\//:} ]] && exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
-          do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 
+          do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
 
           einfo "${RED}${x}${BLACK} copied to RAMFS" 
           continue 2
@@ -413,7 +413,7 @@ prepare_env() {
       if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
         exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
         einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
-        do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
+        do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
       else
         # Create the directories for the ramfs mounts
         for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
@@ -422,7 +422,7 @@ prepare_env() {
 
       # If old RAMFS dir exist, then transfer files
       if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
-        do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} 
+        do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
         einfo "${RED}${x}${BLACK} copied to RAMFS"
       fi
     done
@@ -436,7 +436,7 @@ prepare_env() {
       done
       einfo "${BLUE}${y}${BLACK} is an orphan directory."
       einfo "Moving data to ${RED}${ARCH}/${y//://}.${BLACK} please wait..."
-      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} 
+      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} &>/dev/null
       do_exec rm -rf ${EXCLUDES_DIR}/${y}
     done
   else
@@ -450,7 +450,7 @@ prepare_env() {
       done
       einfo "${BLUE}${y}${BLACK} is either an orphan directory or part of an old ${BLUE}ramfs (--ramfs)${BLACK} run."
       einfo "Moving data to ${RED}${ARCH}/${y//://}.${BLACK} please wait..."
-      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://}
+      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} &>/dev/null
       do_exec rm -rf ${EXCLUDES_DIR}/${y}
     done
 
@@ -500,7 +500,7 @@ release_env() {
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
           einfo "Removing ${RED}${x}${BLACK} from memory.. please wait"
-          do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
+          do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
           do_exec umount ${ARCH}/${x} 
           einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${BLACK}"
           continue 2
@@ -517,7 +517,7 @@ release_env() {
         [[ ${x} = ${y} ]] && continue 2
       done
       einfo "Removing ${RED}${x}${BLACK} from memory.. please wait."
-      do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} 
+      do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null 
       do_exec umount ${ARCH}/${x} 
       einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
     done
@@ -541,7 +541,7 @@ clean_env() {
 
   # Copying livecd environment before clean up and iso image build
   einfo "Performing livecd cleanup, please wait..."
-  do_exec rsync -caq --delete-before ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} 
+  do_exec rsync -caq --delete-before ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} &>/dev/null
 
   # Make sure we are moving a valid /boot directory
   if [[ -d ${EXCLUDES_DIR}/boot ]]; then
@@ -557,7 +557,7 @@ clean_env() {
     # Only sync directories with data.
     if [[ $(ls ${EXCLUDES_DIR}/${i//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
       einfo "Moving ${BLUE}${i}${BLACK} to ${RED}${TARGET}/${i}.${BLACK} please wait..."
-      do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${i//\//:}/* ${TARGET}/${i}  
+      do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${i//\//:}/* ${TARGET}/${i} &>/dev/null  
     fi
   done
 
@@ -570,7 +570,7 @@ clean_env() {
         # Only sync directories with data.
         if [[ $(ls ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
           einfo "Moving ${BLUE}${x}${BLACK} to ${RED}${TARGET}/${x}.${BLACK} please wait..."
-          do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${x//\//:}/* ${TARGET}/${x}         
+          do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${x//\//:}/* ${TARGET}/${x} &>/dev/null
         fi
     done
   fi
