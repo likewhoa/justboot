@@ -78,7 +78,7 @@ cat << HELP
 JustBOOT(tm) - Gentoo Linux LiveCD Generator
 Usage: justboot [options]
 
-Options:
+Arguments:
 
 --arch=	                - Set arch for livecd build i.e --arch=x86_64
 --kernel=               - Kernel sources for livecd (Currently on zen-sources is supported)
@@ -89,6 +89,15 @@ Options:
 --force-toolchain	- Force a rebuilt of the toolchain
 --skip-toolchain	- Skips toolchain built for those in a hurry
 --data-directory=	- Set the data directory for compiles
+--letmein               - Will run /bin/bash at end of chroot stage for self maintanance
+--menuconfig		- Runs make menuconfig for interactive kernel
+--verbose               - Run in verbose mode - lots of output
+--purge                 - Purge old data and start fresh
+--purge-kernel          - Purge any kernel sources and start fresh
+--debug                 - Turn on debugging
+
+Gentoo make.conf options:
+
 --keywords=             - make.conf specific KEYWORDS
 --jobs=			- Set numbers of jobs for emerge threads
 --use=                  - make.conf specific USE flags
@@ -97,11 +106,6 @@ Options:
 --make-opts=            - make.conf specific MAKEOPTS
 --gentoo-mirrors=	- JustBOOT and make.conf specific source download mirrors separated by commas
 --niceness=		- make.conf specific PORTAGE_NICENESS
---letmein		- Will run /bin/bash at end of chroot stage for self maintanance
---verbose		- Run in verbose mode - lots of output
---purge			- Purge old data and start fresh
---purge-kernel		- Purge any kernel sources and start fresh
---debug                 - Turn on debugging
 
 Usage examples:
  Generate a 64bit livecd using gentoo-sources and set 'gentoo' for root password
@@ -175,6 +179,7 @@ while [ $# -gt 0 ]; do
       GENTOO_MIRROR=$(echo $1 | awk '{print$1}')
       GENTOO_MIRRORS="${1##*=}"
       ;;
+    --menuconfig) MENUCONFIG=0;;
     --force-toolchain) YES_TOOL=0;;
     --skip-toolchain) NO_TOOL=0;;
     --lang=*) LINGUAS="${1##*=}";;
@@ -839,7 +844,14 @@ prepare_kernel() {
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
     do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     do_exec cd /usr/src/linux
-    do_exec make ${MAKEOPTS} 
+
+    if [[ ${MENUCONFIG} ]]; then
+      do_exec make menuconfig
+      do_exec make ${MAKEOPTS} 
+    else
+      do_exec make ${MAKEOPTS}
+    fi
+
     do_exec make modules_install 
     einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image."
     do_exec prepare_initramfs
