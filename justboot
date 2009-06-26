@@ -92,12 +92,13 @@ Arguments:
 
 Gentoo make.conf options:
 
---keywords=             - make.conf specific KEYWORDS
---jobs=			- Set numbers of jobs for emerge threads
---use=                  - make.conf specific USE flags
---ldflags=              - make.conf specific LDFLAGS
+--cflags		- Compiler FLAGS
+--ldflags=              - Linker FLAGS
+--make-opts=            - MAKEOPTS
+--keywords=             - Accepted KEYWORDS i.e x86
+--jobs=                 - Specifies the number of packages to build simultaneously
+--use=                  - Packages USE flags
 --features=             - make.conf specific FEATURES
---make-opts=            - make.conf specific MAKEOPTS
 --gentoo-mirrors=	- JustBOOT and make.conf specific source download mirrors separated by commas
 --niceness=		- make.conf specific PORTAGE_NICENESS
 
@@ -136,6 +137,8 @@ while [ $# -gt 0 ]; do
       ARCH="${1##*=}"
       einfo "${BLUE}${ARCH}${BLACK} set for build"
       ;;
+    --cflags=*) CFLAGS="${1##*=}";;
+    --ldflags=*) LDFLAGS="${1##*=}";;
     --kernel=*)
       KERNEL_SOURCES="${1##*=}"
       einfo "${BLUE}${KERNEL_SOURCES} set"
