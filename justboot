@@ -830,9 +830,11 @@ prepare_kernel() {
   if [ ${CPU} ]; then
     case ${ARCH} in
       i[4,5,6]86)
-        sed -i -e 's/CONFIG_M486/# CONFIG_M486/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES};;
+        sed -e 's/CONFIG_M486/# CONFIG_M486/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+>${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
       x86_64)
-        sed -i -e 's/CONFIG_GENERIC_CPU/# CONFIG_GENERIC_CPU/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}
+        sed -e 's/CONFIG_GENERIC_CPU/# CONFIG_GENERIC_CPU/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+>${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
     esac
   fi
 
@@ -863,7 +865,13 @@ prepare_kernel() {
     do_exec emerge ${KERNEL_SOURCES} 
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
-    do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
+    # Copy custom kernel if --coprocessor used.
+    if [ ${CPU} ]; then 
+      do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
+    else
+      do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
+    fi
+
     do_exec cd /usr/src/linux
 
     if [ ${MENUCONFIG} ]; then
