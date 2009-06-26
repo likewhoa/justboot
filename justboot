@@ -86,10 +86,8 @@ Arguments:
 --skip-toolchain	- Skips toolchain built for those in a hurry
 --data-directory=	- Set the data directory for compiles
 --letmein               - Will run /bin/bash at end of chroot stage for self maintanance
---menuconfig		- Runs make menuconfig for interactive kernel
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
---purge-kernel          - Purge any kernel sources and start fresh
 --debug                 - Turn on debugging
 
 Gentoo make.conf options:
@@ -102,6 +100,12 @@ Gentoo make.conf options:
 --make-opts=            - make.conf specific MAKEOPTS
 --gentoo-mirrors=	- JustBOOT and make.conf specific source download mirrors separated by commas
 --niceness=		- make.conf specific PORTAGE_NICENESS
+
+Linux Kernel options:
+
+--coprocessor=		- Processor type for the livecd kernel i.e --coprocessor=core2
+--menuconfig            - Runs make menuconfig for interactive kernel
+--purge-kernel          - Purge any kernel sources and start fresh
 
 Usage examples:
  Generate a 64bit livecd using gentoo-sources and set 'gentoo' for root password
@@ -188,6 +192,7 @@ while [ $# -gt 0 ]; do
     --letmein) LETMEIN=0;;
     --purge) PURGE=0;;
     --purge-kernel) PURGE_KERNEL=0;;
+    --coprocessor=*) CPU="${1##*=}";;
     --verbose) VERBOSE=0;;
     --debug|-db) DEBUG=0; einfo "Running in debug mode";;
     --help|-h) run_help;;
@@ -812,11 +817,21 @@ prepare_initramfs() {
 prepare_kernel() {
   local DATE=$(date +%Y%m%d-%H%m)
 
-  # Convert x86 arch for proper usage in kernel.
-  case ${ARCH} in
-    i[4,5,6]86) local ARCH=x86
-  esac
+  # Customized the kernel processor (--coprocessor)
+  if [ ${CPU} ]; then
+    case ${ARCH} in
+      i[4,5,6]86)
+        sed -i -e 's/CONFIG_M486/# CONFIG_M486/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES};;
+      x86_64)
+        sed -i -e 's/CONFIG_GENERIC_CPU/# CONFIG_GENERIC_CPU/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}
+    esac
+  fi
 
+  # Convert x86 arch for proper usage in kernel.
+  case ${ARCH} in   
+    i[4,5,6]86) local ARCH=x86 
+  esac
+    
   # Remove kernel sources when --purge-kernel is used
   if [ ${PURGE_KERNEL} ]; then
     ewarn "--purge-kernel used,.. removing sources."
@@ -885,7 +900,7 @@ prepare_kernel() {
     einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
     if [ ${LETMEIN} ]; then
       einfo "letmein flag used, type ${RED}exit${BLK} when finished to continue with build."
-      exec /bin/bash
+      /bin/bash
     fi
 }
 
