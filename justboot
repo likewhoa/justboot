@@ -1,5 +1,5 @@
 #!/bin/bash 
-# justboot v0.3 - JustBOOT(tm) Gentoo Based Linux Livecd Generator.
+# JustBOOT(tm) v0.3 - A Gentoo Linux LiveCD Generator.
 ##
 # Copyright (C) 2009-2012 Mission Accomplish, Inc.
 #
@@ -18,6 +18,8 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
 
+if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
+
 # Declare global arrays
 declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/excluded-directories.lst | grep -vE '^#') )
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/remove-packages.lst | grep -vE '^#') )
@@ -29,12 +31,6 @@ BLACK='\e[1;48;30m'
 BLUE='\e[1;48;34m'
 RED='\e[1;48;31m'
 NOCOLOR='\e[0m'
-
-if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
-
-USER_INTERRUPT=13
-trap 'release_env now; exit $USER_INTERRUPT' TERM INT
-#  Cleans up the livecd environment if script is interrupted by control-c.
 
 einfo() {
   echo -e "\a${BLACK}.: ${1} :."${NOCOLOR}
@@ -239,7 +235,57 @@ if [ ${PURGE} ]; then
   fi
 fi
 
-# Beginning of global and chroot functions.
+release_env() {            
+  einfo "Releasing livecd environment, please wait..."
+  do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
+                           
+  # Umount local livecd folders
+  do_exec umount ${ARCH_DIR}/{proc,dev}   
+  do_exec umount ${ARCH}${DATA_DIR}
+                           
+  # Umount RAMFS & Livecd excluded directories
+  if [ ${RAMFS} ]; then    
+    # Compare directories against a list to umount from ramfs (--ramfs)
+    for x in "${LIVECD_EXCLUDES[@]}"; do
+      for y in "${RAMFS_DIR[@]}"; do
+        if [[ ${x} = ${y} ]]; then
+          einfo "Removing ${RED}${x}${BLACK} from memory.. please wait"
+          do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
+          do_exec umount ${ARCH}/${x}
+          einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${BLACK}"
+          continue 2
+        fi
+      done                 
+      # Umount livecd excluded directories
+        do_exec umount ${ARCH}/${x}
+    done
+                           
+    # Umount the RAMFS directories that are not equal to livecd excludes
+    for x in "${RAMFS_DIR[@]}"; do
+      for y in "${LIVECD_EXCLUDES[@]}"; do
+        # Skip matches     
+        [[ ${x} = ${y} ]] && continue 2
+      done                 
+      einfo "Removing ${RED}${x}${BLACK} from memory.. please wait."
+      do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
+      do_exec umount ${ARCH}/${x}
+      einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
+    done
+  else  
+    # Umount livecd excluded directories
+    for x in "${LIVECD_EXCLUDES[@]}"; do
+      do_exec umount ${ARCH}/${x}
+    done
+  fi
+    
+  # Did we trap an interrupt?
+  [[ ! $1 ]] && do_exec clean_env
+}
+
+USER_INTERRUPT=13
+trap 'release_env now; exit $USER_INTERRUPT' TERM INT
+#  Cleans up the livecd environment if script is interrupted by control-c.
+
 prepare_stage() {
   # Make sure squashfs-tools is emerged on system before continuing
   if ! which mksquashfs &>/dev/null; then
@@ -487,54 +533,6 @@ prepare_env() {
   einfo "Exiting livecd chroot environment."
   do_exec env-update 1>/dev/null && do_exec source /etc/profile
   do_exec release_env 
-}
-
-release_env() {
-  einfo "Releasing livecd environment, please wait..."
-  do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
-
-  # Umount local livecd folders
-  do_exec umount ${ARCH_DIR}/proc 
-  do_exec umount ${ARCH_DIR}/dev 
-  do_exec umount ${ARCH}${DATA_DIR} 
-
-  # Umount RAMFS & Livecd excluded directories
-  if [ ${RAMFS} ]; then
-    # Compare directories against a list to umount from ramfs (--ramfs)
-    for x in "${LIVECD_EXCLUDES[@]}"; do
-      for y in "${RAMFS_DIR[@]}"; do
-        if [[ ${x} = ${y} ]]; then
-          einfo "Removing ${RED}${x}${BLACK} from memory.. please wait"
-          do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
-          do_exec umount ${ARCH}/${x} 
-          einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${BLACK}"
-          continue 2
-        fi
-      done
-      # Umount livecd excluded directories
-        do_exec umount ${ARCH}/${x} 
-    done
-
-    # Umount the RAMFS directories that are not equal to livecd excludes
-    for x in "${RAMFS_DIR[@]}"; do
-      for y in "${LIVECD_EXCLUDES[@]}"; do
-        # Skip matches
-        [[ ${x} = ${y} ]] && continue 2
-      done
-      einfo "Removing ${RED}${x}${BLACK} from memory.. please wait."
-      do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null 
-      do_exec umount ${ARCH}/${x} 
-      einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
-    done
-  else
-    # Umount livecd excluded directories
-    for x in "${LIVECD_EXCLUDES[@]}"; do
-      do_exec umount ${ARCH}/${x} 
-    done 
-  fi
-
-  # Did we trap an interrupt? 
-  [[ ! $1 ]] && do_exec clean_env
 }
 
 clean_env() {
