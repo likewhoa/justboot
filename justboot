@@ -138,7 +138,10 @@ while [ $# -gt 0 ]; do
       ARCH="${1##*=}"
       einfo "${BLUE}${ARCH}${BLACK} set for build"
       ;;
-    --cflags=*) CFLAGS="${1##*=}";;
+    --cflags=*) 
+      CFLAGS="${1##*=}"
+      einfo "Compiling with ${BLUE}\"${CFLAGS}\""
+      ;;
     --ldflags=*) LDFLAGS="${1##*=}";;
     --kernel=*)
       KERNEL_SOURCES="${1##*=}"
@@ -180,8 +183,9 @@ while [ $# -gt 0 ]; do
       einfo "Livecd Data directory set to ${BLUE}\"${LIVEDIR}\""
       ;;
     --gentoo-mirrors=*)
-      GENTOO_MIRROR=$(echo $1 | awk '{print$1}')
+      GENTOO_MIRROR="$(echo $1 | awk '{print$1}')"
       GENTOO_MIRRORS="${1##*=}"
+      einfo "Using ${BLUE}\"${GENTOO_MIRRORS}\"${BLACK} as Gentoo mirrors"
       ;;
     --rsync-mirror=*) SYNC="${1##*=}";;
     --menuconfig) MENUCONFIG=0;;
@@ -904,7 +908,7 @@ prepare_kernel() {
 
     einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
     if [ ${LETMEIN} ]; then
-      einfo "letmein flag used, type ${RED}exit${BLK} when finished to continue with build."
+      einfo "letmein flag used, type ${RED}exit${BLACK} when finished to continue with build."
       /bin/bash
     fi
 }
