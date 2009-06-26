@@ -921,8 +921,8 @@ prepare_kernel() {
     einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
     if [ ${LETMEIN} ]; then
       einfo "letmein flag used, type ${RED}exit${BLACK} when finished to continue with build."
-      /bin/bash
     fi
+    /bin/bash
 }
 
 prepare_useropts() {
