@@ -282,13 +282,13 @@ prepare_stage() {
           REMOVAL=0;break
         fi
       done
-      if [[ ${REMOVAL} ]]; then
+      if [ ${REMOVAL} ]; then
         ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
         do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
       else
         ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
         do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
-        do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}} 
+        do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
       fi        
     elif [[ /usr/share/justboot != ${LIVEDIR} && -d /usr/share/justboot/${ARCH} ]]; then 
       einfo "Moving data directory from ${RED}/usr/share/justboot/${ARCH}${BLACK} to ${RED}${LIVEDIR}/${ARCH}.${BLACK} please wait..."
