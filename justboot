@@ -186,7 +186,6 @@ while [ $# -gt 0 ]; do
       OPT="$(echo ${1##*=} | awk '{print$1}')"
       GENTOO_MIRROR="${OPT/%\/}" # Lets get rid of leading slash
       GENTOO_MIRRORS="${1##*=}"
-      einfo "Using ${BLUE}\"${GENTOO_MIRRORS}\"${BLACK} as Gentoo mirrors"
       ;;
     --rsync-mirror=*) SYNC="${1##*=}";;
     --menuconfig) MENUCONFIG=0;;
