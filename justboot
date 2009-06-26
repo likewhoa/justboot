@@ -1,5 +1,5 @@
 #!/bin/bash 
-# JustBOOT(tm) v0.3 - A Gentoo Linux LiveCD Generator.
+# JustBOOT(tm) v0.3.0 - A Gentoo Linux LiveCD Generator.
 ##
 # Copyright (C) 2009-2012 Mission Accomplish, Inc.
 #
@@ -890,6 +890,22 @@ prepare_kernel() {
     if [[ -f /usr/src/linux/.config ]]; then
       einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}"
       do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\${KERNEL_SOURCES}-\${DATE}
+    fi
+
+    # Customized the kernel processor setting (--coprocessor) # Fix duplicate statements ^
+    if [ ${CPU} ]; then
+      case ${ARCH} in
+        i[4,5,6]86)   
+          sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+>${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
+          ;;
+        x86_64)
+          sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+>${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
+      esac
+      do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
+    else 
+      do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
 
     # Prepare initramfs then recompile kernel.
