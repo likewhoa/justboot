@@ -94,12 +94,12 @@ Gentoo make.conf options:
 
 --cflags		- Compiler FLAGS
 --ldflags=              - Linker FLAGS
---make-opts=            - MAKEOPTS
+--make-opts=            - MAKEOPTS 
 --keywords=             - Accepted KEYWORDS i.e x86
 --jobs=                 - Specifies the number of packages to build simultaneously
 --use=                  - Packages USE flags
 --features=             - make.conf specific FEATURES
---gentoo-mirrors=	- JustBOOT and make.conf specific source download mirrors separated by commas
+--gentoo-mirrors=	- JustBOOT and make.conf space-seperated list of local mirrors
 --rsync-mirror=		- Sets default rsync mirror
 --niceness=		- make.conf specific PORTAGE_NICENESS
 
@@ -724,6 +724,7 @@ SYNC="${SYNC}"
 GENTOO_MIRRORS="${GENTOO_MIRRORS}"
 CLEAN_DELAY="1"
 EMERGE_WARNING_DELAY="1"
+EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS}"
 MAKECONF
   fi
 }
