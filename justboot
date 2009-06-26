@@ -324,17 +324,15 @@ prepare_stage() {
         # Skip own arch
         [[ ${i} = ${ARCH} ]] && continue 2
         # If arch found, don't remove parent directory
-        if [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]]; then
-          REMOVAL=0;break
-        fi
+        if [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]]; then REMOVAL=0;break;fi
       done
       if [ ${REMOVAL} ]; then
-        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
-        do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
-      else
         ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
         do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
         do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
+      else
+        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
+        do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
       fi        
     elif [[ /usr/share/justboot != ${LIVEDIR} && -d /usr/share/justboot/${ARCH} ]]; then 
       einfo "Moving data directory from ${RED}/usr/share/justboot/${ARCH}${BLACK} to ${RED}${LIVEDIR}/${ARCH}.${BLACK} please wait..."
