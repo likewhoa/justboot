@@ -828,7 +828,7 @@ prepare_initramfs() {
 prepare_kernel() {
   local DATE=$(date +%Y%m%d-%H%m)
 
-  # Customized the kernel processor (--coprocessor)
+  # Customized the kernel processor setting (--coprocessor)
   if [ ${CPU} ]; then
     case ${ARCH} in
       i[4,5,6]86)
@@ -877,6 +877,7 @@ prepare_kernel() {
 
     do_exec cd /usr/src/linux
 
+    # Did we use --menu-config?
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 
