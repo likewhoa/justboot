@@ -100,6 +100,7 @@ Gentoo make.conf options:
 --use=                  - Packages USE flags
 --features=             - make.conf specific FEATURES
 --gentoo-mirrors=	- JustBOOT and make.conf specific source download mirrors separated by commas
+--rsync-mirror=		- Sets default rsync mirror
 --niceness=		- make.conf specific PORTAGE_NICENESS
 
 Linux Kernel options:
@@ -182,6 +183,7 @@ while [ $# -gt 0 ]; do
       GENTOO_MIRROR=$(echo $1 | awk '{print$1}')
       GENTOO_MIRRORS="${1##*=}"
       ;;
+    --rsync-mirror=*) SYNC="${1##*=}";;
     --menuconfig) MENUCONFIG=0;;
     --force-toolchain) YES_TOOL=0;;
     --skip-toolchain) NO_TOOL=0;;
