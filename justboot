@@ -183,7 +183,7 @@ while [ $# -gt 0 ]; do
       einfo "Livecd Data directory set to ${BLUE}\"${LIVEDIR}\""
       ;;
     --gentoo-mirrors=*)
-      OPT="$(echo $1 | awk '{print$1}')"
+      OPT="$(echo ${1##*=} | awk '{print$1}')"
       GENTOO_MIRROR="${OPT/%\/}" # Lets get rid of leading slash
       GENTOO_MIRRORS="${1##*=}"
       einfo "Using ${BLUE}\"${GENTOO_MIRRORS}\"${BLACK} as Gentoo mirrors"
