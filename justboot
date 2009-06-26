@@ -828,24 +828,6 @@ prepare_initramfs() {
 prepare_kernel() {
   local DATE=$(date +%Y%m%d-%H%m)
 
-  # Customized the kernel processor setting (--coprocessor)
-  if [ ${CPU} ]; then
-    case ${ARCH} in
-      i[4,5,6]86)
-        sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
->${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
-        ;;
-      x86_64)
-        sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
->${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
-    esac
-  fi
-
-  # Convert x86 arch for proper usage in kernel.
-  case ${ARCH} in   
-    i[4,5,6]86) local ARCH=x86 
-  esac
-    
   # Remove kernel sources when --purge-kernel is used
   if [ ${PURGE_KERNEL} ]; then
     ewarn "--purge-kernel used,.. removing sources."
@@ -853,6 +835,11 @@ prepare_kernel() {
     do_exec rm -rf /usr/src/* /lib/modules/*
   fi
 
+  # Convert x86 arch for proper usage in kernel.
+  case ${ARCH} in   
+    i[4,5,6]86) local ARCH=x86 
+  esac
+    
   # Is this is a fresh kernel?
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
     # Is layman emerged?
@@ -868,8 +855,17 @@ prepare_kernel() {
     do_exec emerge ${KERNEL_SOURCES} 
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
-    # Copy custom kernel if --coprocessor used.
-    if [ ${CPU} ]; then 
+    # Customized the kernel processor setting (--coprocessor)
+    if [ ${CPU} ]; then
+      case ${ARCH} in
+        i[4,5,6]86)
+          sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+>${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
+          ;;
+        x86_64)
+          sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+>${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
+      esac
       do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
     else
       do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
