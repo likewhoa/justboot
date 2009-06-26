@@ -384,7 +384,7 @@ prepare_stage() {
     #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
 
     # Retrieve latest gentoo autobuild stage
-    do_exec wget -q ${GENTOO_MIRROR}/gentoo/releases/${GENTOO_ARCH}/autobuilds
+    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds
     local GENTOO_STAGE_SRC_URI=$(grep folder index.html | cut -d\> -f3 | cut -d/ -f1 | tail -n1)
     do_exec rm index.html
 
@@ -392,14 +392,14 @@ prepare_stage() {
     do_exec cd ${ARCH_DIR}
 
     einfo "Fetching gentoo stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2 autobuild stage"
-    do_exec wget -q ${GENTOO_MIRROR}/gentoo/releases/${GENTOO_ARCH}/autobuilds/${GENTOO_STAGE_SRC_URI}/stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2
+    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds/${GENTOO_STAGE_SRC_URI}/stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2
 
     einfo "Extracting stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2"
     do_exec tar xjpf stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2 
     do_exec rm stage3-${STAGE}-${GENTOO_STAGE_SRC_URI}.tar.bz2
 
     einfo "Fetching portage tree snapshot"
-    do_exec wget -q ${GENTOO_MIRROR}/gentoo/snapshots/portage-latest.tar.bz2
+    do_exec wget -q ${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2
 
     einfo "Extracting  portage-latest.tar.bz2"
     do_exec tar xjpf portage-latest.tar.bz2 -C usr/ 
