@@ -257,8 +257,8 @@ if [ ${PURGE} ]; then
   for i in i{4,5,6}86 x86_64; do
     # Skip own arch
     [[ ${i} = ${ARCH} ]] && continue 2
-      # If arch found, don't remove parent directory
-      if [[ -d ${X/${ARCH}/${i}} ]]; then REMOVAL=0;break;fi
+    # If arch found, don't remove parent directory
+    [[ -d ${X/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
   done
   if [ ! ${REMOVAL} ]; then
     ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
@@ -338,35 +338,35 @@ prepare_stage() {
       for i in /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}; do
         do_exec unlink ${i} 
       done
-      
+
       # Move to new data directory
       exec_chkdir ${LIVEDIR}/excludes
       do_exec mv ${REAL_ARCH_DIR} ${ARCH_DIR}
       do_exec mv ${REAL_EXCLUDES_DIR} ${EXCLUDES_DIR}
       
-      if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
-        # Create new symbolic links
-        exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
-        exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
-        exec_chklink /usr/share/justboot/data ${DATA_DIR}
-      fi
+        if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
+          # Create new symbolic links
+          exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
+          exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
+          exec_chklink /usr/share/justboot/data ${DATA_DIR}
+        fi
 
-      # Lets make sure we don't delete other sources.
-      for i in i{4,5,6}86 x86_64; do
-        # Skip own arch
-        [[ ${i} = ${ARCH} ]] && continue 2
-        # If arch found, don't remove parent directory
-        if [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]]; then REMOVAL=0;break;fi
-      done
-      if [ ${REMOVAL} ]; then
-        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
-        do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
-      else
-        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
-        do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
-        do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
-      fi        
-    elif [[ /usr/share/justboot != ${LIVEDIR} && -d /usr/share/justboot/${ARCH} ]]; then 
+          # Lets make sure we don't delete other sources.
+          for i in i{4,5,6}86 x86_64; do
+            # Skip own arch
+            [[ ${i} = ${ARCH} ]] && continue 2
+            # If arch found, don't remove parent directory
+            [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
+          done
+            if [ ${REMOVAL} ]; then
+              ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
+              do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
+            else
+              ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
+              do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
+              do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
+            fi        
+  elif [[ /usr/share/justboot != ${LIVEDIR} && -d /usr/share/justboot/${ARCH} ]]; then 
       einfo "Moving data directory from ${RED}/usr/share/justboot/${ARCH}${BLACK} to ${RED}${LIVEDIR}/${ARCH}.${BLACK} please wait..."
 
       # Move to new data directory
@@ -432,12 +432,12 @@ prepare_stage() {
 
     einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}."
 
-    if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
-      # Create new symbolic links
-      exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
-      exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
-      exec_chklink /usr/share/justboot/data ${DATA_DIR}
-    fi
+      if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
+        # Create new symbolic links
+        exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
+        exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
+        exec_chklink /usr/share/justboot/data ${DATA_DIR}
+      fi
   fi
   prepare_env
 }
@@ -490,22 +490,22 @@ prepare_env() {
       done
       einfo "Mounting ${BLUE}${x}${BLACK} in memory.. please wait."
 
-      # Check for existing contents in ramfs directories, then move data if true.
-      if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
-        exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
-        einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
-        do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
-      else
-        # Create the directories for the ramfs mounts
-        for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
-      fi
-      do_exec mount -t ramfs ${x} ${ARCH}/${x}
+        # Check for existing contents in ramfs directories, then move data if true.
+        if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
+          exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
+          einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
+          do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
+        else
+          # Create the directories for the ramfs mounts
+          for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
+        fi
+        do_exec mount -t ramfs ${x} ${ARCH}/${x}
 
-      # If old RAMFS dir exist, then transfer files
-      if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
-        do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
-        einfo "${RED}${x}${BLACK} copied to RAMFS"
-      fi
+          # If old RAMFS dir exist, then transfer files
+          if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
+            do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
+          einfo "${RED}${x}${BLACK} copied to RAMFS"
+          fi
     done
     # Move any orphan directories to the livecd environment.
     declare -a DIRS
@@ -543,10 +543,8 @@ prepare_env() {
   fi
 
   # Create directories for aufs union mounts
-  if [[ ! -d ${ARCH_DIR}/mnt/livecd ]]; then
-    do_exec mkdir -p ${ARCH_DIR}/mnt/livecd/{static,image,dynamic}
-  fi
-
+  [[ ! -d ${ARCH_DIR}/mnt/livecd ]] && do_exec mkdir -p ${ARCH_DIR}/mnt/livecd/{static,image,dynamic}
+  
   einfo "Entering the livecd chroot environment."
   do_exec chmod +x ${CHROOT_SCRIPT} && do_exec mv ${CHROOT_SCRIPT} ${ARCH_DIR}/tmp
   do_exec cp /etc/resolv.conf ${ARCH_DIR}/etc
@@ -892,7 +890,6 @@ prepare_kernel() {
         else
           do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
         fi
-
     do_exec cd /usr/src/linux
 
           # Did we use --menu-config?
@@ -902,7 +899,6 @@ prepare_kernel() {
           else
             do_exec make ${MAKEOPTS}
           fi
-
     do_exec make modules_install 
     einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image."
     do_exec prepare_initramfs
@@ -963,7 +959,7 @@ prepare_useropts() {
   einfo "Setting root password to \"\${RED}${ROOT_PASSWD:-gentoo}\""
 
   # Set the livecd root password according to --root-passwd otherwise use "gentoo" for root
-  echo "root:${ROOT_PASSWD:-gentoo}" | chpasswd 1>/dev/null
+  echo "root:${ROOT_PASSWD:-gentoo}" | chpasswd 1>/dev/null # BUG #275555
   einfo "Root passwd set to \${RED}\"${ROOT_PASSWD:-gentoo}\""
 }
 
