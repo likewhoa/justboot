@@ -128,8 +128,10 @@ Usage examples:
 # justboot --arch=x86_64 --kernel=zen-sources --data-directory=/home/username
  Change the RSYNC and Gentoo Mirrors used for package downloads
 # justboot --gentoo-mirrors="http://gentoo.mirrors.tera-byte.com/ http://mirror.datapipe.net/gentoo ftp://gentoo.chem.wisc.edu/gentoo/" --rsync-mirror="http://localhost/portage"
- Generater a livecd for AMd processors
+ Generater a livecd for a AMD processor
 # justboot --coprocessor=MK8 --arch=x86_64 --cflags="-march=k8 -Os -pipe" --make-opts=-j3
+ Generater a livecd for a Intel Core2Dou processor
+# justboot --coprocessor=MCORE2 --arch=x86_64 --cflags="-march=k8 -Os -pipe" --make-opts=-j5
 
 HELP
 exit 1
