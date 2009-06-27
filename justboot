@@ -18,6 +18,9 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
 
+VERSION=0.3.0
+if [[ $1 ~= (--version|-V|-v) ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
+
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
 
 # Declare global arrays
