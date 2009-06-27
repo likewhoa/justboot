@@ -74,8 +74,7 @@ do_exec() {
 # Help menu - TODO add moar examples!
 run_help() {
 cat << HELP
-JustBOOT(tm) - Gentoo Linux LiveCD Generator
-Usage: justboot [options]
+Usage: justboot [arguments] [make opts] [kernel opts]
 
 Arguments:
 
