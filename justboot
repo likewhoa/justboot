@@ -877,7 +877,7 @@ prepare_kernel() {
     do_exec emerge ${KERNEL_SOURCES} 
 
         einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
-        # Customized the kernel processor setting (--coprocessor)
+        # Customize the kernel processor setting (--coprocessor)
         if [ ${CPU} ]; then
           case ${ARCH} in
             i[4,5,6]86)
@@ -892,7 +892,7 @@ prepare_kernel() {
         else
           do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
         fi
-    do_exec cd /usr/src/linux
+    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
           # Did we use --menu-config?
           if [ ${MENUCONFIG} ]; then
@@ -929,7 +929,7 @@ prepare_kernel() {
 
   # Prepare initramfs then recompile kernel.
   einfo "Compiling \${RED}\${ARCH}\${BLACK} kernel image."
-  do_exec cd /usr/src/linux
+  do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
         if [ ${MENUCONFIG} ]; then
           do_exec make menuconfig
@@ -943,18 +943,18 @@ prepare_kernel() {
   do_exec prepare_initramfs
   fi
 
-    do_exec cd /usr/src/linux
-    do_exec cp arch/\${ARCH}/boot/bzImage /boot/vmlinuz
-    do_exec update-modules 
+  do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+  do_exec cp arch/\${ARCH}/boot/bzImage /boot/vmlinuz
+  do_exec update-modules 
 
-    einfo "Emerging \${BLUE}lvm2"
-    do_exec emerge lvm2 -q 
+  einfo "Emerging \${BLUE}lvm2"
+  do_exec emerge lvm2 -q 
 
-    einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
-    if [ ${LETMEIN} ]; then
-      einfo "letmein flag used. Type ${RED}exit${BLACK} when finished to continue with build."
-      exec /bin/bash
-    fi
+  einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
+  if [ ${LETMEIN} ]; then
+    einfo "letmein flag used. Type ${RED}exit${BLACK} when finished to continue with build."
+    cd / && exec /bin/bash
+  fi
 }
 
 prepare_useropts() {
