@@ -186,7 +186,7 @@ while [ $# -gt 0 ]; do
     --data-directory=*)                 
       DIR="${1##*=}"                        
       LIVEDIR="${DIR/%\//}/justboot" # Remove leading slash
-      einfo "Livecd Data directory set to ${BLUE}\"${LIVEDIR}\""
+      einfo "Livecd data directory set to ${BLUE}\"${LIVEDIR}\""
       ;;
     --gentoo-mirrors=*)
       OPT="$(echo ${1##*=} | awk '{print$1}')"
