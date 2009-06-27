@@ -135,13 +135,14 @@ HELP
 exit 1
 }
 
-einfo "${BLUE}JustBOOT(tm)${BLACK} Gentoo Linux LiveCD Generator Started..."
+einfo "${BLUE}JustBOOT(tm)${BLACK} initiated."
 
 # Parse Command Line Arguments.
 while [ $# -gt 0 ]; do
   case "$1" in
     --arch=*)
       ARCH="${1##*=}"
+      [[ ${ARCH} = i586 ]] && { ewarn "i586 needs a toolchain build, setting --force-toolchain flag";YES_TOOL=0; }
       einfo "${BLUE}${ARCH}${BLACK} set for build"
       ;;
     --cflags=*) 
