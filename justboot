@@ -17,10 +17,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
-
 VERSION=0.3.0
-if [[ $1 ~= (--version|-V|-v) ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
+if [[ $1 =~ (--version|-V|-v) ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
 
+# Make sure we are root
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
 
 # Declare global arrays
