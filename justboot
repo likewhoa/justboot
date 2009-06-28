@@ -28,6 +28,8 @@ declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/excluded-directories.lst | grep
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/remove-packages.lst | grep -vE '^#') )
 declare -a REMOVE_FILES=( $(cat /etc/justboot/remove-files.lst | grep -vE '^#') )
 declare -a RAMFS_DIR=( $(cat /etc/justboot/ramfs-directories.lst | grep -vE '^#') )
+declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII [pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [mk6]=MK6 [mk7]=MK7 \
+[k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 
 # Set colors
 BLACK='\e[1;48;30m'
@@ -202,7 +204,13 @@ while [ $# -gt 0 ]; do
     --letmein) LETMEIN=0;;
     --purge) PURGE=0;;
     --purge-kernel) PURGE_KERNEL=0;;
-    --coprocessor=*) CPU="${1##*=}";;
+    --coprocessor=*) 
+      CPU="${1##*=}"
+      if [[ -z ${PROCS[${CPU}]} ]]; then
+        ewarm "${CPU} is an invalid --coprocessor option."
+        einfo "Available options are: i386,i486,i586,i686,mk6,mk7,mk8,opteron,core2 & generic"
+        ewarm "Exiting now."; exit 1;;
+      fi
     --verbose) VERBOSE=0;;
     --debug|-db) DEBUG=0; einfo "Running in debug mode";;
     --help|-h) run_help;;
