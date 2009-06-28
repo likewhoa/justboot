@@ -35,19 +35,11 @@ BLUE='\e[1;48;34m'
 RED='\e[1;48;31m'
 NOCOLOR='\e[0m'
 
-einfo() {
-  echo -e "\a${BLACK}.: ${1} :."${NOCOLOR}
-  sleep 1
-}
+einfo() { echo -e "\a${BLACK}.: ${1} :."${NOCOLOR}; sleep 1; }
 
-ewarn() {
-  echo -e "\a${RED}.: ${1} :."${NOCOLOR}
-}
+ewarn() { echo -e "\a${RED}.: ${1} :."${NOCOLOR}; }
 
-error() {
-  echo -e "\a${RED}.: ${1} :."${NOCOLOR}
-  exit 1
-}
+error() { echo -e "\a${RED}.: ${1} :."${NOCOLOR}; exit 1; }
 
 exec_chkdir() {
   local DIR="${1}"
@@ -686,7 +678,7 @@ NOCOLOR='\e[0m'
 trap 'echo "User Interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
 #  Cleans up the environment if script interrupted by control-c.
 
-  env-update 1>/dev/null && source /etc/profile
+env-update 1>/dev/null && source /etc/profile
 
 exec_chklink() {
   local SRC="\${1}" DEST="\${2}"
@@ -705,24 +697,13 @@ do_exec() {
   fi
 }
 
-einfo() {
-  echo -e "\a\${BLACK}.: \${1} :."\${NOCOLOR}
-  sleep 1
-}
+einfo() { echo -e "\a\${BLACK}.: \${1} :."\${NOCOLOR}; sleep 1; }
 
-ewarn() {
-  echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}
-}
+ewarn() { echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}; }
 
-error() {
-  echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}
-  exit 1
-}
+error() { echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}; exit 1; }
 
 prepare_configs() {
-  echo "chroot jump"
-  exec /bin/bash
-
   do_exec cp -a ${DATA_DIR}/etc/fstab /etc
   do_exec cp -a ${DATA_DIR}/etc/portage /etc
   do_exec cp -a ${DATA_DIR}/etc/conf.d/{hostname,net,clock} /etc/conf.d
@@ -762,7 +743,7 @@ prepare_packages() {
   for i in \${GLOBAL_PACKAGES[@]}; do
     if ! which \${i/:*/} &>/dev/null; then
       einfo "Emerging \${BLUE}\${i/*:/}."
-      do_exec emerge -q \${i/*:/}  
+      do_exec emerge -q \${i/*:/} 1>/dev/null
     fi
   done
   do_exec emerge memtest86+ -q 
