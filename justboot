@@ -407,7 +407,7 @@ prepare_stage() {
 
     # Retrieve latest gentoo autobuild stage
     do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/current
-    local GENTOO_STAGE_SRC_URI=$(egrep -o 'stage3-${STAGE}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].tar.bz2\"' index.html | cut -d\" -f1)
+    local GENTOO_STAGE_SRC_URI=$(egrep -o "stage3-${STAGE}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].tar.bz2\"" index.html | cut -d\" -f1)
     do_exec rm index.html
 
     exec_chkdir ${ARCH_DIR}
