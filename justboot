@@ -406,8 +406,8 @@ prepare_stage() {
     #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
 
     # Retrieve latest gentoo autobuild stage
-    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds
-    local GENTOO_STAGE_SRC_URI=$(egrep -o '>[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]' index.html | cut -d\> -f2 | tail -n1)
+    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/current
+    local GENTOO_STAGE_SRC_URI=$(egrep -o 'stage3-${STAGE}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].tar.bz2\"' index.html | cut -d\" -f1)
     do_exec rm index.html
 
     exec_chkdir ${ARCH_DIR}
@@ -720,6 +720,9 @@ error() {
 }
 
 prepare_configs() {
+  echo "chroot jump"
+  exec /bin/bash
+
   do_exec cp -a ${DATA_DIR}/etc/fstab /etc
   do_exec cp -a ${DATA_DIR}/etc/portage /etc
   do_exec cp -a ${DATA_DIR}/etc/conf.d/{hostname,net,clock} /etc/conf.d
