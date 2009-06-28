@@ -209,8 +209,9 @@ while [ $# -gt 0 ]; do
       if [[ -z ${PROCS[${CPU}]} ]]; then
         ewarm "${CPU} is an invalid --coprocessor option."
         einfo "Available options are: i386,i486,i586,i686,mk6,mk7,mk8,opteron,core2 & generic"
-        ewarm "Exiting now."; exit 1;;
+        ewarm "Exiting now."; exit 1
       fi
+      ;;
     --verbose) VERBOSE=0;;
     --debug|-db) DEBUG=0; einfo "Running in debug mode";;
     --help|-h) run_help;;
