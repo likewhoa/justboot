@@ -1023,7 +1023,7 @@ bootstrap() {
   do_exec cp -a /usr/share/zoneinfo/UTC /etc/localtime
 
   einfo "Running emerge --sync"
-  do_exec emerge --sync -q 
+  do_exec emerge --sync -q 1>/dev/null
 
   # Compile toolchain if --skip-toolchain is not set
   if [ ! ${NO_TOOL} ]; then
@@ -1043,7 +1043,7 @@ bootstrap() {
       einfo "Emerging \${BLUE}\"\${ebuild}\""
       do_exec emerge -v1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
       einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
-    done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)"|sed '1,4d') 
+    done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)" | sed '1,4d') 
 
     while read ebuild; do
       einfo "Emerging \${BLUE}\"\${ebuild}\""
