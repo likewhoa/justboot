@@ -139,7 +139,6 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --arch=*)
       ARCH="${1##*=}"
-      [[ ${ARCH} = i586 ]] && { ewarn "i586 needs a toolchain build, setting --force-toolchain flag";YES_TOOL=0; }
       einfo "${BLUE}${ARCH}${BLACK} set for build"
       ;;
     --cflags=*) 
@@ -851,7 +850,7 @@ prepare_kernel_opts() {
     i[4,5,6]86)
       # Do not sed our default kernel since it's already set to CONFIG_M486
       if [[ ${PROCS[${CPU}]} != M486 ]]; then
-        sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} >${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom
+        sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} >${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom
       fi
       ;;   
     x86_64)                                                                
@@ -914,25 +913,23 @@ prepare_kernel() {
     # Backup old kernel config
     if [[ -f /usr/src/linux/.config ]]; then
       einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}"
-      do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\${KERNEL_SOURCES}-\${DATE}
+      do_exec cp /usr/src/linux/.config /usr/src/linux/.config.${KERNEL_SOURCES}-\${DATE}
     fi
 
-  prepare_kernel_opts \${ARCH} 
-
-  # Prepare initramfs then recompile kernel.
-  einfo "Compiling \${RED}\${ARCH}\${BLACK} kernel image."
-  do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+    einfo "Compiling \${RED}\${ARCH}\${BLACK} kernel image."
+    prepare_kernel_opts \${ARCH}
+    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 
-    else                      
+    else
       do_exec make ${MAKEOPTS}
     fi
 
-  do_exec make modules_install 
-  einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image"
-  do_exec prepare_initramfs
+    do_exec make modules_install 
+    einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image"
+    do_exec prepare_initramfs
   fi
 
   do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
@@ -941,7 +938,7 @@ prepare_kernel() {
 
   einfo "Emerging \${BLUE}lvm2"
   do_exec emerge lvm2 -q 
-
+  
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
   if [ ${LETMEIN} ]; then
     einfo "letmein flag used. Type ${RED}exit${BLACK} when finished to continue with build."
@@ -963,6 +960,10 @@ diff () {
 }
 
 check_toolchain_days() {
+  if [[ ${ARCH} = i586 && ! -f /etc/toolchain_age ]]; then
+    ewarn "i586 needs a toolchain build, setting --force-toolchain flag"
+    YES_TOOL=0
+  fi
   if [ ${NO_TOOL} ]; then
     ewarn "Skipping toolchain build"
     return 1
