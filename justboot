@@ -968,7 +968,7 @@ check_toolchain_days() {
     return 1
   elif [ ${YES_TOOL} ]; then
     ewarn "Forcing a toolchain build"
-    >/etc/toolchain_age
+    date -u -d 'now' '+%F %T.%N %Z'>/etc/toolchain_age
     return 0
   else
     # Set first start of toolchain build 
