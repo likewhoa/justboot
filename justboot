@@ -102,6 +102,7 @@ Gentoo make.conf options:
 Linux Kernel options:
 
 --coprocessor=		- Processor type for the livecd kernel i.e --coprocessor=core2
+--coprocessor-list	- List the currently supported coprocessors
 --menuconfig            - Runs make menuconfig for interactive kernel
 --purge-kernel          - Purge any kernel sources and start fresh
 
@@ -208,10 +209,11 @@ while [ $# -gt 0 ]; do
       CPU="${1##*=}"
       if [[ -z ${PROCS[${CPU}]} ]]; then
         ewarn "${CPU} is an invalid --coprocessor option."
-        einfo "Available options are: i386,i486,i586,i686,mk6,mk7,mk8,opteron,core2 & generic"
+        einfo "Available procs are: ${BLUE}i386,i486,i586,i686,mk6,mk7,mk8,opteron,core2 & generic"
         ewarn "Exiting now."; exit 1
       fi
       ;;
+    --coprocessor-list) einfo "Available procs are: ${BLUE}i386,i486,i586,i686,mk6,mk7,mk8,opteron,core2 & generic"; exit 0;;
     --verbose) VERBOSE=0;;
     --debug|-db) DEBUG=0; einfo "Running in debug mode";;
     --help|-h) run_help;;
@@ -844,6 +846,25 @@ prepare_initramfs() {
   find | cpio --quiet -o -H newc | ${INIT_COMPRESSION} -9 >/boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
 }
 
+prepare_kernel_opts() {
+  # $1 - Kernel ARCH i.e x86
+  # Customize the kernel processor setting (--coprocessor)
+  case ${ARCH} in
+    i[4,5,6]86)
+      if [[ ${PROCS[${CPU}]} != M486 ]]; then
+        sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} >${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom
+      fi
+      ;;   
+    x86_64)                                                                
+      sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} >${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom
+  esac                                                                   
+  if [[ ${PROCS[${CPU}]} != M486 ]]; then
+    do_exec cp ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
+  else
+    do_exec cp ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} /usr/src/linux/.config
+  fi
+}
+
 prepare_kernel() {
   local DATE=$(date +%Y%m%d-%H%m)
 
@@ -865,39 +886,28 @@ prepare_kernel() {
     if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
       einfo "Emerging \${BLUE}layman"
       do_exec emerge layman -q
-    fi 
-      if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
-        do_exec layman -Sa zen-overlay && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
-      fi  
+    fi
+ 
+    if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
+      do_exec layman -Sa zen-overlay && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
+    fi
+  
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
     echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     do_exec emerge ${KERNEL_SOURCES} 
 
-        einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
-        # Customize the kernel processor setting (--coprocessor)
-        if [ ${CPU} ]; then
-          case ${ARCH} in
-            i[4,5,6]86)
-              sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
->${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
-            ;;
-          x86_64)
-            sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
->${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
-          esac
-          do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
-        else
-          do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
-        fi
+    einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
+    prepare_kernel_opts \${ARCH}
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
-          # Did we use --menu-config?
-          if [ ${MENUCONFIG} ]; then
-            do_exec make menuconfig
-            do_exec make ${MAKEOPTS} 
-          else
-            do_exec make ${MAKEOPTS}
-          fi
+    # Did we use --menu-config?
+    if [ ${MENUCONFIG} ]; then
+      do_exec make menuconfig
+      do_exec make ${MAKEOPTS} 
+    else
+      do_exec make ${MAKEOPTS}
+    fi
+
     do_exec make modules_install 
     einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image."
     do_exec prepare_initramfs
@@ -908,32 +918,18 @@ prepare_kernel() {
       do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\${KERNEL_SOURCES}-\${DATE}
     fi
 
-      # Customized the kernel processor setting (--coprocessor) # Fix duplicate statements ^
-      if [ ${CPU} ]; then
-        case ${ARCH} in
-          i[4,5,6]86)   
-            sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
->${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
-            ;;
-          x86_64)
-            sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
->${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
-        esac
-        cp -v ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
-      else 
-        do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
-      fi
+  prepare_kernel_opts \${ARCH} 
 
   # Prepare initramfs then recompile kernel.
   einfo "Compiling \${RED}\${ARCH}\${BLACK} kernel image."
   do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
-        if [ ${MENUCONFIG} ]; then
-          do_exec make menuconfig
-          do_exec make ${MAKEOPTS} 
-        else                      
-          do_exec make ${MAKEOPTS}
-        fi
+    if [ ${MENUCONFIG} ]; then
+      do_exec make menuconfig
+      do_exec make ${MAKEOPTS} 
+    else                      
+      do_exec make ${MAKEOPTS}
+    fi
 
   do_exec make modules_install 
   einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image"
