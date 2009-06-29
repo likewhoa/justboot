@@ -877,11 +877,12 @@ prepare_kernel() {
         if [ ${CPU} ]; then
           case ${ARCH} in
             i[4,5,6]86)
-              sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+              sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
 >${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
+              ewarn "hi it";sleep 5
             ;;
           x86_64)
-            sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+            sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
 >${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
           esac
           do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
@@ -1019,7 +1020,7 @@ bootstrap() {
   fi
 
   # Generate locales
-  do_exec locale-gen 
+  do_exec locale-gen 1>/dev/null
 
   # Set localtime
   einfo "Setting localtime"
@@ -1033,25 +1034,25 @@ bootstrap() {
   if [ ! ${NO_TOOL} ]; then
     # Begin the bootstrap
     einfo "Compiling the toolchain, this maybe take a while depending on hardware."
-    do_exec emerge gcc-config linux-headers glibc binutils gcc portage -1q 
-    do_exec gcc-config 1  && do_exec env-update 1>/dev/null && do_exec source /etc/profile
+    do_exec emerge gcc-config linux-headers glibc binutils gcc portage -1q 1>/dev/null
+    do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
   
     # Enable new gnu hash style
     [[ ! \$(grep "\-\-hash\-style\=gnu" /etc/make.conf) ]] && sed -i 's/once/once,--hash-style=gnu/' /etc/make.conf 
 
     # Recompile toolchain
-    do_exec emerge linux-headers glibc binutils gcc -1q 
+    do_exec emerge linux-headers glibc binutils gcc -1q 1>/dev/null
     einfo "Toolchain finished, compiling system packages against the new toolchain"
 
     while read ebuild; do
       einfo "Emerging \${BLUE}\"\${ebuild}\""
-      do_exec emerge -v1 "\${ebuild}"  || echo "\${ebuild}" >>failed
+      do_exec emerge -v1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
       einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
     done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)"|sed '1,4d') 
 
     while read ebuild; do
       einfo "Emerging \${BLUE}\"\${ebuild}\""
-      do_exec emerge -v1 "\${ebuild}" 
+      do_exec emerge -v1 "\${ebuild}" 1>/dev/null 
       einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
     done < <(cat failed)
     do_exec rm failed
@@ -1084,6 +1085,6 @@ BUSYBOX
 CHROOT
 
 # Lets go already!
-[[ ! -d ${LIVEDIR} ]] && exec_chkdir ${LIVEDIR}
+[[ ! -d ${LIVEDIR} ]] && exec_chkdir ${LIVEDIR} # I trust it but i really don't.
 do_exec cd ${LIVEDIR} || error "Failed to switch to livecd data directory, Exiting."
 do_exec prepare_stage
