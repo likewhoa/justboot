@@ -851,6 +851,7 @@ prepare_kernel_opts() {
   # Customize the kernel processor setting (--coprocessor)
   case ${ARCH} in
     i[4,5,6]86)
+      # Do not sed our default kernel since it's already set to CONFIG_M486
       if [[ ${PROCS[${CPU}]} != M486 ]]; then
         sed -e 's/CONFIG_M486=y/# CONFIG_M486 is no set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} >${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom
       fi
