@@ -225,7 +225,7 @@ done
 [[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
 [[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma
 [[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
-[[ ! ${CPU} ]] && CPU=${ARCH}
+[[ ! ${CPU} ]] && { ewarn "no coprocessor flag used, using ${ARCH} instead.";CPU=${ARCH}; }
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
@@ -916,7 +916,7 @@ prepare_kernel() {
 >${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
             ;;
           x86_64)
-            sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${CPU} is not set/CONFIG_${CPU}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
+            sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} \
 >${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom
         esac
         cp -v ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
