@@ -38,9 +38,7 @@ RED='\e[1;48;31m'
 NOCOLOR='\e[0m'
 
 einfo() { echo -e "\a${BLACK}.: ${1} :."${NOCOLOR}; sleep 1; }
-
 ewarn() { echo -e "\a${RED}.: ${1} :."${NOCOLOR}; }
-
 error() { echo -e "\a${RED}.: ${1} :."${NOCOLOR}; exit 1; }
 
 exec_chkdir() {
@@ -123,10 +121,12 @@ Usage examples:
 # justboot --arch=x86_64 --kernel=zen-sources --data-directory=/home/username
  Change the RSYNC and Gentoo Mirrors used for package downloads
 # justboot --gentoo-mirrors="http://gentoo.mirrors.tera-byte.com/ http://mirror.datapipe.net/gentoo ftp://gentoo.chem.wisc.edu/gentoo/" --rsync-mirror="http://localhost/portage"
- Generater a livecd for a AMD processor
-# justboot --coprocessor=MK8 --arch=x86_64 --cflags="-march=k8 -Os -pipe" --make-opts=-j3
- Generater a livecd for a Intel Core2Dou processor
-# justboot --coprocessor=MCORE2 --arch=x86_64 --cflags="-march=k8 -Os -pipe" --make-opts=-j5
+ Generater a livecd for a Opteron AMD processor
+# justboot --coprocessor=opteron --arch=x86_64 --cflags="-march=opteron -Os -pipe" --make-opts=-j3
+ Generater a livecd for a Intel Core2 Quad processor
+# justboot --coprocessor=MCORE2 --arch=core2 --cflags="-march=core2 -Os -pipe" --make-opts=-j5
+ Generate x86_64 livecd with interactive kernel menu and custom rsync mirror
+  justboot --arch=x86_64 --menuconfig --make-opts=-j5 --rsync-mirror=http://localhost/portage
 
 HELP
 exit 1
@@ -227,7 +227,7 @@ done
 [[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
 [[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma
 [[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
-[[ ! ${CPU} ]] && { ewarn "no coprocessor flag used, using ${ARCH} instead.";CPU=${ARCH}; }
+[[ ! ${CPU} ]] && CPU=${ARCH}
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
@@ -692,12 +692,16 @@ trap 'echo "User Interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
 
 env-update 1>/dev/null && source /etc/profile
 
+einfo() { echo -e "\a\${BLACK}.: \${1} :."\${NOCOLOR}; sleep 1; }
+ewarn() { echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}; }
+error() { echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}; exit 1; }
+
 exec_chklink() {
   local SRC="\${1}" DEST="\${2}"
   [[ -h \${DEST} ]] && unlink \${DEST}
   ln -s \${SRC} \${DEST}
 }
-
+ 
 do_exec() {
   if [ ${DEBUG} ]; then
     echo -e "\a\${RED}debug:\${NOCOLOR}\${BLUE} (\${@})"\${NOCOLOR}
@@ -708,12 +712,6 @@ do_exec() {
     \${@} 2>/dev/null
   fi
 }
-
-einfo() { echo -e "\a\${BLACK}.: \${1} :."\${NOCOLOR}; sleep 1; }
-
-ewarn() { echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}; }
-
-error() { echo -e "\a\${RED}.: \${1} :."\${NOCOLOR}; exit 1; }
 
 prepare_configs() {
   do_exec cp -a ${DATA_DIR}/etc/fstab /etc
