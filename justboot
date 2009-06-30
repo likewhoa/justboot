@@ -124,7 +124,7 @@ Usage examples:
  Generater a livecd for a Opteron AMD processor
 # justboot --coprocessor=opteron --arch=x86_64 --cflags="-march=opteron -Os -pipe" --make-opts=-j3
  Generater a livecd for a Intel Core2 Quad processor
-# justboot --coprocessor=MCORE2 --arch=core2 --cflags="-march=core2 -Os -pipe" --make-opts=-j5
+# justboot --coprocessor=core2 --arch=core2 --cflags="-march=core2 -Os -pipe" --make-opts=-j5
  Generate x86_64 livecd with interactive kernel menu and custom rsync mirror
   justboot --arch=x86_64 --menuconfig --make-opts=-j5 --rsync-mirror=http://localhost/portage
 
@@ -625,10 +625,10 @@ cat >> ${CLEANUP_SCRIPT} << CLEANUP
 
   for i in ${REMOVE_PACKAGES[@]}; do
     echo "Removing \${i} from livecd"
-    emerge -Cq \${i} 
+    emerge -Cq \${i} &>/dev/null
   done
 
-  echo "${#REMOVE_PACKAGES[@]} Packages removed."
+  echo -e "${RED}${#REMOVE_PACKAGES[@]}${BLACK} Packages removed."
   exit
 CLEANUP
   do_exec chmod +x ${CLEANUP_SCRIPT} && do_exec mv ${CLEANUP_SCRIPT} ${TARGET}/tmp
@@ -883,11 +883,11 @@ prepare_kernel() {
     # Is layman emerged?
     if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
       einfo "Emerging \${BLUE}layman"
-      do_exec emerge layman -q
+      do_exec emerge layman -q 1>/dev/null
     fi
  
     if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
-      do_exec layman -Sa zen-overlay && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
+      do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
     fi
   
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
@@ -901,9 +901,9 @@ prepare_kernel() {
     # Did we use --menu-config?
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
-      do_exec make ${MAKEOPTS} 
+      do_exec make ${MAKEOPTS} 1>/dev/null
     else
-      do_exec make ${MAKEOPTS}
+      do_exec make ${MAKEOPTS} 1>/dev/null
     fi
 
     do_exec make modules_install 
@@ -922,9 +922,9 @@ prepare_kernel() {
 
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
-      do_exec make ${MAKEOPTS} 
+      do_exec make ${MAKEOPTS} 1>/dev/null
     else
-      do_exec make ${MAKEOPTS}
+      do_exec make ${MAKEOPTS} 1>/dev/null
     fi
 
     do_exec make modules_install 
@@ -937,7 +937,7 @@ prepare_kernel() {
   do_exec update-modules 
 
   einfo "Emerging \${BLUE}lvm2"
-  do_exec emerge lvm2 -q 
+  do_exec emerge lvm2 -q 1>/dev/null
   
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
   if [ ${LETMEIN} ]; then
