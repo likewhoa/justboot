@@ -41,7 +41,6 @@ dev-perl/yaml
 perl-core/Package-Constants
 dev-perl/Net-Daemon
 virtual/perl-MIME-Base64   
-dev-libs/apr
 dev-perl/HTML-Parser
 virtual/perl-libnet
 perl-core/Compress-Raw-Bzip2
