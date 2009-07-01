@@ -844,23 +844,32 @@ prepare_initramfs() {
 }
 
 prepare_kernel_opts() {
-  # $1 - Kernel ARCH i.e x86
+  cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel data directory"
+
   # Customize the kernel processor setting (--coprocessor)
   case ${ARCH} in
     i[4,5,6]86)
       # Do not sed our default kernel since it's already set to CONFIG_M486
       if [[ ${PROCS[${CPU}]} != M486 ]]; then
-        sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} >${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom
+        sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
       fi
-      ;;   
+        if [[ ${PROCS[${CPU}]} = ${ARCH} ]]; then
+          # Patch according to ${ARCH} change in kernel config
+          case ${ARCH} in
+            i586) patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch;;
+            i686) patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch
+          esac
+        fi
+      ;;
     x86_64)                                                                
-      sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} >${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom
+      sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
   esac                                                                   
   if [[ ${PROCS[${CPU}]} != M486 ]]; then
-    do_exec cp ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES}-custom /usr/src/linux/.config
+    do_exec cp ${KERNEL_SOURCES}-custom /usr/src/linux/.config
   else
-    do_exec cp ${DATA_DIR}/kernel/\${1}/${KERNEL_SOURCES} /usr/src/linux/.config
+    do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
   fi
+  cd $OLDPWD
 }
 
 prepare_kernel() {
@@ -901,9 +910,9 @@ prepare_kernel() {
     # Did we use --menu-config?
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
-      do_exec make ${MAKEOPTS} 1>/dev/null
+      do_exec make ${MAKEOPTS}
     else
-      do_exec make ${MAKEOPTS} 1>/dev/null
+      do_exec make ${MAKEOPTS}
     fi
 
     do_exec make modules_install 
@@ -922,9 +931,9 @@ prepare_kernel() {
 
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
-      do_exec make ${MAKEOPTS} 1>/dev/null
+      do_exec make ${MAKEOPTS}
     else
-      do_exec make ${MAKEOPTS} 1>/dev/null
+      do_exec make ${MAKEOPTS}
     fi
 
     do_exec make modules_install 
