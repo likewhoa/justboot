@@ -32,7 +32,7 @@ declare -a REMOVE_FILES=( $(cat /etc/justboot/remove-files.lst | grep -vE '^#') 
 declare -a RAMFS_DIR=( $(cat /etc/justboot/ramfs-directories.lst | grep -vE '^#') )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII 
-[pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [mk6]=MK6 [mk7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
+[pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 
 # Set colors
 BLACK='\e[1;48;30m'
@@ -215,7 +215,7 @@ while [ $# -gt 0 ]; do
         ewarn "Exiting now."; exit 1
       fi
       ;;
-    --coprocessor-list) einfo "Available procs are: ${BLUE}i386,i486,i586,i686,mk6,mk7,mk8,opteron,core2 & generic"; exit 0;;
+    --coprocessor-list) einfo "Available procs are: ${BLUE}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"; exit 0;;
     --verbose) VERBOSE=0;;
     --debug|-db) DEBUG=0; einfo "Running in debug mode";;
     --help|-h) run_help;;
