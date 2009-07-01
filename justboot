@@ -30,6 +30,7 @@ declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/excluded-directories.lst | grep
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/remove-packages.lst | grep -vE '^#') )
 declare -a REMOVE_FILES=( $(cat /etc/justboot/remove-files.lst | grep -vE '^#') )
 declare -a RAMFS_DIR=( $(cat /etc/justboot/ramfs-directories.lst | grep -vE '^#') )
+declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII 
 [pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [mk6]=MK6 [mk7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 
@@ -1016,12 +1017,10 @@ check_toolchain_days() {
 }
 
 bootstrap() {
+  # Enable livecd and user locales (see /etc/justboot/locale.gen)
   if [[ ! \$(grep '#en_US' /etc/locale.gen &>/dev/null) ]]; then
-    einfo "Setting global locales"
-    local -a GLOBAL_LOCALES=( 'en_US ISO-8859-1' 'en_US.UTF-8 UTF-8' )
-
-    # Enable locales
-    for i in "\${GLOBAL_LOCALES[@]}"; do
+    einfo "Setting locales"
+    for i in "${LOCALES[@]}" "#en_US ISO-8859-1"; do
       sed -i "s/#\${i}/\${i}/" /etc/locale.gen
     done
   fi
@@ -1040,20 +1039,24 @@ bootstrap() {
   # Compile toolchain if --skip-toolchain is not set
   if [ ! ${NO_TOOL} ]; then
     # Begin the bootstrap
-    einfo "Compiling the toolchain, this maybe take a while depending on hardware."
-    do_exec emerge gcc-config linux-headers glibc binutils gcc portage -1q 1>/dev/null
+    einfo "Compiling the toolchain, this maybe take a while depending on hardware.
+    for i in gcc-config linux-headers glibc binutils gcc portage; do
+      do_exec emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
+    done
     do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
   
     # Enable new gnu hash style
     [[ ! \$(grep "\-\-hash\-style\=gnu" /etc/make.conf) ]] && sed -i 's/once/once,--hash-style=gnu/' /etc/make.conf 
 
     # Recompile toolchain
-    do_exec emerge linux-headers glibc binutils gcc -1q 1>/dev/null
+    for i in emerge linux-headers glibc binutils gcc; do
+      emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
+    done
     einfo "Toolchain finished, compiling system packages against the new toolchain"
 
     while read ebuild; do
       einfo "Emerging \${BLUE}\"\${ebuild}\""
-      do_exec emerge -v1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
+      do_exec emerge -v1 \${ebuild} 1>/dev/null || echo "\${ebuild}" >>failed
       einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
     done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)" | sed '1,4d') 
 
