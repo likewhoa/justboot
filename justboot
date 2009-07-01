@@ -904,7 +904,7 @@ prepare_kernel() {
   
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
     echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
-    do_exec emerge ${KERNEL_SOURCES} 
+    do_exec emerge ${KERNEL_SOURCES} 1>/dev/null
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
     prepare_kernel_opts \${ARCH}
@@ -913,7 +913,7 @@ prepare_kernel() {
     # Did we use --menu-config?
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
-      do_exec make ${MAKEOPTS}
+      do_exec make ${MAKEOPTS} 1>/dev/null
     else
       do_exec make ${MAKEOPTS}
     fi
@@ -934,9 +934,9 @@ prepare_kernel() {
 
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
-      do_exec make ${MAKEOPTS}
+      do_exec make ${MAKEOPTS} 1>/dev/null
     else
-      do_exec make ${MAKEOPTS}
+      do_exec make ${MAKEOPTS} 1>/dev/null
     fi
 
     do_exec make modules_install 
@@ -953,7 +953,7 @@ prepare_kernel() {
   
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
   if [ ${LETMEIN} ]; then
-    einfo "letmein flag used. Type ${RED}exit${BLACK} when finished to continue with build."
+    einfo "letmein flag used. Type \${RED}exit\${BLACK} when finished to continue with build."
     exec /bin/bash
   fi
 }
