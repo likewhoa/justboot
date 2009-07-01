@@ -19,6 +19,8 @@
 ###
 VERSION=0.3.0
 if [[ $1 =~ (--version|-V|-v) ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
+# Check that we have bash associated array support.
+! declare -A &>/dev/null && { ewarn "This script uses bash4 only features, please upgrade!!!"; exit 1; }
 
 # Make sure we are root
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
