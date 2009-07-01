@@ -1041,6 +1041,7 @@ bootstrap() {
     # Begin the bootstrap
     einfo "Compiling the toolchain, this maybe take a while depending on hardware."
     for i in gcc-config linux-headers glibc binutils gcc portage; do
+      einfo "Emerging \${BLUE}\${i}."
       do_exec emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
     done
     do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
@@ -1050,6 +1051,7 @@ bootstrap() {
 
     # Recompile toolchain
     for i in linux-headers glibc binutils gcc; do
+      einfo "Emerging \${BLUE}\${i}."
       do_exec emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
     done
     einfo "Toolchain finished, compiling system packages against the new toolchain"
