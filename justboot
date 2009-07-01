@@ -280,7 +280,7 @@ fi
 
 release_env() {            
   einfo "Releasing livecd environment, please wait..."
-  do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
+  #do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
                            
   # Umount local livecd folders
   do_exec umount ${ARCH_DIR}/{proc,dev}   
@@ -1039,7 +1039,7 @@ bootstrap() {
   # Compile toolchain if --skip-toolchain is not set
   if [ ! ${NO_TOOL} ]; then
     # Begin the bootstrap
-    einfo "Compiling the toolchain, this maybe take a while depending on hardware.
+    einfo "Compiling the toolchain, this maybe take a while depending on hardware."
     for i in gcc-config linux-headers glibc binutils gcc portage; do
       do_exec emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
     done
@@ -1049,14 +1049,14 @@ bootstrap() {
     [[ ! \$(grep "\-\-hash\-style\=gnu" /etc/make.conf) ]] && sed -i 's/once/once,--hash-style=gnu/' /etc/make.conf 
 
     # Recompile toolchain
-    for i in emerge linux-headers glibc binutils gcc; do
-      emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
+    for i in linux-headers glibc binutils gcc; do
+      do_exec emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
     done
     einfo "Toolchain finished, compiling system packages against the new toolchain"
 
     while read ebuild; do
       einfo "Emerging \${BLUE}\"\${ebuild}\""
-      do_exec emerge -v1 \${ebuild} 1>/dev/null || echo "\${ebuild}" >>failed
+      do_exec emerge -v1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
       einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
     done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)" | sed '1,4d') 
 
