@@ -915,7 +915,7 @@ prepare_kernel() {
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 1>/dev/null
     else
-      do_exec make ${MAKEOPTS}
+      do_exec make ${MAKEOPTS} 1>/dev/null
     fi
 
     do_exec make modules_install 
@@ -954,7 +954,7 @@ prepare_kernel() {
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
   if [ ${LETMEIN} ]; then
     einfo "letmein flag used. Type \${RED}exit\${BLACK} when finished to continue with build."
-    exec /bin/bash
+    /bin/bash
   fi
 }
 
