@@ -851,18 +851,14 @@ prepare_kernel_opts() {
 
   # Customize the kernel processor setting (--coprocessor)
   case ${ARCH} in
-    i[4,5,6]86)
+    i[5,6]86)
       # Do not sed our default kernel since it's already set to CONFIG_M486
       if [[ ${PROCS[${CPU}]} != M486 ]]; then
         sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
       fi
-        if [[ ${PROCS[${CPU}]} = ${ARCH} ]]; then
-          # Patch according to ${ARCH} change in kernel config
-          case ${ARCH} in
-            i586) patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch;;
-            i686) patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch
-          esac
-        fi
+      # Patch according to ${ARCH} change in kernel config
+      [[ ${ARCH} = i586 ]] && patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch
+      [[ ${ARCH} = i686 ]] && patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch
       ;;
     x86_64)                                                                
       sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
