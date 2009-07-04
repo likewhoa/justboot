@@ -19,20 +19,25 @@
 ###
 VERSION=0.3.0
 if [[ $1 =~ (--version|-V|-v) ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
-# Check that we have bash associated array support.
-! declare -A &>/dev/null && { ewarn "This script uses bash4 only features, please upgrade!!!"; exit 1; }
 
 # Make sure we are root
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
 
 # Declare global arrays
+# Check that we have bash associated array support.
+if ! declare -A &>/dev/null; then
+  ewarn "This script uses bash4 only features, consider upgrading"
+else
+  BASH4=0
+  declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
+[pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
+fi
+
 declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/excluded-directories.lst | grep -vE '^#') )
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/remove-packages.lst | grep -vE '^#') )
 declare -a REMOVE_FILES=( $(cat /etc/justboot/remove-files.lst | grep -vE '^#') )
 declare -a RAMFS_DIR=( $(cat /etc/justboot/ramfs-directories.lst | grep -vE '^#') )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
-declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII 
-[pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 
 # Set colors
 BLACK='\e[1;48;30m'
@@ -209,7 +214,7 @@ while [ $# -gt 0 ]; do
     --purge-kernel) PURGE_KERNEL=0;;
     --coprocessor=*) 
       CPU="${1##*=}"
-      if [[ -z ${PROCS[${CPU}]} ]]; then
+      if [[ ${BASH4} && -z ${PROCS[${CPU}]} ]]; then
         ewarn "${CPU} is an invalid --coprocessor option."
         einfo "Available procs are: ${BLUE}i386,i486,i586,i686,mk6,mk7,mk8,opteron,core2 & generic"
         ewarn "Exiting now."; exit 1
@@ -321,19 +326,19 @@ release_env() {
     done
   fi
     
-  # Did we trap an interrupt?
+  # Did we trap an interrupted?
   [[ ! $1 ]] && do_exec clean_env
 }
 
 USER_INTERRUPT=13
 trap 'release_env now; exit $USER_INTERRUPT' TERM INT
-#  Cleans up the livecd environment if script is interrupted by control-c.
+#  Cleans up the livecd environment if script is interrupted by Control-C.
 
 prepare_stage() {
   # Make sure squashfs-tools is emerged on system before continuing
   if ! which mksquashfs &>/dev/null; then
     einfo "Emerging squashfs-tools${BLUE}."
-    do_exec emerge -q squashfs-tools 
+    do_exec emerge -q squashfs-tools 1>/dev/null
   fi
 
   # Check if data directory changed.
@@ -355,12 +360,12 @@ prepare_stage() {
       do_exec mv ${REAL_ARCH_DIR} ${ARCH_DIR}
       do_exec mv ${REAL_EXCLUDES_DIR} ${EXCLUDES_DIR}
       
-        if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
-          # Create new symbolic links
-          exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
-          exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
-          exec_chklink /usr/share/justboot/data ${DATA_DIR}
-        fi
+      if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
+        # Create new symbolic links
+        exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
+        exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
+        exec_chklink /usr/share/justboot/data ${DATA_DIR}
+      fi
 
       # Lets make sure we don't delete other sources.
       for i in i{4,5,6}86 x86_64; do
@@ -369,14 +374,14 @@ prepare_stage() {
         # If arch found, don't remove parent directory
         [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
       done
-        if [ ${REMOVAL} ]; then
-          ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
-          do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
-        else
-          ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
-          do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
-          do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
-        fi        
+      if [ ${REMOVAL} ]; then
+        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
+        do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
+      else
+        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
+        do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
+        do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
+      fi        
   elif [[ /usr/share/justboot != ${LIVEDIR} && -d /usr/share/justboot/${ARCH} ]]; then 
       einfo "Moving data directory from ${RED}/usr/share/justboot/${ARCH}${BLACK} to ${RED}${LIVEDIR}/${ARCH}.${BLACK} please wait..."
 
@@ -443,12 +448,12 @@ prepare_stage() {
 
     einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}."
 
-      if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
-        # Create new symbolic links
-        exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
-        exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
-        exec_chklink /usr/share/justboot/data ${DATA_DIR}
-      fi
+    if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
+      # Create new symbolic links
+      exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
+      exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
+      exec_chklink /usr/share/justboot/data ${DATA_DIR}
+    fi
   fi
   prepare_env
 }
@@ -501,23 +506,24 @@ prepare_env() {
       done
       einfo "Mounting ${BLUE}${x}${BLACK} in memory.. please wait."
 
-        # Check for existing contents in ramfs directories, then move data if true.
-        if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
-          exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
-          einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
-          do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
-        else
-          # Create the directories for the ramfs mounts
-          for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
-        fi
-        do_exec mount -t ramfs ${x} ${ARCH}/${x}
+      # Check for existing contents in ramfs directories, then move data if true.
+      if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
+        exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
+        einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
+        do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
+      else
+        # Create the directories for the ramfs mounts
+        for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
+      fi
+      do_exec mount -t ramfs ${x} ${ARCH}/${x}
 
-          # If old RAMFS dir exist, then transfer files
-          if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
-            do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
-          einfo "${RED}${x}${BLACK} copied to RAMFS"
-          fi
+      # If old RAMFS dir exist, then transfer files
+      if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
+        do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
+        einfo "${RED}${x}${BLACK} copied to RAMFS"
+      fi
     done
+
     # Move any orphan directories to the livecd environment.
     declare -a DIRS
     DIRS=( $(ls --color=never ${EXCLUDES_DIR}) )
@@ -566,7 +572,7 @@ prepare_env() {
     do_exec linux64 chroot ${ARCH_DIR} ${CHROOT_SCRIPT} && do_exec rm ${ARCH_DIR}${CHROOT_SCRIPT}
   fi
 
-  # Has user interrupt script?
+  # Has user interrupted script?
   [[ $? = 13 ]] && do_exec release_env now
 
   einfo "Exiting livecd chroot environment."
@@ -620,7 +626,7 @@ clean_env() {
 # Livecd environment clean up script.
 cat >> ${CLEANUP_SCRIPT} << CLEANUP
 #!/bin/bash
-  trap 'echo "User Interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
+  trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
   #  Cleans up the environment if script interrupted by control-c.
 
   echo "Entering livecd environment"
@@ -643,7 +649,7 @@ CLEANUP
     do_exec linux64 chroot ${TARGET} ${CLEANUP_SCRIPT}
   fi
 
-  # Has user interrupt script?
+  # Has user interrupted script?
   [[ $? = 13 ]] && do_exec release_env now
 
   # Clean up livecd environment files
@@ -689,7 +695,7 @@ BLUE='\e[1;48;34m'
 RED='\e[1;48;31m'
 NOCOLOR='\e[0m'
 
-trap 'echo "User Interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
+trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
 #  Cleans up the environment if script interrupted by control-c.
 
 env-update 1>/dev/null && source /etc/profile
@@ -758,7 +764,7 @@ prepare_packages() {
       do_exec emerge -q \${i/*:/} 1>/dev/null
     fi
   done
-  do_exec emerge memtest86+ -q &>/dev/null
+  do_exec emerge memtest86+ -q 1>/dev/null
 
   # Setup sudoers
   [ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
@@ -767,7 +773,7 @@ prepare_packages() {
 prepare_bootloader() {
   [[ -h /boot/grub/menu.lst ]] && do_exec unlink /boot/grub/menu.lst
 
-  # Always a fresh grub.conf, eventually we parse for changes then merge.
+  # Always a fresh grub.conf, eventually it will parse for changes then update.
   >/boot/grub/menu.lst
 cat >> /boot/grub/menu.lst << GRUB
 default 0
@@ -847,7 +853,7 @@ prepare_initramfs() {
 }
 
 prepare_kernel_opts() {
-  cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel data directory"
+  cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
 
   # Customize the kernel processor setting (--coprocessor)
   case ${ARCH} in
@@ -903,7 +909,12 @@ prepare_kernel() {
     do_exec emerge ${KERNEL_SOURCES} 1>/dev/null
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
-    prepare_kernel_opts \${ARCH}
+    if declare -A &>/dev/null; then
+      prepare_kernel_opts \${ARCH}
+    else
+      do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
+    fi
+      
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
     # Did we use --menu-config?
@@ -925,7 +936,11 @@ prepare_kernel() {
     fi
 
     einfo "Compiling \${RED}\${ARCH}\${BLACK} kernel image."
-    prepare_kernel_opts \${ARCH}
+    if declare -A &>/dev/null; then
+      prepare_kernel_opts \${ARCH}
+    else
+      do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
+    fi
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
     if [ ${MENUCONFIG} ]; then
@@ -944,7 +959,7 @@ prepare_kernel() {
   do_exec cp arch/\${ARCH}/boot/bzImage /boot/vmlinuz
   do_exec update-modules 
 
-  einfo "Emerging \${BLUE}lvm2"
+  einfo "Emerging \${BLUE}lvm2\${BLACK}"
   do_exec emerge lvm2 -q 1>/dev/null
   
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
@@ -962,11 +977,7 @@ prepare_useropts() {
   einfo "Root passwd set to \${RED}\"${ROOT_PASSWD:-gentoo}\""
 }
 
-diff () {
-  printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) -
-    \$(date -u -d"\$CURRENT" +%s)))
-}
-
+diff () { printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) - $(date -u -d"\$CURRENT" +%s))); }
 check_toolchain_days() {
   if [[ ${ARCH} = i586 && ! -f /etc/toolchain_age ]]; then
     ewarn "i586 needs a toolchain build, setting --force-toolchain flag"

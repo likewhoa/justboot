@@ -2,6 +2,7 @@
 
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 NEW_ROOT=/newroot
+COMMAND_LINE=$(cat /proc/cmdline)
 CONSOLE=/dev/console
 
 do_modprobe_group() {
@@ -31,8 +32,7 @@ do_modprobe_group() {
   mount -t tmpfs tmpfs /dev
 
   echo "/sbin/modprobe" > /proc/sys/kernel/modprobe
-  mdev -s
-  echo "/sbin/mdev" > /proc/sys/kernel/hotplug
+  mdev -s && echo "/sbin/mdev" > /proc/sys/kernel/hotplug
 
   do_modprobe_group boot
 
