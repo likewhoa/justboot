@@ -37,6 +37,7 @@ declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/excluded-directories.lst | grep
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/remove-packages.lst | grep -vE '^#') )
 declare -a REMOVE_FILES=( $(cat /etc/justboot/remove-files.lst | grep -vE '^#') )
 declare -a RAMFS_DIR=( $(cat /etc/justboot/ramfs-directories.lst | grep -vE '^#') )
+declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/extra-packages.lst | grep -vE '^#') )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 
 # Set colors
@@ -764,7 +765,13 @@ prepare_packages() {
       do_exec emerge -q \${i/*:/} 1>/dev/null
     fi
   done
-  do_exec emerge memtest86+ -q 1>/dev/null
+
+  for i in ${EXTRA_PACKAGES=[@]}; do
+    einfo "Emerging \${BLUE}\${i}."
+    do_exec emerge ${i} -q 1>/dev/null 
+  done
+
+  do_exec memtest86+ -q 1>/dev/null
 
   # Setup sudoers
   [ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
@@ -977,7 +984,9 @@ prepare_useropts() {
   einfo "Root passwd set to \${RED}\"${ROOT_PASSWD:-gentoo}\""
 }
 
-diff () { printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) - $(date -u -d"\$CURRENT" +%s))); }
+diff () { printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) - 
+\$(date -u -d"\$CURRENT" +%s))) 
+}
 check_toolchain_days() {
   if [[ ${ARCH} = i586 && ! -f /etc/toolchain_age ]]; then
     ewarn "i586 needs a toolchain build, setting --force-toolchain flag"
