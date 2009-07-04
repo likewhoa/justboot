@@ -689,7 +689,7 @@ UCLIBC_SCRIPT=\$(mktemp /tmp/XXX)
 UCLIBC_SRC_URI="http://gentoo.mirrors.tds.net/gentoo/experimental/x86/embedded/stages/stage3-x86-uclibc-2008.0.tar.bz2"
 BUSYBOX_SRC_URI="http://www.busybox.net/downloads/busybox-1.14.0.tar.gz"
 BUSYBOX_ARCHIVE=\$(echo \${BUSYBOX_SRC_URI} | cut -d/ -f5)
-BUSYBOX_CONF="${DATA_DIR}/busybox/.config"
+BUSYBOX_CONF=${DATA_DIR}/busybox/.config
 BUSYBOX=\${BUSYBOX_ARCHIVE/.tar.gz/}
 BLACK='\e[1;48;30m'
 BLUE='\e[1;48;34m'
@@ -972,7 +972,7 @@ prepare_kernel() {
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
   if [ ${LETMEIN} ]; then
     einfo "letmein flag used. Type \${RED}exit\${BLACK} when finished to continue with build."
-    /bin/bash
+    exec /bin/bash
   fi
 }
 
