@@ -4,25 +4,17 @@ as it's constructive.
 Hope you enjoy the script, I was tired of using catalyst or manually building my livecds
 from scratch even with the 3 little scripts I used, this way everything is automated and with good features.
 
-*** YOU MUST RUN install.sh prior to running the justboot.sh script ***
+*** YOU MUST RUN install prior to running the justboot script ***
 *** NOTE that only zen-sources is supported with --kernel flag for now ***
 
 Start by running all of some of the following commands:
 
-justboot.sh --arch=x86_64 --kernel=zen-sources --root-passwd="gentoo"
-justboot.sh --arch=i686 --kernel=zen-sources --volid="gentoo"
-justboot.sh --arch=x86_64 --kernel=zen-sources -ramfs 
-justboot.sh --arch=x86_64 --kernel=zen-sources --purge
-justboot.sh --arch=x86_64 --kernel=zen-sources --root-passwd="gentoo rocks" --volid="gentoo" --data-directory=/opt
-justboot.sh --arch=x86_64 --kernel=zen-sources --make-opts="-j3" --niceness="-5"
-
-The variables that are editable in the justboot.sh script are between the following lines in code
-
-$REMOVE_PACKAGES 
-$REMOVE_FILES 
-Gentoo make.conf options are available from command line, see --help
-$RAMFS_DIR 
-$LIVECD_EXCLUDES 
+justboot --arch=x86_64 --kernel=zen-sources --root-passwd="gentoo"
+justboot --arch=i686 --kernel=zen-sources --volid="gentoo"
+justboot --arch=x86_64 --kernel=zen-sources -ramfs # MAKE SURE YOU HAVE >4GB of RAM
+justboot --arch=x86_64 --kernel=zen-sources --purge
+justboot --arch=x86_64 --kernel=zen-sources --root-passwd="gentoo rocks" --volid="gentoo" --data-directory=/opt
+justboot --arch=x86_64 --kernel=zen-sources --make-opts="-j3" --niceness="-5"
 
 Thanks for your testing
 likewhoa
