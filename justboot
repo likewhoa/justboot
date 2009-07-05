@@ -200,11 +200,11 @@ while [ $# -gt 0 ]; do
       einfo "Livecd data directory set to ${BLUE}\"${LIVEDIR}\""
       ;;
     --package-manager=*)
-      [[ -f /etc/justboot/pms ]] && error "Previously enabled package manager, delete /etc/justboot/pms then try again to override"
+      [[ -f /etc/justboot/${ARCH}-pms ]] && error "Previously enabled package manager, delete /etc/justboot/${ARCH}-pms then try again to override"
       [[ ${1##*=} =~ ^(pkgcore|portage)$ ]] || { einfo "--package-manager=${RED}${1##*=}${BLACK} is invalid, try pkgcore or portage"; error "Exiting!"; }
       if [[ ${1##*=} = portage ]]; then PMS="emerge -q"; else PMS="pmerge"; fi
-      einfo "${RED}${PMS}${BLACK} permanently enabled, to override delete /etc/justboot/pms"
-      touch /etc/justboot/pms 
+      einfo "${RED}${PMS}${BLACK} permanently enabled, to override delete /etc/justboot/${ARCH}-pms"
+      touch /etc/justboot/${ARCH}-pms # FIX ME 
       ;; 
     --gentoo-mirrors=*)
       OPT="$(echo ${1##*=} | awk '{print$1}')"
