@@ -246,7 +246,7 @@ done
 [[ ! ${ARCH} ]] && error "Missing --arch argument. i.e --arch=x86_64"
 [[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
 [[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma
-[[ ! ${PMS} ]] && PMS="emerge -q"
+if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then PMS="$(cat /etc/justboot/${ARCH}-pms)"; else PMS="emerge -q"; fi
 [[ ! ${ROOT_PASSWD} ]] && ROOT_PASSWD=gentoo
 [[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
 [[ ! ${CPU} ]] && CPU=${ARCH}
@@ -352,7 +352,7 @@ trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 check_deps() {
   # Check for pkgcore if --package-manager=pkgcore is used"
   if [[ ${PMS} = pmerge ]]; then
-    if ! which pkgcore &>/dev/null; then
+    if ! which pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
       do_exec emerge pkgcore 1>/dev/null
     fi
@@ -748,7 +748,7 @@ do_exec() {
 check_deps() {
   # Check for pkgcore if --package-manager=pkgcore is used"
   if [[ ${PMS} = pmerge ]]; then   
-    if ! which pkgcore &>/dev/null; then
+    if ! which pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
       do_exec emerge pkgcore 1>/dev/null
     fi
@@ -803,7 +803,7 @@ prepare_packages() {
   for i in ${EXTRA_PACKAGES=[@]}; do
     if ! which \${i/:*/} &>/dev/null; then
       einfo "Compiling \${BLUE}\${i}."
-      do_exec ${PMS} ${i} 1>/dev/null
+      do_exec ${PMS} \${i/*:/} 1>/dev/null
     fi 
   done
 
@@ -1007,7 +1007,7 @@ prepare_kernel() {
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
   if [ ${LETMEIN} ]; then
     einfo "letmein flag used. Type \${RED}exit\${BLACK} when finished to continue with build."
-    exec /bin/bash
+    /bin/bash
   fi
 }
 
