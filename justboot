@@ -1139,6 +1139,7 @@ cat >> \${UCLIBC_SCRIPT} << BUSYBOX
   exit
 BUSYBOX
   do_exec prepare_configs
+  do_exec check_deps
   do_exec check_toolchain_days && bootstrap
   do_exec prepare_packages
   do_exec prepare_bootloader
