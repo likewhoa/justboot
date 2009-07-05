@@ -47,7 +47,6 @@ perl-core/Compress-Raw-Bzip2
 virtual/perl-Scalar-List-Utils
 perl-core/Compress-Raw-Zlib
 dev-python/pyxml
-net-misc/neon
 dev-util/cvsps
 net-dns/libidn
 virtual/perl-Test-Harness

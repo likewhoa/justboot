@@ -18,7 +18,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
 VERSION=0.3.0
-if [[ $1 =~ (--version|-V|-v) ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
+if [[ $1 =~ ^(--version|-V|-v)$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
 
 # Make sure we are root
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
@@ -88,6 +88,8 @@ Arguments:
 --force-toolchain	- Force a rebuilt of the toolchain
 --skip-toolchain	- Skips toolchain built for those in a hurry
 --data-directory=	- Set the data directory for compiles
+--package-manager=	- Enable the package manager for all builds. 
+	Currently only pkgcore is supported, by default justboot uses portage
 --letmein               - Will run /bin/bash at end of chroot stage for self maintanance
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
@@ -136,6 +138,8 @@ Usage examples:
 # justboot --coprocessor=core2 --arch=core2 --cflags="-march=core2 -Os -pipe" --make-opts=-j5
  Generate x86_64 livecd with interactive kernel menu and custom rsync mirror
   justboot --arch=x86_64 --menuconfig --make-opts=-j5 --rsync-mirror=http://localhost/portage
+# Use sys-apps/pkgcore for all livecd builds instead of portage
+  justboot --arch=i486 --package-manager=pkgcore --root-passwd=letmein --letmein
 
 HELP
 exit 1
@@ -151,8 +155,9 @@ while [ $# -gt 0 ]; do
       einfo "${BLUE}${ARCH}${BLACK} set for build"
       ;;
     --cflags=*) 
-      CFLAGS="${1##*=}"
-      einfo "Compiling with ${BLUE}\"${CFLAGS}\""
+      ARG=$(echo ${1} | cut -d\= -f2-) # FIX ME
+      CFLAGS=${ARG}
+      einfo "CFLAGS set to ${BLUE}\"${CFLAGS}\""
       ;;
     --ldflags=*) LDFLAGS="${1##*=}";;
     --kernel=*)
@@ -194,6 +199,13 @@ while [ $# -gt 0 ]; do
       LIVEDIR="${DIR/%\//}/justboot" # Remove leading slash
       einfo "Livecd data directory set to ${BLUE}\"${LIVEDIR}\""
       ;;
+    --package-manager=*)
+      [[ -f /etc/justboot/pms ]] && error "Previously enabled package manager, delete /etc/justboot/pms then try again to override"
+      [[ ${1##*=} =~ ^(pkgcore|portage)$ ]] || { einfo "--package-manager=${RED}${1##*=}${BLACK} is invalid, try pkgcore or portage"; error "Exiting!"; }
+      if [[ ${1##*=} = portage ]]; then PMS="emerge -q"; else PMS="pmerge"; fi
+      einfo "${RED}${PMS}${BLACK} permanently enabled, to override delete /etc/justboot/pms"
+      touch /etc/justboot/pms 
+      ;; 
     --gentoo-mirrors=*)
       OPT="$(echo ${1##*=} | awk '{print$1}')"
       GENTOO_MIRROR="${OPT/%\/}" # Lets get rid of leading slash
@@ -234,6 +246,8 @@ done
 [[ ! ${ARCH} ]] && error "Missing --arch argument. i.e --arch=x86_64"
 [[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
 [[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma
+[[ ! ${PMS} ]] && PMS="emerge -q"
+[[ ! ${ROOT_PASSWD} ]] && ROOT_PASSWD=gentoo
 [[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
 [[ ! ${CPU} ]] && CPU=${ARCH}
 
@@ -335,13 +349,22 @@ USER_INTERRUPT=13
 trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 #  Cleans up the livecd environment if script is interrupted by Control-C.
 
-prepare_stage() {
-  # Make sure squashfs-tools is emerged on system before continuing
-  if ! which mksquashfs &>/dev/null; then
-    einfo "Emerging squashfs-tools${BLUE}."
-    do_exec emerge -q squashfs-tools 1>/dev/null
+check_deps() {
+  # Check for pkgcore if --package-manager=pkgcore is used"
+  if [[ ${PMS} = pmerge ]]; then
+    if ! which pkgcore &>/dev/null; then
+      einfo "Compiling sys-apps/pkgcore."
+      do_exec emerge pkgcore 1>/dev/null
+    fi
   fi
 
+  # Make sure squashfs-tools is compiled on system before continuing
+  if ! which mksquashfs &>/dev/null; then
+    einfo "Compiling ${BLUE}squashfs-tools."
+    do_exec ${PMS} squashfs-tools 1>/dev/null
+  fi
+}
+prepare_stage() {
   # Check if data directory changed.
   if [[ ! -d ${ARCH_DIR} || ${LIVEDIR} = /usr/share/justboot ]]; then
     # Make sure we are not following a symbolic link
@@ -567,7 +590,7 @@ prepare_env() {
   do_exec chmod +x ${CHROOT_SCRIPT} && do_exec mv ${CHROOT_SCRIPT} ${ARCH_DIR}/tmp
   do_exec cp /etc/resolv.conf ${ARCH_DIR}/etc
   
-  if [[ ${ARCH} =~ i[4,5,6]86 ]]; then
+  if [[ ${ARCH} =~ ^i(4-5-6)86$ ]]; then
     do_exec linux32 chroot ${ARCH_DIR} ${CHROOT_SCRIPT} && do_exec rm ${ARCH_DIR}${CHROOT_SCRIPT}
   else
     do_exec linux64 chroot ${ARCH_DIR} ${CHROOT_SCRIPT} && do_exec rm ${ARCH_DIR}${CHROOT_SCRIPT}
@@ -635,7 +658,7 @@ cat >> ${CLEANUP_SCRIPT} << CLEANUP
 
   for i in ${REMOVE_PACKAGES[@]}; do
     echo "Removing \${i} from livecd"
-    emerge -Cq \${i} &>/dev/null
+    ${PMS} -C \${i} &>/dev/null
   done
 
   echo -e "${RED}${#REMOVE_PACKAGES[@]}${BLACK} Packages removed."
@@ -644,7 +667,7 @@ CLEANUP
   do_exec chmod +x ${CLEANUP_SCRIPT} && do_exec mv ${CLEANUP_SCRIPT} ${TARGET}/tmp
 
   # Eventually this will be a case for multiple arches.
-  if [[ ${ARCH} =~ i[4,5,6]86 ]]; then
+  if [[ ${ARCH} =~ ^i(4-5-6)86$ ]]; then
     do_exec linux32 chroot ${TARGET} ${CLEANUP_SCRIPT} 
   else
     do_exec linux64 chroot ${TARGET} ${CLEANUP_SCRIPT}
@@ -722,6 +745,16 @@ do_exec() {
   fi
 }
 
+check_deps() {
+  # Check for pkgcore if --package-manager=pkgcore is used"
+  if [[ ${PMS} = pmerge ]]; then   
+    if ! which pkgcore &>/dev/null; then
+      einfo "Compiling sys-apps/pkgcore."
+      do_exec emerge pkgcore 1>/dev/null
+    fi
+  fi
+} 
+
 prepare_configs() {
   do_exec cp -a ${DATA_DIR}/etc/fstab /etc
   do_exec cp -a ${DATA_DIR}/etc/portage /etc
@@ -761,18 +794,20 @@ prepare_packages() {
 
   for i in \${GLOBAL_PACKAGES[@]}; do
     if ! which \${i/:*/} &>/dev/null; then
-      einfo "Emerging \${BLUE}\${i/*:/}."
-      do_exec emerge -q \${i/*:/} 1>/dev/null
+      einfo "Compiling \${BLUE}\${i/*:/}."
+      do_exec ${PMS} \${i/*:/} 1>/dev/null
     fi
   done
 
+  # Compile extra packages
   for i in ${EXTRA_PACKAGES=[@]}; do
-    einfo "Emerging \${BLUE}\${i}."
-    do_exec emerge ${i} -q 1>/dev/null 
+    if ! which \${i/:*/} &>/dev/null; then
+      einfo "Compiling \${BLUE}\${i}."
+      do_exec ${PMS} ${i} 1>/dev/null
+    fi 
   done
 
-  do_exec memtest86+ -q 1>/dev/null
-
+  if ! which memtest86+ &>/dev/null; then do_exec ${PMS} memtest86+ 1>/dev/null; fi
   # Setup sudoers
   [ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
 }
@@ -822,7 +857,7 @@ prepare_busybox() {
   einfo "Entering UCLIBC environment"
   do_exec chmod +x \${UCLIBC_SCRIPT} && do_exec mv \${UCLIBC_SCRIPT} \${UCLIBC}/tmp
 
-  if [[ ${ARCH} =~ i[4,5,6]86 ]]; then
+  if [[ ${ARCH} =~ ^i(4-5-6)86$ ]]; then
     do_exec linux32 chroot \${UCLIBC} \${UCLIBC_SCRIPT}
   else
     do_exec chroot \${UCLIBC} \${UCLIBC_SCRIPT}
@@ -901,10 +936,10 @@ prepare_kernel() {
 
   # Is this is a fresh kernel?
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
-    # Is layman emerged?
+    # Is layman compiled?
     if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
-      einfo "Emerging \${BLUE}layman"
-      do_exec emerge layman -q 1>/dev/null
+      einfo "Compiling \${BLUE}layman"
+      do_exec ${PMS} layman 1>/dev/null
     fi
  
     if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
@@ -913,7 +948,7 @@ prepare_kernel() {
   
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
     echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
-    do_exec emerge ${KERNEL_SOURCES} 1>/dev/null
+    do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
     if declare -A &>/dev/null; then
@@ -966,8 +1001,8 @@ prepare_kernel() {
   do_exec cp arch/\${ARCH}/boot/bzImage /boot/vmlinuz
   do_exec update-modules 
 
-  einfo "Emerging \${BLUE}lvm2\${BLACK}"
-  do_exec emerge lvm2 -q 1>/dev/null
+  einfo "Compiling \${BLUE}lvm2\${BLACK}"
+  do_exec ${PMS} lvm2 1>/dev/null
   
   einfo "Done with \${RED}\${ARCH}\${BLACK} kernel"
   if [ ${LETMEIN} ]; then
@@ -977,11 +1012,11 @@ prepare_kernel() {
 }
 
 prepare_useropts() {
-  einfo "Setting root password to \"\${RED}${ROOT_PASSWD:-gentoo}\""
+  einfo "Setting root password to \"\${RED}${ROOT_PASSWD}\""
 
   # Set the livecd root password according to --root-passwd otherwise use "gentoo" for root
-  echo "root:${ROOT_PASSWD:-gentoo}" | chpasswd 1>/dev/null # BUG #275555
-  einfo "Root passwd set to \${RED}\"${ROOT_PASSWD:-gentoo}\""
+  echo "root:${ROOT_PASSWD}" | chpasswd 1>/dev/null # BUG #275555
+  einfo "Root passwd set to \${RED}\"${ROOT_PASSWD}\""
 }
 
 diff () { printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) - 
@@ -1057,8 +1092,8 @@ bootstrap() {
     # Begin the bootstrap
     einfo "Compiling the toolchain, this maybe take a while depending on hardware."
     for i in gcc-config linux-headers glibc binutils gcc portage; do
-      einfo "Emerging \${BLUE}\${i}."
-      do_exec emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
+      einfo "Compiling \${BLUE}\${i}."
+      do_exec ${PMS} -1 \${i} 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} compiled."
     done
     do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
   
@@ -1067,21 +1102,21 @@ bootstrap() {
 
     # Recompile toolchain
     for i in linux-headers glibc binutils gcc; do
-      einfo "Emerging \${BLUE}\${i}."
-      do_exec emerge \${i} -1q 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} emerged."
+      einfo "Compiling \${BLUE}\${i}."
+      do_exec ${PMS} -1 \${i} 1>/dev/null && einfo "\${BLUE}\${i}\${BLACK} compiled."
     done
     einfo "Toolchain finished, compiling system packages against the new toolchain"
 
     while read ebuild; do
-      einfo "Emerging \${BLUE}\"\${ebuild}\""
-      do_exec emerge -v1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
-      einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
+      einfo "Compiling \${BLUE}\"\${ebuild}\""
+      do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
+      einfo "\${BLUE}\"\${ebuild}\"\${BLACK} compiled"
     done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)" | sed '1,4d') 
 
     while read ebuild; do
-      einfo "Emerging \${BLUE}\"\${ebuild}\""
-      do_exec emerge -v1 "\${ebuild}" 1>/dev/null 
-      einfo "\${BLUE}\"\${ebuild}\"\${BLACK} emerged"
+      einfo "Compiling \${BLUE}\"\${ebuild}\""
+      do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null 
+      einfo "\${BLUE}\"\${ebuild}\"\${BLACK} compiled"
     done < <(cat failed)
     do_exec rm failed
 
@@ -1115,4 +1150,4 @@ CHROOT
 # Lets go already!
 [[ ! -d ${LIVEDIR} ]] && exec_chkdir ${LIVEDIR} # I trust it but i really don't.
 do_exec cd ${LIVEDIR} || error "Failed to switch to livecd data directory, Exiting."
-do_exec prepare_stage
+do_exec check_deps && do_exec prepare_stage
