@@ -19,14 +19,11 @@
 ###
 VERSION=0.3.0
 if [[ $1 =~ ^(--version|-[Vv])$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
-
-# Make sure we are root
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
 
 # Source JustBOOT default configuration options
 . /etc/justboot/justboot.conf
 
-# Declare global arrays
 # Check for bash associated array support.
 if ! declare -A &>/dev/null; then
   ewarn "This script uses bash4 only features, consider upgrading"
@@ -264,13 +261,8 @@ fi
 # Source JustBOOT global configuration options
 . /etc/justboot/config.globals
 
-# First check/set required runtime options
-[[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
-[[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma 
+# Check for default package manager
 if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then PMS="$(cat /etc/justboot/${ARCH}-pms)"; else PMS="emerge -q"; fi
-[[ ! ${ROOT_PASSWD} ]] && ROOT_PASSWD=gentoo
-[[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
-[[ ! ${CPU} ]] && CPU=${ARCH}
 
 # Remove old data directories (--purge)
 if [ ${PURGE} ]; then
@@ -288,11 +280,8 @@ if [ ${PURGE} ]; then
     einfo "No ARCH to purge!"
   fi
 
-  # Lets make sure we don't delete other sources.
   for i in i{4,5,6}86 x86_64; do
-    # Skip own arch
     [[ ${i} = ${ARCH} ]] && continue 2
-    # If arch found, don't remove parent directory
     [[ -d ${X/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
   done
   if [ ! ${REMOVAL} ]; then
