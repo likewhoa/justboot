@@ -23,7 +23,7 @@ if [[ $1 =~ ^(--version|-[Vv])$ ]]; then echo "JustBOOT-${VERSION} see --help fo
 # Make sure we are root
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
 
-# Source JustBOOT user default configuration options
+# Source JustBOOT default configuration options
 . /etc/justboot/justboot.conf
 
 # Declare global arrays
@@ -36,11 +36,11 @@ else
 [pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 fi
 
-declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/excluded-directories.lst | grep -vE '^#') )
-declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/remove-packages.lst | grep -vE '^#') )
-declare -a REMOVE_FILES=( $(cat /etc/justboot/remove-files.lst | grep -vE '^#') )
-declare -a RAMFS_DIR=( $(cat /etc/justboot/ramfs-directories.lst | grep -vE '^#') )
-declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/extra-packages.lst | grep -vE '^#') )
+declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/files/excluded-directories.lst | grep -vE '^#') )
+declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | grep -vE '^#') )
+declare -a REMOVE_FILES=( $(cat /etc/justboot/files/remove-files.lst | grep -vE '^#') )
+declare -a RAMFS_DIR=( $(cat /etc/justboot/files/ramfs-directories.lst | grep -vE '^#') )
+declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/files/extra-packages.lst | grep -vE '^#') )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 
 # Set colors
@@ -245,15 +245,6 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# First check/set required runtime options
-[[ ! ${ARCH} ]] && error "Missing --arch argument. i.e --arch=x86_64"
-[[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
-[[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma
-if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then PMS="$(cat /etc/justboot/${ARCH}-pms)"; else PMS="emerge -q"; fi
-[[ ! ${ROOT_PASSWD} ]] && ROOT_PASSWD=gentoo
-[[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
-[[ ! ${CPU} ]] && CPU=${ARCH}
-
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
   x86_64)
@@ -270,8 +261,16 @@ if [[ ! ${LIVEDIR} && -h /usr/share/justboot/${ARCH} ]]; then
   LIVEDIR=${LINK/\/${ARCH}/}
 fi
 
-# Source JustBOOT configuration options
-. /etc/justboot/justboot.conf
+# Source JustBOOT global configuration options
+. /etc/justboot/config.globals
+
+# First check/set required runtime options
+[[ ! ${KERNEL_SOURCES} ]] && KERNEL_SOURCES=zen-sources
+[[ ! ${INIT_COMPRESSION} ]] && INIT_COMPRESSION=lzma 
+if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then PMS="$(cat /etc/justboot/${ARCH}-pms)"; else PMS="emerge -q"; fi
+[[ ! ${ROOT_PASSWD} ]] && ROOT_PASSWD=gentoo
+[[ ! ${VOLID} ]] && VOLID="JustBOOT_livecd"
+[[ ! ${CPU} ]] && CPU=${ARCH}
 
 # Remove old data directories (--purge)
 if [ ${PURGE} ]; then
@@ -303,17 +302,17 @@ if [ ${PURGE} ]; then
   fi
 fi
 
+# The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories
+# First we remove local livecd folders i.e proc,dev and data directory, then we copy any ramfs changes to
+# the livecd exclude folders.
 release_env() {            
   einfo "Releasing livecd environment, please wait..."
-  #do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
+  do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
                            
-  # Umount local livecd folders
   do_exec umount ${ARCH_DIR}/{proc,dev}   
   do_exec umount ${ARCH}${DATA_DIR}
                            
-  # Umount RAMFS & Livecd excluded directories
   if [ ${RAMFS} ]; then    
-    # Compare directories against a list to umount from ramfs (--ramfs)
     for x in "${LIVECD_EXCLUDES[@]}"; do
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
@@ -324,14 +323,11 @@ release_env() {
           continue 2
         fi
       done                 
-      # Umount livecd excluded directories
-        do_exec umount ${ARCH}/${x}
+      do_exec umount ${ARCH}/${x}
     done
                            
-    # Umount the RAMFS directories that are not equal to livecd excludes
     for x in "${RAMFS_DIR[@]}"; do
       for y in "${LIVECD_EXCLUDES[@]}"; do
-        # Skip matches     
         [[ ${x} = ${y} ]] && continue 2
       done                 
       einfo "Removing ${RED}${x}${BLACK} from memory.. please wait."
@@ -340,13 +336,10 @@ release_env() {
       einfo "Copied ${BLUE}${x}${BLACK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
     done
   else  
-    # Umount livecd excluded directories
     for x in "${LIVECD_EXCLUDES[@]}"; do
       do_exec umount ${ARCH}/${x}
     done
   fi
-    
-  # Did we trap an interrupted?
   [[ ! $1 ]] && do_exec clean_env
 }
 
@@ -354,8 +347,8 @@ USER_INTERRUPT=13
 trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 #  Cleans up the livecd environment if script is interrupted by Control-C.
 
+# Check local system for requires packages.
 check_deps() {
-  # Check for pkgcore if --package-manager=pkgcore is used"
   if [[ ${PMS} = pmerge ]]; then
     if ! which pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
@@ -363,44 +356,37 @@ check_deps() {
     fi
   fi
 
-  # Make sure squashfs-tools is compiled on system before continuing
   if ! which mksquashfs &>/dev/null; then
     einfo "Compiling ${BLUE}squashfs-tools."
     do_exec ${PMS} squashfs-tools 1>/dev/null
   fi
 }
+
+# Preparation of the stage1 build, we skip most of this and only run through half of it once
+# unless we are starting fresh or ran justboot with --purge argument.
 prepare_stage() {
-  # Check if data directory changed.
   if [[ ! -d ${ARCH_DIR} || ${LIVEDIR} = /usr/share/justboot ]]; then
-    # Make sure we are not following a symbolic link
     if [[ -h /usr/share/justboot/${ARCH} ]]; then
-      # Save real paths.
       local REAL_ARCH_DIR=$(readlink /usr/share/justboot/${ARCH})
       local REAL_EXCLUDES_DIR=$(readlink /usr/share/justboot/excludes/${ARCH})
 
       einfo "Moving data directory from ${RED}${REAL_ARCH_DIR}${BLACK} to ${RED}${LIVEDIR}/${ARCH}..${BLACK} please wait..."
-      # Remove old symbolic links
       for i in /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}; do
         do_exec unlink ${i} 
       done
 
-      # Move to new data directory
       exec_chkdir ${LIVEDIR}/excludes
       do_exec mv ${REAL_ARCH_DIR} ${ARCH_DIR}
       do_exec mv ${REAL_EXCLUDES_DIR} ${EXCLUDES_DIR}
       
       if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
-        # Create new symbolic links
         exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
         exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
         exec_chklink /usr/share/justboot/data ${DATA_DIR}
       fi
 
-      # Lets make sure we don't delete other sources.
       for i in i{4,5,6}86 x86_64; do
-        # Skip own arch
         [[ ${i} = ${ARCH} ]] && continue 2
-        # If arch found, don't remove parent directory
         [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
       done
       if [ ${REMOVAL} ]; then
@@ -414,12 +400,10 @@ prepare_stage() {
   elif [[ /usr/share/justboot != ${LIVEDIR} && -d /usr/share/justboot/${ARCH} ]]; then 
       einfo "Moving data directory from ${RED}/usr/share/justboot/${ARCH}${BLACK} to ${RED}${LIVEDIR}/${ARCH}.${BLACK} please wait..."
 
-      # Move to new data directory
       exec_chkdir ${LIVEDIR}/excludes
       do_exec mv /usr/share/justboot/${ARCH} ${ARCH_DIR}
       do_exec mv /usr/share/justboot/excludes/${ARCH} ${EXCLUDES_DIR}
 
-      # Create new symbolic links
       exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
       exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
       exec_chklink /usr/share/justboot/data ${DATA_DIR}
@@ -430,7 +414,6 @@ prepare_stage() {
   case ${ARCH} in
     x86_64) local GENTOO_ARCH=amd64 STAGE=amd64;;
     i[4,5,6]86)
-      # Fall i586 to i486 since there are no i586 tarballs for gentoo
       if [[ ${ARCH} = i586 ]]; then
         local STAGE=i486
         local GENTOO_ARCH=x86
@@ -440,12 +423,10 @@ prepare_stage() {
       fi
   esac
 
-  # Check if we are starting a fresh build (--purge maybe)
   if [[ ! -d ${ARCH_DIR} ]]; then
     einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${BLACK}. please wait..."
     #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
 
-    # Retrieve latest gentoo autobuild stage
     do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/current
     local GENTOO_STAGE=$(egrep -o "stage3-${STAGE}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].tar.bz2\"" index.html | cut -d\" -f1)
     do_exec rm index.html
@@ -478,7 +459,6 @@ prepare_stage() {
     einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}."
 
     if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
-      # Create new symbolic links
       exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
       exec_chklink ${LIVEDIR}/excludes/${ARCH} /usr/share/justboot/excludes/${ARCH}
       exec_chklink /usr/share/justboot/data ${DATA_DIR}
@@ -487,19 +467,18 @@ prepare_stage() {
   prepare_env
 }
 
+# After we have prepared the stage1 build, we need to detect/setup all the livecd exclude directories and or ramfs mounts first
+# before we start the chroot and compile packages
 prepare_env() {
   cd ${LIVEDIR}
   exec_chkdir ${ARCH_DIR}${DATA_DIR}
   exec_chkdir ${ARCH_DIR}/mnt/gentoo
 
-  # Bind local livecd folders
   do_exec mount -o bind /proc ${ARCH}/proc
   do_exec mount -o bind /dev ${ARCH}/dev 
   do_exec mount -o bind ${DATA_DIR} ${ARCH}${DATA_DIR} 
 
-  # Detect new livecd exclude directories
   for x in "${LIVECD_EXCLUDES[@]}"; do
-    # Directory have contents?
     if [[ $(ls ${ARCH}/${x//://} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
       einfo "Detected newly added ${BLUE}${x}${BLACK} for livecd excludes, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
       exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
@@ -509,7 +488,6 @@ prepare_env() {
   done
 
   if [ ${RAMFS} ]; then
-    # Compare directories against a ramfs list
     for x in "${LIVECD_EXCLUDES[@]}"; do
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
@@ -523,44 +501,36 @@ prepare_env() {
           continue 2
         fi
       done
-      # No matches found, mount livecd excluded directories.
       do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 
     done
 
-    # Mount the RAMFS directories that are not part of the livecd excludes
     for x in "${RAMFS_DIR[@]}"; do
       for y in "${LIVECD_EXCLUDES[@]}"; do
-        # Skip matches then mount the rest.
         [[ ${x} = ${y} ]] && continue 2
       done
       einfo "Mounting ${BLUE}${x}${BLACK} in memory.. please wait."
 
-      # Check for existing contents in ramfs directories, then move data if true.
       if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
         exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
         einfo "${BLUE}${ARCH}/${x}${BLACK} is not empty, moving data to ${RED}${EXCLUDES_DIR}/${x//\//:}.${BLACK} please wait..."
         do_exec mv ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
       else
-        # Create the directories for the ramfs mounts
         for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
       fi
       do_exec mount -t ramfs ${x} ${ARCH}/${x}
 
-      # If old RAMFS dir exist, then transfer files
       if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
         do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
         einfo "${RED}${x}${BLACK} copied to RAMFS"
       fi
     done
 
-    # Move any orphan directories to the livecd environment.
     declare -a DIRS
     ( # This is how we avoid cd - or cd $OLDPWD
     cd ${EXCLUDES_DIR}
     DIRS=( * )
     for y in "${DIRS[@]}"; do
       for z in "${LIVECD_EXCLUDES[@]}" "${RAMFS_DIR[@]}"; do
-        # Skip matches
         [[ ${y} = ${z//\//:} ]] && continue 2
       done
       einfo "${BLUE}${y}${BLACK} is an orphan directory."
@@ -570,14 +540,12 @@ prepare_env() {
     done
     )
   else
-    # Move any orphan excluded directories
     declare -a DIRS
     ( # This is how we avoid cd - or cd $OLDPWD 
     cd ${EXCLUDES_DIR}
     DIRS=( * )
     for y in "${DIRS[@]}"; do
       for z in "${LIVECD_EXCLUDES[@]}"; do
-        # Skip matches
         [[ ${y} = ${z//\//:} ]] && continue 2
       done
       einfo "${BLUE}${y}${BLACK} is either an orphan directory or part of an old ${BLUE}ramfs (--ramfs)${BLACK} run."
@@ -586,14 +554,12 @@ prepare_env() {
       do_exec rm -rf ${EXCLUDES_DIR}/${y}
     done
     )
-    # Mount livecd excluded directories
     einfo "Mounting livecd data files"
     for x in "${LIVECD_EXCLUDES[@]}"; do
       do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 
     done
   fi
 
-  # Create directories for aufs union mounts
   [[ ! -d ${ARCH_DIR}/mnt/livecd ]] && do_exec mkdir -p ${ARCH_DIR}/mnt/livecd/{static,image,dynamic}
   
   einfo "Entering the livecd chroot environment."
@@ -606,7 +572,6 @@ prepare_env() {
     do_exec linux64 chroot ${ARCH_DIR} ${CHROOT_SCRIPT} && do_exec rm ${ARCH_DIR}${CHROOT_SCRIPT}
   fi
 
-  # Has user interrupted script?
   [[ $? = 13 ]] && do_exec release_env now
 
   einfo "Exiting livecd chroot environment."
@@ -614,6 +579,8 @@ prepare_env() {
   do_exec release_env 
 }
 
+# Before we create our iso image we will clean up the environment of any excluded packages and common directories or files that
+# we don't require for livecd operations
 clean_env() {
   local TARGET=${LIVEDIR}/target/files/${ARCH}
   local CLEANUP_SCRIPT=$(mktemp /tmp/XXX)
@@ -621,11 +588,9 @@ clean_env() {
   [[ -d ${LIVEDIR}/target ]] && do_exec rm -rf ${LIVEDIR}/{boot,target}
   exec_chkdir ${TARGET}
 
-  # Copying livecd environment before clean up and iso image build
   einfo "Performing livecd cleanup, please wait..."
   do_exec rsync -caq --delete-before ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} &>/dev/null
 
-  # Make sure we are moving a valid /boot directory
   if [[ -d ${EXCLUDES_DIR}/boot ]]; then
     do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/boot ${LIVEDIR}/target 
     do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/boot ${LIVEDIR} 
@@ -634,9 +599,7 @@ clean_env() {
     do_exec rsync -caq --delete-before ${ARCH_DIR}/boot ${LIVEDIR} 
   fi
 
-  # Move environment data before packages removal.
   for i in "${LIVECD_EXCLUDES[@]}"; do
-    # Only sync directories with data.
     if [[ $(ls ${EXCLUDES_DIR}/${i//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
       einfo "Moving ${BLUE}${i}${BLACK} to ${RED}${TARGET}/${i}.${BLACK} please wait..."
       do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${i//\//:}/* ${TARGET}/${i} &>/dev/null  
@@ -646,10 +609,8 @@ clean_env() {
   if [ ${RAMFS} ]; then
     for x in "${RAMFS_DIR[@]}"; do
       for y in "${LIVECD_EXCLUDES[@]}"; do
-        # Skip matches
         [[ ${x} = ${y} ]] && continue 2
       done
-        # Only sync directories with data.
         if [[ $(ls ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
           einfo "Moving ${BLUE}${x}${BLACK} to ${RED}${TARGET}/${x}.${BLACK} please wait..."
           do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${x//\//:}/* ${TARGET}/${x} &>/dev/null
@@ -657,7 +618,6 @@ clean_env() {
     done
   fi
 
-# Livecd environment clean up script.
 cat >> ${CLEANUP_SCRIPT} << CLEANUP
 #!/bin/bash
   trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
@@ -676,21 +636,17 @@ cat >> ${CLEANUP_SCRIPT} << CLEANUP
 CLEANUP
   do_exec chmod +x ${CLEANUP_SCRIPT} && do_exec mv ${CLEANUP_SCRIPT} ${TARGET}/tmp
 
-  # Eventually this will be a case for multiple arches.
   if [[ ${ARCH} =~ ^i(4-5-6)86$ ]]; then
     do_exec linux32 chroot ${TARGET} ${CLEANUP_SCRIPT} 
   else
     do_exec linux64 chroot ${TARGET} ${CLEANUP_SCRIPT}
   fi
 
-  # Has user interrupted script?
   [[ $? = 13 ]] && do_exec release_env now
 
-  # Clean up livecd environment files
   do_exec cd ${TARGET}
   do_exec rm -rf ${REMOVE_FILES[@]} ${LIVECD_EXCLUDES[@]}
 
-  # Create required directories.
   for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb var/cache/hald var/log root var/log; do
     do_exec exec_chkdir ${i}
   done
@@ -701,6 +657,7 @@ CLEANUP
   do_exec create_livecd
 }
 
+# Livecd creation function
 create_livecd() {
   do_exec touch ${LIVEDIR}/target/livecd
 

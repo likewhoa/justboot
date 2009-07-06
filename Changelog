@@ -11,4 +11,6 @@
 06/14/2009 - --help menu and usage examples
 06/21/2009 - Added support for zen-sources-2.6.30
 06/27/2009 - Bunch of options like --coprocessor,--purge-kernel etc..
-
+06/29/2009 - Added backwards compatibility with bash-3.x
+06/30/2009 - Better handling of kernel opts and code clean ups
+07/05/2009 - More customization options added.

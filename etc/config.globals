@@ -19,6 +19,11 @@ SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}"
 ###
 # GLOBAL JUSTBOOT VARIABLES - DO NOT EDIT
 ###
+KERNEL_SOURCES=${KERNEL_SOURCES:-zen-sources}
+INIT_COMPRESSION=${INIT_COMPRESSION:-lzma}
+ROOT_PASSWD="${ROOT_PASSWD:-gentoo}"
+VOLID="${VOLID:-JustBOOT_livecd}"
+CPU=${ARCH}
 LIVEDIR=${LIVEDIR:-/usr/share/justboot}
 DATA_DIR="${DATA_DIR:-${LIVEDIR}/data}"
 ARCH_DIR="${ARCH_DIR:-${LIVEDIR}/${ARCH}}"
