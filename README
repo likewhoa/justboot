@@ -1,10 +1,8 @@
 JustBOOT(tm) is in early beta, so testers, below are some of the commands that you should run
 to help me focus on code and bug fixing. Any suggestions, comments or criticism is appreciated as long
-as it's constructive. 
-Hope you enjoy the script, I was tired of using catalyst or manually building my livecds
-from scratch even with the 3 little scripts I used, this way everything is automated and with good features.
+as it's constructive. Hope you enjoy the script 
 
-*** YOU MUST RUN install prior to running the justboot script ***
+*** YOU MUST RUN ./install prior to running the justboot script ***
 *** NOTE that only zen-sources is supported with --kernel flag for now ***
 
 Start by running all of some of the following commands:

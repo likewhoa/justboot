@@ -204,7 +204,7 @@ while [ $# -gt 0 ]; do
       [[ ${1##*=} =~ ^(pkgcore|portage)$ ]] || { einfo "--package-manager=${RED}${1##*=}${BLACK} is invalid, try pkgcore or portage"; error "Exiting!"; }
       if [[ ${1##*=} = portage ]]; then PMS="emerge -q"; else PMS="pmerge"; fi
       einfo "${RED}${PMS}${BLACK} permanently enabled, to override delete /etc/justboot/${ARCH}-pms"
-      touch /etc/justboot/${ARCH}-pms # FIX ME 
+      echo ${PMS}>/etc/justboot/${ARCH}-pms # FIX/IMPROVE ME 
       ;; 
     --gentoo-mirrors=*)
       OPT="$(echo ${1##*=} | awk '{print$1}')"
@@ -280,8 +280,10 @@ if [ ${PURGE} ]; then
       for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do
         do_exec unlink ${i}
       done
-  else
+  elif [[ -d /usr/share/justboot/${ARCH} ]]; then
     do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
+  else
+    einfo "No ARCH to purge!"
   fi
 
   # Lets make sure we don't delete other sources.
@@ -550,7 +552,9 @@ prepare_env() {
 
     # Move any orphan directories to the livecd environment.
     declare -a DIRS
-    DIRS=( $(ls --color=never ${EXCLUDES_DIR}) )
+    ( # This is how we avoid cd - or cd $OLDPWD
+    cd ${EXCLUDES_DIR}
+    DIRS=( * )
     for y in "${DIRS[@]}"; do
       for z in "${LIVECD_EXCLUDES[@]}" "${RAMFS_DIR[@]}"; do
         # Skip matches
@@ -561,10 +565,13 @@ prepare_env() {
       do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} &>/dev/null
       do_exec rm -rf ${EXCLUDES_DIR}/${y}
     done
+    )
   else
     # Move any orphan excluded directories
     declare -a DIRS
-    DIRS=( $(ls --color=never ${EXCLUDES_DIR}) )
+    ( # This is how we avoid cd - or cd $OLDPWD 
+    cd ${EXCLUDES_DIR}
+    DIRS=( * )
     for y in "${DIRS[@]}"; do
       for z in "${LIVECD_EXCLUDES[@]}"; do
         # Skip matches
@@ -575,7 +582,7 @@ prepare_env() {
       do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} &>/dev/null
       do_exec rm -rf ${EXCLUDES_DIR}/${y}
     done
-
+    )
     # Mount livecd excluded directories
     einfo "Mounting livecd data files"
     for x in "${LIVECD_EXCLUDES[@]}"; do
@@ -895,6 +902,7 @@ prepare_initramfs() {
 }
 
 prepare_kernel_opts() {
+  ( # This is how we avoid cd - or cd $OLDPWD
   cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
 
   # Customize the kernel processor setting (--coprocessor)
@@ -916,7 +924,7 @@ prepare_kernel_opts() {
   else
     do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
   fi
-  cd $OLDPWD
+  )
 }
 
 prepare_kernel() {
@@ -957,7 +965,7 @@ prepare_kernel() {
       do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
     fi
       
-    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+    do_exec cd /usr/src/linux # error "Failed to switch to kernel source directory"
 
     # Did we use --menu-config?
     if [ ${MENUCONFIG} ]; then
@@ -983,7 +991,7 @@ prepare_kernel() {
     else
       do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
     fi
-    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+    do_exec cd /usr/src/linux # error "Failed to switch to kernel source directory"
 
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
@@ -997,7 +1005,7 @@ prepare_kernel() {
     do_exec prepare_initramfs
   fi
 
-  do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+  do_exec cd /usr/src/linux # error "Failed to switch to kernel source directory"
   do_exec cp arch/\${ARCH}/boot/bzImage /boot/vmlinuz
   do_exec update-modules 
 
