@@ -18,13 +18,16 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
 VERSION=0.3.0
-if [[ $1 =~ ^(--version|-V|-v)$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
+if [[ $1 =~ ^(--version|-[Vv])$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
 
 # Make sure we are root
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
 
+# Source JustBOOT user default configuration options
+. /etc/justboot/justboot.conf
+
 # Declare global arrays
-# Check that we have bash associated array support.
+# Check for bash associated array support.
 if ! declare -A &>/dev/null; then
   ewarn "This script uses bash4 only features, consider upgrading"
 else
@@ -904,7 +907,6 @@ prepare_initramfs() {
 prepare_kernel_opts() {
   ( # This is how we avoid cd - or cd $OLDPWD
   cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
-
   # Customize the kernel processor setting (--coprocessor)
   case ${ARCH} in
     i[5,6]86)
@@ -916,13 +918,16 @@ prepare_kernel_opts() {
       [[ ${ARCH} = i586 ]] && patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch
       [[ ${ARCH} = i686 ]] && patch -sp0 <${KERNEL_SOURCES}-${ARCH}-config.patch
       ;;
-    x86_64)                                                                
+    x86_64)
+      # Do not sed our default kernel since it's already set to CONFIG_GENERIC_CPU
+      if [[ ${PROCS[${CPU}]} != GENERIC_CPU ]]; then                                                                
       sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
+      fi
   esac                                                                   
-  if [[ ${PROCS[${CPU}]} != M486 ]]; then
-    do_exec cp ${KERNEL_SOURCES}-custom /usr/src/linux/.config
-  else
+  if [[ ${PROCS[${CPU}]} =~ ^(M486|GENERIC_CPU)$ ]]; then
     do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
+  else
+    do_exec cp ${KERNEL_SOURCES}-custom /usr/src/linux/.config
   fi
   )
 }
@@ -962,10 +967,10 @@ prepare_kernel() {
     if declare -A &>/dev/null; then
       prepare_kernel_opts \${ARCH}
     else
-      do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
+      do_exec cp ${DATA_DIR}/kernel/${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
       
-    do_exec cd /usr/src/linux # error "Failed to switch to kernel source directory"
+    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
     # Did we use --menu-config?
     if [ ${MENUCONFIG} ]; then
@@ -989,9 +994,9 @@ prepare_kernel() {
     if declare -A &>/dev/null; then
       prepare_kernel_opts \${ARCH}
     else
-      do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config
+      do_exec cp ${DATA_DIR}/kernel/${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
-    do_exec cd /usr/src/linux # error "Failed to switch to kernel source directory"
+    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
@@ -1119,7 +1124,7 @@ bootstrap() {
       einfo "Compiling \${BLUE}\"\${ebuild}\""
       do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
       einfo "\${BLUE}\"\${ebuild}\"\${BLACK} compiled"
-    done < <(emerge -ep --columns --color=n system| cut -d] -f2 | awk '{print\$1}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)" | sed '1,4d') 
+    done < <(emerge -ep --columns --color=n system | egrep -o '[[:alnum:]]+-[[:alnum:]]+/[[:alnum:]]+' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)") 
 
     while read ebuild; do
       einfo "Compiling \${BLUE}\"\${ebuild}\""
