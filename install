@@ -4,7 +4,8 @@ if [ $(whoami) != root ]; then echo "You must be root to install JustBOOT!"; exi
 
 mkdir -p /usr/share/justboot
 cp -a data /usr/share/justboot
-mkdir /etc/justboot && cp -a etc/* /etc/justboot
+[ ! -d /etc/justboot ] && mkdir /etc/justboot 
+cp -a etc/* /etc/justboot
 cp justboot /usr/sbin
 chmod +x /usr/sbin/justboot
 echo "JustBOOT installed"

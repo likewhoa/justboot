@@ -93,6 +93,7 @@ Arguments:
 --letmein               - Will run /bin/bash at end of chroot stage for self maintanance
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
+--delete-arch		- Remove --arch=* then exit script
 --debug                 - Turn on debugging
 
 Gentoo make.conf options:
@@ -225,6 +226,7 @@ while [ $# -gt 0 ]; do
     --letmein) LETMEIN=0;;
     --purge) PURGE=0;;
     --purge-kernel) PURGE_KERNEL=0;;
+    --delete-arch) DELETE_ARCH=0;;
     --coprocessor=*) 
       CPU="${1##*=}"
       if [[ ${BASH4} && -z ${PROCS[${CPU}]} ]]; then
@@ -252,10 +254,12 @@ case ${ARCH} in
     [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86";;
 esac
 
-# Make sure our $LIVEDIR variable is never null
-if [[ ! ${LIVEDIR} && -h /usr/share/justboot/${ARCH} ]]; then
+if [[ -h /usr/share/justboot/${ARCH} ]]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
+  DATA_DIR=${LIVEDIR}/data
+  ARCH_DIR=${LIVEDIR}/${ARCH}
+  EXCLUDES_DIR=${LIVEDIR}/excludes/${ARCH}
 fi
 
 # Source JustBOOT global configuration options
@@ -265,19 +269,21 @@ fi
 if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then PMS="$(cat /etc/justboot/${ARCH}-pms)"; else PMS="emerge -q"; fi
 
 # Remove old data directories (--purge)
-if [ ${PURGE} ]; then
+if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
   X=$(readlink /usr/share/justboot/${ARCH})
-  einfo "${RED}--purge flag used.${BLACK} Removing old ${RED}${ARCH}${BLACK} data directories and starting fresh"
+  einfo "${RED}--purge or --delete-arch flag used.${BLACK} Removing ${RED}${ARCH}${BLACK} sources."
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
     do_exec rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
     do_exec rm -rf $(readlink /usr/share/justboot/${ARCH})
       for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do
         do_exec unlink ${i}
       done
-  elif [[ -d /usr/share/justboot/${ARCH} ]]; then
+  elif [ -d /usr/share/justboot/${ARCH} ]; then
     do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
+  elif [ ${DELETE_ARCH} ]; then
+    einfo "All done ${ARCH} sources removed, exiting"; exit 0
   else
-    einfo "No ARCH to purge!"
+    einfo "No ARCH to purge or remove! Exiting"; exit 1
   fi
 
   for i in i{4,5,6}86 x86_64; do
@@ -285,7 +291,7 @@ if [ ${PURGE} ]; then
     [[ -d ${X/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
   done
   if [ ! ${REMOVAL} ]; then
-    ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
+    ewarn "Removing orphan data directory ${RED}${X/${ARCH}/}"
     do_exec unlink ${X/\/${ARCH}//data} 
     do_exec rm -rf ${X/\/${ARCH}/}
   fi
