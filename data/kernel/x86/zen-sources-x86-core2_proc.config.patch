@@ -1,5 +1,5 @@
---- /mnt/dev/justboot/data/kernel/x86/zen-sources-custom	2009-07-07 09:30:42.147481174 +0000
-+++ .config	2009-07-07 09:32:48.000000000 +0000
+--- zen-sources-custom				2009-07-07 09:30:42.147481174 +0000
++++ zen-sources-x86-core2_proc.config.patch	2009-07-07 09:32:48.000000000 +0000
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit

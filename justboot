@@ -821,12 +821,12 @@ prepare_busybox() {
   einfo "Done with busybox build"
 }
 
+# The setup of our initramfs image
 prepare_initramfs() {
   local INITRAMFS_DIR=/tmp/initramfs
   KERNEL_SRC=\$(readlink /usr/src/linux)
   KERNEL_MODULE_SRC=\$(echo \${KERNEL_SRC} | cut -d- -f2-)
 
-  # Prepare busybox applets
   [[ -d \${INITRAMFS_DIR} ]] && do_exec rm -rf \${INITRAMFS_DIR}
   do_exec mkdir \${INITRAMFS_DIR} && do_exec cd \${UCLIBC}/\${BUSYBOX}
   ./applets/install.sh \${INITRAMFS_DIR} --symlinks 1>/dev/null
@@ -835,7 +835,6 @@ prepare_initramfs() {
   do_exec mkdir -p proc sys dev mnt new-root lib mnt/livecd mnt/livecd/{static,dynamic,image} lib/modules
   do_exec cp -a ${DATA_DIR}/initramfs/etc .
 
-  # Copy JustBOOT(tm) /init script and create require nodes
   do_exec cp ${DATA_DIR}/initramfs/init .
   do_exec chmod 755 init
   do_exec mknod dev/console c 5 1
@@ -844,12 +843,11 @@ prepare_initramfs() {
 
   do_exec cp -a /lib/modules/\${KERNEL_MODULE_SRC} lib/modules/
 
-  # Generate the initramfs image
   [[ -f /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION} ]] && do_exec rm /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
   find | cpio --quiet -o -H newc | ${INIT_COMPRESSION} -9 >/boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
 }
 
-# This functions handles the custom kernel options with --coprocessor
+# This function handles the custom kernel options with --coprocessor argument
 prepare_kernel_opts() {
   ( # Spawn a new shell to avoid leaving current working path
   cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
@@ -876,10 +874,10 @@ prepare_kernel_opts() {
   )
 }
 
+# JustBOOT kernel compilation and customization options
 prepare_kernel() {
   local DATE=$(date +%Y%m%d-%H%m)
 
-  # Remove kernel sources when --purge-kernel is used
   if [ ${PURGE_KERNEL} ]; then
     ewarn "--purge-kernel used,.. removing sources."
     do_exec unlink /usr/src/linux
@@ -889,9 +887,7 @@ prepare_kernel() {
   # Convert x86 arch for proper usage in kernel
   case ${ARCH} in i[4,5,6]86) local ARCH=x86;; esac
 
-  # Is this is a fresh kernel?
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
-    # Is layman compiled?
     if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
       einfo "Compiling \${BLUE}layman"
       do_exec ${PMS} layman # 1>/dev/null
@@ -914,19 +910,17 @@ prepare_kernel() {
       
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
-    # Did we use --menu-config?
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 1>/dev/null
     else
-      do_exec make ${MAKEOPTS} 1>/dev/null || { ewarn "Kernel has updates! running make oldconfig"; make oldconfig; make ${MAKEOPTS}; }
+      do_exec make ${MAKEOPTS} 1>/dev/null
     fi
 
-    do_exec make modules_install 
+    do_exec make modules_install 1>/dev/null
     einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image."
     do_exec prepare_initramfs
   else
-    # Backup old kernel config
     if [[ -f /usr/src/linux/.config ]]; then
       einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}"
       do_exec cp /usr/src/linux/.config /usr/src/linux/.config.${KERNEL_SOURCES}-\${DATE}
@@ -944,10 +938,10 @@ prepare_kernel() {
       do_exec make menuconfig
       make ${MAKEOPTS} 1>/dev/null
     else
-      do_exec make ${MAKEOPTS} || { ewarn "Kernel has updates! running make oldconfig"; make oldconfig; make; }
+      do_exec make ${MAKEOPTS} 1>/dev/null
     fi
 
-    do_exec make modules_install 
+    do_exec make modules_install 1>/dev/null
     einfo "\${RED}\${ARCH}\${BLACK} kernel compiled, preparing initramfs image"
     do_exec prepare_initramfs
   fi
@@ -977,6 +971,7 @@ prepare_useropts() {
 diff () { printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) - 
 \$(date -u -d"\$CURRENT" +%s))) 
 }
+
 check_toolchain_days() {
   if [[ ${ARCH} = i586 && ! -f /etc/toolchain_age ]]; then
     ewarn "i586 needs a toolchain build, setting --force-toolchain flag"
