@@ -264,7 +264,13 @@ if [[ -h /usr/share/justboot/${ARCH} ]]; then
 fi
 
 # Check if we previously set a package manager for compiles on ${ARCH}
-if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then PMS="$(cat /etc/justboot/${ARCH}-pms)"; else PMS="emerge -q"; fi
+if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then
+  PMS="$(cat /etc/justboot/${ARCH}-pms)"
+  einfo "Package manager set to ${PMS}"
+else 
+  PMS="emerge -q"
+  einfo "Package manager set to ${PMS}"
+fi
 
 # Remove old data directories (--purge/--delete-arch)
 if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
@@ -281,17 +287,16 @@ if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
   else
     einfo "No ARCH to purge or remove! Exiting"; exit 1
   fi
-  [[ ${DELETE_ARCH} ]] && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
-
   for i in i{4,5,6}86 x86_64; do
     [[ ${i} = ${ARCH} ]] && continue 2
     [[ -d ${X/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
   done
   if [ ! ${REMOVAL} ]; then
-    ewarn "Removing orphan data directory ${RED}${X/${ARCH}}"
+    ewarn "Removing orphan data directory ${RED}${X/\/${ARCH}}"
     do_exec unlink ${X/\/${ARCH}//data} 
     do_exec rm -rf ${X/\/${ARCH}}
   fi
+  [[ ${DELETE_ARCH} ]] && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 fi
 
 # The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories
