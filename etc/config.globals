@@ -1,6 +1,6 @@
 ###
 # Gentoo make.conf options - DO NOT EDIT 
-# instead use the command line options or create a ~/.justboot/$arch-stage1.conf file. 
+# instead use the command line options or create a ~/.justboot/$arch.conf file. 
 # See justboot --help for command line options
 ###
 CFLAGS="${CFLAGS:--Os -march=${MAKE_ARCH:-${ARCH}} -pipe}"

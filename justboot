@@ -241,8 +241,8 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-# Allow for user default options per $ARCH i.e ~/.justboot/x86_64-stage1.conf
-[[ -f ~/.justboot/${ARCH}-stage1.conf ]] && { exec_chkdir ~/.justboot; . ~/.justboot/${ARCH}-stage1.conf; }
+# Allow for user default $ARCH options i.e ~/.justboot/x86_64.conf
+[[ -f ~/.justboot/${ARCH}.conf ]] && { exec_chkdir ~/.justboot; . ~/.justboot/${ARCH}.conf; }
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
@@ -898,8 +898,7 @@ prepare_kernel() {
     fi
   
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
-    echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
-    do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null
+    do_exec USE=symlink ${PMS} ${KERNEL_SOURCES} 1>/dev/null
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
     if declare -A &>/dev/null; then
