@@ -1,5 +1,7 @@
 ###
-# Gentoo make.conf options - DO NOT EDIT instead use the command line options or create a ~/.justboot/$arch-stage1.conf file. See justboot --help for command line options
+# Gentoo make.conf options - DO NOT EDIT 
+# instead use the command line options or create a ~/.justboot/$arch-stage1.conf file. 
+# See justboot --help for command line options
 ###
 CFLAGS="${CFLAGS:--Os -march=${MAKE_ARCH:-${ARCH}} -pipe}"
 CHOST="${CHOST:-${ARCH}-pc-linux-gnu}"
@@ -24,11 +26,11 @@ INIT_COMPRESSION=${INIT_COMPRESSION:-lzma}
 ROOT_PASSWD="${ROOT_PASSWD:-gentoo}"
 VOLID="${VOLID:-JustBOOT_livecd}"
 ARCH=${ARCH:-i486}
+CPU=${CPU:-${ARCH}}
 LIVEDIR="${LIVEDIR:-/usr/share/justboot}"
 DATA_DIR="${LIVEDIR}/data"
 ARCH_DIR="${LIVEDIR}/${ARCH}"
 EXCLUDES_DIR="${LIVEDIR}/excludes/${ARCH}"
 CHROOT_SCRIPT=$(mktemp /tmp/XXX)
 GENTOO_MIRROR="http://gentoo.mirrors.tds.net/gentoo"
-CPU=${ARCH}
 

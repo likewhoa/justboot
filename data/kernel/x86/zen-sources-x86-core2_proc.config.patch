@@ -1,0 +1,42 @@
+--- /mnt/dev/justboot/data/kernel/x86/zen-sources-custom	2009-07-07 09:30:42.147481174 +0000
++++ .config	2009-07-07 09:32:48.000000000 +0000
+@@ -1,7 +1,7 @@
+ #
+ # Automatically generated make config: don't edit
+ # Linux kernel version: 2.6.30-zen1 "Summertime Tropic Eclipse"
+-# Tue Jun 30 20:29:37 2009
++# Tue Jul  7 09:32:48 2009
+ #
+ # CONFIG_64BIT is not set
+ CONFIG_X86_32=y
+@@ -256,9 +256,8 @@
+ CONFIG_X86_L1_CACHE_BYTES=64
+ CONFIG_X86_INTERNODE_CACHE_BYTES=64
+ CONFIG_X86_CMPXCHG=y
+-CONFIG_X86_L1_CACHE_SHIFT=5
++CONFIG_X86_L1_CACHE_SHIFT=6
+ CONFIG_X86_XADD=y
+-# CONFIG_X86_PPRO_FENCE is not set
+ CONFIG_X86_WP_WORKS_OK=y
+ CONFIG_X86_INVLPG=y
+ CONFIG_X86_BSWAP=y
+@@ -292,8 +291,8 @@
+ CONFIG_X86_IO_APIC=y
+ # CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS is not set
+ CONFIG_X86_MCE=y
+-CONFIG_X86_MCE_NONFATAL=y
+-CONFIG_X86_MCE_P4THERMAL=y
++# CONFIG_X86_MCE_NONFATAL is not set
++# CONFIG_X86_MCE_P4THERMAL is not set
+ CONFIG_VM86=y
+ # CONFIG_TOSHIBA is not set
+ # CONFIG_I8K is not set
+@@ -3492,7 +3491,7 @@
+ CONFIG_VIRTUALIZATION=y
+ CONFIG_KVM=m
+ CONFIG_KVM_INTEL=m
+-CONFIG_KVM_AMD=m
++# CONFIG_KVM_AMD is not set
+ # CONFIG_KVM_TRACE is not set
+ # CONFIG_LGUEST is not set
+ # CONFIG_VIRTIO_PCI is not set
