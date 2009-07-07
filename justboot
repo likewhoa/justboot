@@ -264,13 +264,7 @@ if [[ -h /usr/share/justboot/${ARCH} ]]; then
 fi
 
 # Check if we previously set a package manager for compiles on ${ARCH}
-if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then
-  PMS="$(cat /etc/justboot/${ARCH}-pms)"
-  einfo "Package manager set to ${PMS}"
-else 
-  PMS="emerge -q"
-  einfo "Package manager set to ${PMS}"
-fi
+if [[ ! -f /etc/justboot/${ARCH}-pms ]]; then PMS="emerge -q"; else PMS="$(cat /etc/justboot/${ARCH}-pms)"; fi
 
 # Remove old data directories (--purge/--delete-arch)
 if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
