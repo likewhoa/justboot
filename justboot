@@ -288,9 +288,9 @@ if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
     [[ -d ${X/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
   done
   if [ ! ${REMOVAL} ]; then
-    ewarn "Removing orphan data directory ${RED}${X/${ARCH}/}"
+    ewarn "Removing orphan data directory ${RED}${X/${ARCH}}"
     do_exec unlink ${X/\/${ARCH}//data} 
-    do_exec rm -rf ${X/\/${ARCH}/}
+    do_exec rm -rf ${X/\/${ARCH}}
   fi
 fi
 
