@@ -21,9 +21,6 @@ VERSION=0.3.0
 if [[ $1 =~ ^(--version|-[Vv])$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
 if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLACK}."; exit 1;fi
 
-# Source JustBOOT default configuration options
-. /etc/justboot/justboot.conf
-
 # Check for bash associated array support.
 if ! declare -A &>/dev/null; then
   ewarn "This script uses bash4 only features, consider upgrading"
@@ -93,7 +90,7 @@ Arguments:
 --letmein               - Will run /bin/bash at end of chroot stage for self maintanance
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
---delete-arch		- Remove --arch=* then exit script
+--delete-arch		- Like --purge but exits script after
 --debug                 - Turn on debugging
 
 Gentoo make.conf options:
@@ -244,6 +241,12 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# Allow for user default options per $ARCH i.e ~/.justboot/x86_64-stage1.conf
+[[ -f ~/.justboot/${ARCH}-stage1.conf ]] && { exec_chkdir ~/.justboot; . ~/.justboot/${ARCH}-stage1.conf; }
+
+# Source JustBOOT global configuration options
+. /etc/justboot/config.globals
+
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
   x86_64)
@@ -254,6 +257,8 @@ case ${ARCH} in
     [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86";;
 esac
 
+# When no --data-directory is set we default to /usr/share/justboot but when our data directory
+# argument is not set, we check for existing symbolic link so our $LIVEDIR is set properly
 if [[ -h /usr/share/justboot/${ARCH} ]]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
@@ -262,10 +267,7 @@ if [[ -h /usr/share/justboot/${ARCH} ]]; then
   EXCLUDES_DIR=${LIVEDIR}/excludes/${ARCH}
 fi
 
-# Source JustBOOT global configuration options
-. /etc/justboot/config.globals
-
-# Check for default package manager
+# Check if we previously set package manager for compiles on ${ARCH}
 if [[ ! ${PMS} && -f /etc/justboot/${ARCH}-pms ]]; then PMS="$(cat /etc/justboot/${ARCH}-pms)"; else PMS="emerge -q"; fi
 
 # Remove old data directories (--purge)
@@ -280,11 +282,10 @@ if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
       done
   elif [ -d /usr/share/justboot/${ARCH} ]; then
     do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
-  elif [ ${DELETE_ARCH} ]; then
-    einfo "All done ${ARCH} sources removed, exiting"; exit 0
   else
     einfo "No ARCH to purge or remove! Exiting"; exit 1
   fi
+  [[ ${DELETE_ARCH} ]] && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 
   for i in i{4,5,6}86 x86_64; do
     [[ ${i} = ${ARCH} ]] && continue 2
@@ -298,8 +299,8 @@ if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
 fi
 
 # The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories
-# First we remove local livecd folders i.e proc,dev and data directory, then we copy any ramfs changes to
-# the livecd exclude folders.
+# First we remove local livecd folders i.e proc,dev and the data directory, then we copy any ramfs changes to
+# the livecd exclude folders. See the /etc/justboot/files/{ramfs-directories,excluded-directories}.lst file 
 release_env() {            
   einfo "Releasing livecd environment, please wait..."
   do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
@@ -357,7 +358,7 @@ check_deps() {
   fi
 }
 
-# Preparation of the stage1 build, we skip most of this and only run through half of it once
+# Preparation of the stage1 build - we skip most of this and only run through half of it once
 # unless we are starting fresh or ran justboot with --purge argument.
 prepare_stage() {
   if [[ ! -d ${ARCH_DIR} || ${LIVEDIR} = /usr/share/justboot ]]; then
@@ -423,7 +424,7 @@ prepare_stage() {
     #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
 
     do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/current
-    local GENTOO_STAGE=$(egrep -o "stage3-${STAGE}-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9].tar.bz2\"" index.html | cut -d\" -f1)
+    local GENTOO_STAGE=$(egrep -o stage3-${STAGE}-[[:digit:]]{8}.tar.bz2 index.html)
     do_exec rm index.html
 
     exec_chkdir ${ARCH_DIR}
@@ -709,7 +710,7 @@ do_exec() {
 
 check_deps() {
   # Check for pkgcore if --package-manager=pkgcore is used"
-  if [[ ${PMS} = pmerge ]]; then   
+  if [[ "${PMS}" = pmerge ]]; then   
     if ! which pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
       do_exec emerge pkgcore 1>/dev/null
@@ -904,7 +905,7 @@ prepare_kernel() {
     # Is layman compiled?
     if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
       einfo "Compiling \${BLUE}layman"
-      do_exec ${PMS} layman 1>/dev/null
+      do_exec ${PMS} layman # 1>/dev/null
     fi
  
     if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
