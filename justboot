@@ -29,7 +29,6 @@ else
   declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
 [pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 fi
-
 declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/files/excluded-directories.lst | grep -vE '^#') )
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | grep -vE '^#') )
 declare -a REMOVE_FILES=( $(cat /etc/justboot/files/remove-files.lst | grep -vE '^#') )
@@ -47,12 +46,9 @@ einfo() { echo -e "\a${BLACK}.: ${1} :."${NOCOLOR}; sleep 1; }
 ewarn() { echo -e "\a${RED}.: ${1} :."${NOCOLOR}; }
 error() { echo -e "\a${RED}.: ${1} :."${NOCOLOR}; exit 1; }
 
-exec_chkdir() {
-  local DIR="${1}"
-  [[ ! -d ${DIR} ]] && mkdir -p ${DIR}
-}
+exec_chkdir() { local DIR="${1}"; [[ ! -d ${DIR} ]] && mkdir -p ${DIR}; }
 
-exec_chklink() {
+exec_chklink() { 
   local SRC="${1}" DEST="${2}"
   [[ -h ${DEST} ]] && unlink ${DEST}
   ln -s ${SRC} ${DEST}
@@ -150,7 +146,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --arch=*)
       ARCH="${1##*=}"
-      einfo "${BLUE}${ARCH}${BLACK} set for build"
+      einfo "${BLUE}${ARCH}${BLACK} arch set"
       ;;
     --cflags=*) 
       ARG=$(echo ${1} | cut -d\= -f2-) # FIX ME
@@ -246,15 +242,15 @@ done
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
-  x86_64) MAKE_ARCH=x86-64;  [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86 ~amd64";;
+  x86_64) MAKE_ARCH=x86-64; [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86 ~amd64";;
   i[4,5,6]86) [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86"
 esac
 
 # Source JustBOOT global configuration options
 . /etc/justboot/config.globals
 
-# When no --data-directory is set we default to /usr/share/justboot but when our data directory
-# argument is not set, we check for existing symbolic link so our $LIVEDIR is set properly
+# When no --data-directory is set we default to /usr/share/justboot, but we check for existing symbolic link
+# so our $LIVEDIR always points to the correct arch sources
 if [[ -h /usr/share/justboot/${ARCH} ]]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
@@ -268,7 +264,7 @@ if [[ ! -f /etc/justboot/${ARCH}-pms ]]; then PMS="emerge -q"; else PMS="$(cat /
 
 # Remove old data directories (--purge/--delete-arch)
 if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
-  X=$(readlink /usr/share/justboot/${ARCH})
+  src=$(readlink /usr/share/justboot/${ARCH})
   einfo "${RED}--purge or --delete-arch flag used.${BLACK} Removing ${RED}${ARCH}${BLACK} sources."
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
     do_exec rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
@@ -283,12 +279,12 @@ if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
   fi
   for i in i{4,5,6}86 x86_64; do
     [[ ${i} = ${ARCH} ]] && continue 2
-    [[ -d ${X/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
+    [[ -d ${src/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
   done
   if [ ! ${REMOVAL} ]; then
-    ewarn "Removing orphan data directory ${RED}${X/\/${ARCH}}"
-    do_exec unlink ${X/\/${ARCH}//data} 
-    do_exec rm -rf ${X/\/${ARCH}}
+    ewarn "Removing orphan data directory ${RED}${src/\/${ARCH}}"
+    do_exec unlink ${src/\/${ARCH}//data} 
+    do_exec rm -rf ${src/\/${ARCH}}
   fi
   [[ ${DELETE_ARCH} ]] && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 fi
@@ -298,10 +294,8 @@ fi
 # the livecd exclude folders. See the /etc/justboot/files/{ramfs-directories,excluded-directories}.lst file 
 release_env() {            
   einfo "Releasing livecd environment, please wait..."
-  do_exec rm -rf ${ARCH}/tmp/* # Get rid of old temp data in case of ctrl+c
-                           
-  do_exec umount ${ARCH_DIR}/{proc,dev}   
-  do_exec umount ${ARCH}${DATA_DIR}
+  do_exec rm -rf ${ARCH}/tmp/* 
+  do_exec umount ${ARCH_DIR}/{proc,dev} ${ARCH}${DATA_DIR} 
                            
   if [ ${RAMFS} ]; then    
     for x in "${LIVECD_EXCLUDES[@]}"; do
@@ -416,7 +410,6 @@ prepare_stage() {
 
   if [[ ! -d ${ARCH_DIR} ]]; then
     einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${BLACK}. please wait..."
-    #local GENTOO_MIRROR=$(mirrorselect -oq | cut -d\" -f2) # FIX ME
 
     do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/current
     local GENTOO_STAGE=$(egrep -o stage3-${STAGE}-[[:digit:]]{8}.tar.bz2 index.html | uniq)
@@ -459,7 +452,7 @@ prepare_stage() {
 }
 
 # After we have prepared the stage1 build, we need to detect/setup all the livecd exclude directories and or ramfs mounts first
-# before we start the chroot and compile packages
+# before we start the chroot process and compile packages
 prepare_env() {
   cd ${LIVEDIR}
   exec_chkdir ${ARCH_DIR}${DATA_DIR}
@@ -517,7 +510,7 @@ prepare_env() {
     done
 
     declare -a DIRS
-    ( # This is how we avoid cd - or cd $OLDPWD
+    ( 
     cd ${EXCLUDES_DIR}
     DIRS=( * )
     for y in "${DIRS[@]}"; do
@@ -532,7 +525,7 @@ prepare_env() {
     )
   else
     declare -a DIRS
-    ( # This is how we avoid cd - or cd $OLDPWD 
+    ( 
     cd ${EXCLUDES_DIR}
     DIRS=( * )
     for y in "${DIRS[@]}"; do
@@ -744,8 +737,8 @@ MAKECONF
   fi
 }
   
+# Prepare the livecd required and user packages.
 prepare_packages() {
-  # Livecd required packages - binary:category/package
   local -a GLOBAL_PACKAGES=( 'grub:sys-boot/grub' 'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/reiser4progs' \
 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'screen:app-misc/screen' \
 'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
@@ -757,7 +750,6 @@ prepare_packages() {
     fi
   done
 
-  # Compile extra packages
   for i in ${EXTRA_PACKAGES=[@]}; do
     if ! which \${i/:*/} &>/dev/null; then
       einfo "Compiling \${BLUE}\${i}."
