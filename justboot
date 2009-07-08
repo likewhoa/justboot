@@ -889,7 +889,7 @@ prepare_kernel() {
     fi
   
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
-    if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use) ]]; then 
+    if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then 
       echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     fi
     do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null
