@@ -191,7 +191,7 @@ while [ $# -gt 0 ]; do
     --data-directory=*)                 
       DIR="${1##*=}"                        
       LIVEDIR="${DIR/%\//}/justboot" # Remove leading slash
-      einfo "Livecd data directory set to ${BLUE}\"${LIVEDIR}\""
+      einfo "Livecd data directory set to ${BLUE}\"${LIVEDIR}\"${BLACK}"
       ;;
     --package-manager=*)
       [[ -f /etc/justboot/${ARCH}-pms ]] && error "Previously enabled package manager, delete /etc/justboot/${ARCH}-pms then try again to override"
@@ -210,7 +210,7 @@ while [ $# -gt 0 ]; do
     --force-toolchain) YES_TOOL=0;;
     --skip-toolchain) NO_TOOL=0;;
     --lang=*) LINGUAS="${1##*=}";;
-    --niceness=*) PNICE="${1##*=}";;
+    --niceness=*) PORTAGE_NICENESS="${1##*=}";;
     --use=*) USE="${1##*=}";;
     --make-opts=*) MAKEOPTS="${1##*=}";;
     --jobs=*) JOBS="${1##*=}";;
@@ -428,7 +428,7 @@ prepare_stage() {
     einfo "Fetching portage tree snapshot"
     do_exec wget -q ${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2
 
-    einfo "Extracting  portage-latest.tar.bz2"
+    einfo "Extracting portage-latest.tar.bz2"
     do_exec tar xjpf portage-latest.tar.bz2 -C usr/ 
     do_exec rm portage-latest.tar.bz2
 
@@ -440,7 +440,7 @@ prepare_stage() {
       do_exec mv ${i}/* ${EXCLUDES_DIR}/${i//\//:} &>/dev/null
     done
 
-    einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}."
+    einfo "Done with stage1 for ${BLUE}${GENTOO_ARCH}.${BLACK}"
 
     if [[ ${LIVEDIR} != /usr/share/justboot ]]; then
       exec_chklink ${ARCH_DIR} /usr/share/justboot/${ARCH}
@@ -889,7 +889,7 @@ prepare_kernel() {
     fi
   
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
-    if [[ ! \$(grep sys-kernel/${KERNEL_SOURCES} symlink) ]]; then 
+    if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use) ]]; then 
       echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     fi
     do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null
