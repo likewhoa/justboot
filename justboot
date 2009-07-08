@@ -892,7 +892,8 @@ prepare_kernel() {
     if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then 
       echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     fi
-    do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null
+    # Bug with pkgcore and zen-sources "!!! Failed to build config wrapped(use): ebuild src: sys-kernel/zen-sources-2.6.30-r1: False"
+    if [ ${PMS} = pmerge ]; then do_exec emerge ${KERNEL_SOURCES} 1>/dev/null; else do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null; fi
 
     einfo "Compiling \${BLUE}\${ARCH}\${BLACK} kernel image"
     if declare -A &>/dev/null; then
@@ -929,7 +930,7 @@ prepare_kernel() {
 
     if [ ${MENUCONFIG} ]; then
       do_exec make menuconfig
-      make ${MAKEOPTS} 1>/dev/null
+      do_exec make ${MAKEOPTS} 1>/dev/null
     else
       do_exec make ${MAKEOPTS} 1>/dev/null
     fi
@@ -939,7 +940,7 @@ prepare_kernel() {
     do_exec prepare_initramfs
   fi
 
-  do_exec cd /usr/src/linux # error "Failed to switch to kernel source directory"
+  do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
   do_exec cp arch/\${ARCH}/boot/bzImage /boot/vmlinuz
   do_exec update-modules 
 
