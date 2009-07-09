@@ -19,13 +19,13 @@
 ###
 VERSION=0.3.0
 if [[ $1 =~ ^(--version|-[Vv])$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
-if [ $(whoami) != root ]; then echo -e "This script must be run as ${RED}root${BLK}."; exit 1;fi
+if [ $(id -u) != 0 ]; then echo -e "This script must be run as root."; exit 1;fi
 
 # Check for bash associated array support.
 if ! declare -A &>/dev/null; then
   ewarn "This script uses bash4 only features, consider upgrading"
 else
-  BASH4=0
+  BASH4=true
   declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
 [pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 fi
@@ -58,16 +58,16 @@ exec_chklink() {
 do_exec() {
   if [ ${DEBUG} ]; then
     echo -e "\a${RED}debug:${NOCOLOR}${BLUE} (${@})"${NOCOLOR}
-    ${@} 
+    "${@}" 
   elif [ ${VERBOSE} ]; then
-    ${@} 
+    "${@}" 
   else
-    ${@} 2>/dev/null 
+    "${@}" 2>/dev/null 
   fi
 }
 
 # Help menu - TODO add moar examples!
-run_help() {
+print_help() {
 cat << HELP
 Usage: justboot [arguments] [make opts] [kernel opts]
 
@@ -137,7 +137,7 @@ Usage examples:
   justboot --arch=i486 --package-manager=pkgcore --root-passwd=letmein
 
 HELP
-exit 1
+exit 0
 }
 
 einfo "${BLUE}JustBOOT(tm)${BLK} initiated."
@@ -168,7 +168,7 @@ while [ $# -gt 0 ]; do
       einfo "Setting ${BLUE}${ACCEPT_KEYWORDS}${BLK} for make.conf"
       ;;
     --ramfs|-ricer)
-      RAMFS=0
+      RAMFS=true
       einfo "${RED}RAMFS${BLK} compiles enabled!!!"
       ;;
     --init-compression)
@@ -207,9 +207,9 @@ while [ $# -gt 0 ]; do
       GENTOO_MIRRORS="${1##*=}"
       ;;
     --rsync-mirror=*) SYNC="${1##*=}";;
-    --menuconfig) MENUCONFIG=0;;
-    --force-toolchain) YES_TOOL=0;;
-    --skip-toolchain) NO_TOOL=0;;
+    --menuconfig) MENUCONFIG=true;;
+    --force-toolchain) YES_TOOL=true;;
+    --skip-toolchain) NO_TOOL=true;;
     --lang=*) LINGUAS="${1##*=}";;
     --niceness=*) PORTAGE_NICENESS="${1##*=}";;
     --use=*) USE="${1##*=}";;
@@ -217,10 +217,10 @@ while [ $# -gt 0 ]; do
     --jobs=*) JOBS="${1##*=}";;
     --ldflags=*) LDFLAGS="${1##*=}";;
     --features=*) FEATURES="${1##*=}";;
-    --letmein) LETMEIN=0;;
-    --purge) PURGE=0;;
-    --purge-kernel) PURGE_KERNEL=0;;
-    --delete-arch) DELETE_ARCH=0;;
+    --letmein) LETMEIN=true;;
+    --purge) PURGE=true;;
+    --purge-kernel) PURGE_KERNEL=true;;
+    --delete-arch) DELETE_ARCH=true;;
     --coprocessor=*) 
       CPU="${1##*=}"
       if [[ ${BASH4} && -z ${PROCS[${CPU}]} ]]; then
@@ -230,9 +230,9 @@ while [ $# -gt 0 ]; do
       fi
       ;;
     --coprocessor-list) einfo "Available procs are: ${BLUE}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"; exit 0;;
-    --verbose) VERBOSE=0;;
-    --debug|-db) DEBUG=0; einfo "Running in debug mode";;
-    --help|-h) run_help;;
+    --verbose) VERBOSE=true;;
+    --debug|-db) DEBUG=true; einfo "Running in debug mode";;
+    --help|-h) print_help;;
     *) error "${BLUE}Invalid argument ${RED}${1}!${BLK}, run \"$0 --help\" for help."
   esac
   shift
@@ -244,17 +244,17 @@ done
 # Check that we are using a valid $ARCH
 for i in ${ARCHES[@]}; do 
   if [[ ${ARCH} != ${i} ]]; then
-    INVALID_ARCH=0
+    INVALID_ARCH=true
   else
     unset INVALID_ARCH; break
   fi
 done
-[[ ${INVALID_ARCH} ]] && { einfo "${RED}${ARCH}${BLK} is invalid, valid options are ${ARCHES[@]}"; error "Exiting!!!"; }
+${INVALID_ARCH} && { einfo "${RED}${ARCH}${BLK} is invalid, valid options are ${ARCHES[@]}"; error "Exiting!!!"; }
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
-  x86_64) MAKE_ARCH=x86-64; [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86 ~amd64";;
-  i[4,5,6]86) [[ ! ${ACCEPT_KEYWORDS} ]] && MAKE_KEYWORDS="~x86"
+  x86_64) MAKE_ARCH=x86-64; ${ACCEPT_KEYWORDS} || MAKE_KEYWORDS="~x86 ~amd64";;
+  i[4,5,6]86) ${ACCEPT_KEYWORDS} || MAKE_KEYWORDS="~x86"
 esac
 
 # Source JustBOOT global configuration options
@@ -290,14 +290,14 @@ if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
   fi
   for i in i{4,5,6}86 x86_64; do
     [[ ${i} = ${ARCH} ]] && continue 2
-    [[ -d ${src/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
+    [[ -d ${src/${ARCH}/${i}} ]] && { REMOVAL=true; break; }
   done
-  if [ ! ${REMOVAL} ]; then
+  if ! ${REMOVAL}; then
     ewarn "Removing orphan data directory ${RED}${src/\/${ARCH}}"
     do_exec unlink ${src/\/${ARCH}//data} 
     do_exec rm -rf ${src/\/${ARCH}}
   fi
-  [[ ${DELETE_ARCH} ]] && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
+  ${DELETE_ARCH} && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 fi
 
 # The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories
@@ -336,7 +336,7 @@ release_env() {
       do_exec umount ${ARCH}/${x}
     done
   fi
-  [[ ! $1 ]] && do_exec clean_env
+  ! $1 && do_exec clean_env
 }
 
 USER_INTERRUPT=13
@@ -346,13 +346,13 @@ trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 # Check local system for requires packages.
 check_deps() {
   if [[ ${PMS} = pmerge ]]; then
-    if ! which pmerge &>/dev/null; then
+    if ! hash pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
       do_exec emerge pkgcore 1>/dev/null
     fi
   fi
 
-  if ! which mksquashfs &>/dev/null; then
+  if ! hash mksquashfs &>/dev/null; then
     einfo "Compiling ${BLUE}squashfs-tools."
     do_exec ${PMS} squashfs-tools 1>/dev/null
   fi
@@ -383,9 +383,9 @@ prepare_stage() {
 
       for i in i{4,5,6}86 x86_64; do
         [[ ${i} = ${ARCH} ]] && continue 2
-        [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]] && { REMOVAL=0; break; }
+        [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]] && { REMOVAL=true; break; }
       done
-      if [ ${REMOVAL} ]; then
+      if ${REMOVAL}; then
         ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
         do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
       else
@@ -699,18 +699,18 @@ exec_chklink() {
 do_exec() {
   if [ ${DEBUG} ]; then
     echo -e "\a\${RED}debug:\${NOCOLOR}\${BLUE} (\${@})"\${NOCOLOR}
-    \${@}
+    "\${@}"
   elif [ ${VERBOSE} ]; then
-    \${@}
+    "\${@}"
   else
-    \${@} 2>/dev/null
+    "\${@}" 2>/dev/null
   fi
 }
 
 check_deps() {
   # Check for pkgcore if --package-manager=pkgcore is used"
   if [[ "${PMS}" = pmerge ]]; then   
-    if ! which pmerge &>/dev/null; then
+    if ! hash pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
       do_exec emerge pkgcore 1>/dev/null
     fi
@@ -755,20 +755,20 @@ prepare_packages() {
 'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
 
   for i in \${GLOBAL_PACKAGES[@]}; do
-    if ! which \${i/:*/} &>/dev/null; then
+    if ! hash \${i/:*/} &>/dev/null; then
       einfo "Compiling \${BLUE}\${i/*:/}."
       do_exec ${PMS} \${i/*:/} 1>/dev/null
     fi
   done
 
   for i in ${EXTRA_PACKAGES=[@]}; do
-    if ! which \${i/:*/} &>/dev/null; then
+    if ! hash \${i/:*/} &>/dev/null; then
       einfo "Compiling \${BLUE}\${i}."
       do_exec ${PMS} \${i/*:/} 1>/dev/null
     fi 
   done
 
-  if ! which memtest86+ &>/dev/null; then do_exec ${PMS} memtest86+ 1>/dev/null; fi
+  if ! hash memtest86+ &>/dev/null; then do_exec ${PMS} memtest86+ 1>/dev/null; fi
   # Setup sudoers
   [ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
 }
@@ -961,7 +961,7 @@ prepare_kernel() {
   einfo "Done with \${RED}\${ARCH}\${BLK} kernel"
   if [ ${LETMEIN} ]; then
     einfo "letmein flag used. Type \${RED}exit\${BLK} when finished to continue with build."
-    /bin/bash
+    /bin/bash -i
   fi
 }
 
@@ -980,12 +980,12 @@ diff () { printf '%s' \$(( \$(date -u -d"\$TARGET" +%s) -
 check_toolchain_days() {
   if [[ ${ARCH} = i586 && ! -f /etc/toolchain_age ]]; then
     ewarn "i586 needs a toolchain build, setting --force-toolchain flag"
-    YES_TOOL=0
+    YES_TOOL=true
   fi
-  if [ ${NO_TOOL} ]; then
+  if ${NO_TOOL}; then
     ewarn "Skipping toolchain build"
     return 1
-  elif [ ${YES_TOOL} ]; then
+  elif ${YES_TOOL}; then
     ewarn "Forcing a toolchain build"
     date -u -d 'now' '+%F %T.%N %Z'>/etc/toolchain_age
     return 0
@@ -1043,7 +1043,7 @@ bootstrap() {
   do_exec emerge --sync -q 1>/dev/null
 
   # Compile toolchain if --skip-toolchain is not set
-  if [ ! ${NO_TOOL} ]; then
+  if ! ${NO_TOOL}; then
     # Begin the bootstrap
     einfo "Compiling the toolchain, this maybe take a while depending on hardware."
     for i in gcc-config linux-headers glibc binutils gcc portage; do
@@ -1075,7 +1075,7 @@ bootstrap() {
     done < <(cat failed)
     do_exec rm failed
 
-    python-updater
+    python-updater &>/dev/null
 
     einfo "Toolchain build completed, compiling livecd packages."
   else
