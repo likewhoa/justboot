@@ -272,7 +272,7 @@ if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
       for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do
         do_exec unlink ${i}
       done
-  elif [ -d /usr/share/justboot/${ARCH} ]; then
+  elif [[ -d /usr/share/justboot/${ARCH} ]]; then
     do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
   else
     einfo "No ARCH to purge or remove! Exiting"; exit 1
@@ -573,20 +573,20 @@ clean_env() {
   exec_chkdir ${TARGET}
 
   einfo "Performing livecd cleanup, please wait..."
-  do_exec rsync -caq --delete-before ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} &>/dev/null
+  do_exec cp -a ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} &>/dev/null
 
   if [[ -d ${EXCLUDES_DIR}/boot ]]; then
-    do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/boot ${LIVEDIR}/target 
-    do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/boot ${LIVEDIR} 
+    do_exec cp -a ${EXCLUDES_DIR}/boot ${LIVEDIR}/target 
+    do_exec cp -a ${EXCLUDES_DIR}/boot ${LIVEDIR} 
   else
-    do_exec rsync -caq --delete-before ${ARCH_DIR}/boot ${LIVEDIR}/target 
-    do_exec rsync -caq --delete-before ${ARCH_DIR}/boot ${LIVEDIR} 
+    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR}/target 
+    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR} 
   fi
 
   for i in "${LIVECD_EXCLUDES[@]}"; do
     if [[ $(ls ${EXCLUDES_DIR}/${i//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
       einfo "Moving ${BLUE}${i}${BLACK} to ${RED}${TARGET}/${i}.${BLACK} please wait..."
-      do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${i//\//:}/* ${TARGET}/${i} &>/dev/null  
+      do_exec cp -a ${EXCLUDES_DIR}/${i//\//:}/* ${TARGET}/${i} &>/dev/null  
     fi
   done
 
@@ -597,7 +597,7 @@ clean_env() {
       done
         if [[ $(ls ${EXCLUDES_DIR}/${x//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
           einfo "Moving ${BLUE}${x}${BLACK} to ${RED}${TARGET}/${x}.${BLACK} please wait..."
-          do_exec rsync -caq --delete-before ${EXCLUDES_DIR}/${x//\//:}/* ${TARGET}/${x} &>/dev/null
+          do_exec cp -a ${EXCLUDES_DIR}/${x//\//:}/* ${TARGET}/${x} &>/dev/null
         fi
     done
   fi
