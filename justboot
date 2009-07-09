@@ -21,6 +21,17 @@ VERSION=0.3.0
 if [[ $1 =~ ^(--version|-[Vv])$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0;fi
 if [ $(id -u) != 0 ]; then echo -e "This script must be run as root."; exit 1;fi
 
+# Set some script variables before hand
+NO_TOOL=false
+YES_TOOL=false
+LETMEIN=false
+PURGE=false
+PURGE_KERNEL=false
+MENUCONFIG=false
+DELETE_ARCH=false
+VERBOSE=false
+DEBUG=false
+
 # Check for bash associated array support.
 if ! declare -A &>/dev/null; then
   ewarn "This script uses bash4 only features, consider upgrading"
@@ -34,7 +45,7 @@ declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | gre
 declare -a REMOVE_FILES=( $(cat /etc/justboot/files/remove-files.lst | grep -vE '^#') )
 declare -a RAMFS_DIR=( $(cat /etc/justboot/files/ramfs-directories.lst | grep -vE '^#') )
 declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/files/extra-packages.lst | grep -vE '^#') )
-declare -a ARCHES=( i386 i486 i586 i686 x86_64 )
+declare -a ARCHES=( x86_64 i386 i486 i586 i686 )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 
 # Set colors
@@ -56,10 +67,10 @@ exec_chklink() {
 }
 
 do_exec() {
-  if [ ${DEBUG} ]; then
+  if ${DEBUG}; then
     echo -e "\a${RED}debug:${NOCOLOR}${BLUE} (${@})"${NOCOLOR}
     "${@}" 
-  elif [ ${VERBOSE} ]; then
+  elif ${VERBOSE}; then
     "${@}" 
   else
     "${@}" 2>/dev/null 
@@ -246,15 +257,15 @@ for i in ${ARCHES[@]}; do
   if [[ ${ARCH} != ${i} ]]; then
     INVALID_ARCH=true
   else
-    unset INVALID_ARCH; break
+    INVALID_ARCH=false; break
   fi
 done
 ${INVALID_ARCH} && { einfo "${RED}${ARCH}${BLK} is invalid, valid options are ${ARCHES[@]}"; error "Exiting!!!"; }
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
-  x86_64) MAKE_ARCH=x86-64; ${ACCEPT_KEYWORDS} || MAKE_KEYWORDS="~x86 ~amd64";;
-  i[4,5,6]86) ${ACCEPT_KEYWORDS} || MAKE_KEYWORDS="~x86"
+  x86_64) MAKE_ARCH=x86-64; [[ ${ACCEPT_KEYWORDS} ]] || MAKE_KEYWORDS="~x86 ~amd64";;
+  i[4,5,6]86) [[ ${ACCEPT_KEYWORDS} ]] || MAKE_KEYWORDS="~x86"
 esac
 
 # Source JustBOOT global configuration options
@@ -274,7 +285,7 @@ fi
 if [[ ! -f /etc/justboot/${ARCH}-pms ]]; then PMS="emerge -q"; else PMS="$(cat /etc/justboot/${ARCH}-pms)"; fi
 
 # Remove old data directories (--purge/--delete-arch)
-if [[ ${PURGE} || ${DELETE_ARCH} ]]; then
+if ${PURGE} || ${DELETE_ARCH}; then
   src=$(readlink /usr/share/justboot/${ARCH})
   einfo "${RED}--purge or --delete-arch flag used.${BLK} Removing ${RED}${ARCH}${BLK} sources."
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
@@ -305,7 +316,7 @@ fi
 # the livecd exclude folders. See the /etc/justboot/files/{ramfs-directories,excluded-directories}.lst file 
 release_env() {            
   einfo "Releasing livecd environment, please wait..."
-  do_exec rm -rf ${ARCH}/tmp/* 
+#  do_exec rm -rf ${ARCH}/tmp/* 
   do_exec umount ${ARCH_DIR}/{proc,dev} ${ARCH}${DATA_DIR} 
                            
   if [ ${RAMFS} ]; then    
@@ -336,7 +347,7 @@ release_env() {
       do_exec umount ${ARCH}/${x}
     done
   fi
-  ! $1 && do_exec clean_env
+  [ ! $1 ] && do_exec clean_env
 }
 
 USER_INTERRUPT=13
@@ -697,10 +708,10 @@ exec_chklink() {
 }
  
 do_exec() {
-  if [ ${DEBUG} ]; then
+  if ${DEBUG}; then
     echo -e "\a\${RED}debug:\${NOCOLOR}\${BLUE} (\${@})"\${NOCOLOR}
     "\${@}"
-  elif [ ${VERBOSE} ]; then
+  elif ${VERBOSE}; then
     "\${@}"
   else
     "\${@}" 2>/dev/null
