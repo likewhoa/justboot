@@ -34,7 +34,7 @@ DEBUG=false
 
 # Check for bash associated array support.
 if ! declare -A &>/dev/null; then
-  ewarn "This script uses bash4 only features, consider upgrading"
+  echo "This script uses bash4 only features, consider upgrading"
 else
   BASH4=true
   declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
