@@ -247,6 +247,7 @@ for i in ${ARCHES[@]}; do
     INVALID_ARCH=0
   else
     unset INVALID_ARCH; break
+  fi
 done
 [[ ${INVALID_ARCH} ]] && { einfo "${RED}${ARCH}${BLACK} is invalid, valid options are ${ARCHES[@]}"; error "Exiting!!!"; }
 
