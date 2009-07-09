@@ -926,7 +926,7 @@ prepare_kernel() {
       
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
-    if [ ${MENUCONFIG} ]; then
+    if ${MENUCONFIG}; then
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 1>/dev/null
     else
@@ -950,7 +950,7 @@ prepare_kernel() {
     fi
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
-    if [ ${MENUCONFIG} ]; then
+    if ${MENUCONFIG}; then
       do_exec make menuconfig
       do_exec make ${MAKEOPTS} 1>/dev/null
     else
@@ -970,7 +970,7 @@ prepare_kernel() {
   do_exec ${PMS} lvm2 1>/dev/null
   
   einfo "Done with \${RED}\${ARCH}\${BLK} kernel"
-  if [ ${LETMEIN} ]; then
+  if ${LETMEIN}; then
     einfo "letmein flag used. Type \${RED}exit\${BLK} when finished to continue with build."
     /bin/bash -i
   fi
