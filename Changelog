@@ -13,4 +13,6 @@
 06/27/2009 - Bunch of options like --coprocessor,--purge-kernel etc..
 06/29/2009 - Added backwards compatibility with bash-3.x
 06/30/2009 - Better handling of kernel opts and code clean ups
-07/05/2009 - More customization options added.
+07/05/2009 - More customization options added
+07/08/2009 - Fix on pkgcore and certain packages
+07/09/2009 - Added check for valid --arch settings
