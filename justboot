@@ -34,6 +34,7 @@ declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | gre
 declare -a REMOVE_FILES=( $(cat /etc/justboot/files/remove-files.lst | grep -vE '^#') )
 declare -a RAMFS_DIR=( $(cat /etc/justboot/files/ramfs-directories.lst | grep -vE '^#') )
 declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/files/extra-packages.lst | grep -vE '^#') )
+declare -a ARCHES=( i386 i486 i586 i686 x86_64 )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 
 # Set colors
@@ -239,6 +240,11 @@ done
 
 # Allow for user default $ARCH options i.e ~/.justboot/x86_64.conf
 [[ -f ~/.justboot/${ARCH}.conf ]] && { exec_chkdir ~/.justboot; . ~/.justboot/${ARCH}.conf; }
+
+# Check that we are using a valid $ARCH
+for i in ${ARCHES[@]}; do 
+  [[ ${ARCH} != ${i} ]] && { einfo "Invalid ${RED}${ARCH}${BLACK} set, valid arches are ${RED}\"${ARCHES[@]}\"${BLACK}"; error "Exiting!!!"; }
+done
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
