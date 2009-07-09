@@ -243,8 +243,12 @@ done
 
 # Check that we are using a valid $ARCH
 for i in ${ARCHES[@]}; do 
-  [[ ${ARCH} != ${i} ]] && { einfo "Invalid ${RED}${ARCH}${BLACK} set, valid arches are ${RED}\"${ARCHES[@]}\"${BLACK}"; error "Exiting!!!"; }
+  if [[ ${ARCH} != ${i} ]]; then
+    INVALID_ARCH=0
+  else
+    unset INVALID_ARCH; break
 done
+[[ ${INVALID_ARCH} ]] && { einfo "${RED}${ARCH}${BLACK} is invalid, valid options are ${ARCHES[@]}"; error "Exiting!!!"; }
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
