@@ -891,7 +891,7 @@ prepare_kernel_opts() {
 prepare_kernel() {
   local DATE=$(date +%Y%m%d-%H%m)
 
-  if [ ${PURGE_KERNEL} ]; then
+  if ${PURGE_KERNEL}; then
     ewarn "--purge-kernel used,.. removing sources."
     do_exec unlink /usr/src/linux
     do_exec rm -rf /usr/src/* /lib/modules/*
