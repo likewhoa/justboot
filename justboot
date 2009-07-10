@@ -325,12 +325,12 @@ release_env() {
         if [[ ${x} = ${y} ]]; then
           einfo "Removing ${RED}${x}${BLK} from memory.. please wait"
           do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
-          do_exec umount ${ARCH}/${x}
+          do_exec umount ${ARCH}/${x} 1>/dev/null 
           einfo "Copied ${BLUE}${x}${BLK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${BLK}"
           continue 2
         fi
       done                 
-      do_exec umount ${ARCH}/${x}
+      do_exec umount ${ARCH}/${x} 1>/dev/null
     done
                            
     for x in "${RAMFS_DIR[@]}"; do
@@ -339,12 +339,12 @@ release_env() {
       done                 
       einfo "Removing ${RED}${x}${BLK} from memory.. please wait."
       do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
-      do_exec umount ${ARCH}/${x}
+      do_exec umount ${ARCH}/${x} 1>/dev/null
       einfo "Copied ${BLUE}${x}${BLK} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
     done
   else  
     for x in "${LIVECD_EXCLUDES[@]}"; do
-      do_exec umount ${ARCH}/${x}
+      do_exec umount ${ARCH}/${x} 1>/dev/null
     done
   fi
   [ ! $1 ] && do_exec clean_env
@@ -498,7 +498,7 @@ prepare_env() {
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
           einfo "Mounting ${BLUE}${x}${BLK} in memory.. please wait"
-          do_exec mount -t ramfs ${x} ${ARCH}/${x} 
+          do_exec mount -t ramfs ${x} ${ARCH}/${x} 1>/dev/null 
 
           [[ ! -d ${EXCLUDES_DIR}/${x//\//:} ]] && exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
           do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
@@ -507,7 +507,7 @@ prepare_env() {
           continue 2
         fi
       done
-      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 
+      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 1>/dev/null 
     done
 
     for x in "${RAMFS_DIR[@]}"; do
@@ -523,7 +523,7 @@ prepare_env() {
       else
         for i in ${ARCH}/${x} ${EXCLUDES_DIR}/${x//\//:}; do exec_chkdir ${i}; done
       fi
-      do_exec mount -t ramfs ${x} ${ARCH}/${x}
+      do_exec mount -t ramfs ${x} ${ARCH}/${x} 1>/dev/null
 
       if [[ -d ${EXCLUDES_DIR}/${x//\//:} ]]; then
         do_exec rsync -caq ${EXCLUDES_DIR}/${x//\//:}/* ${ARCH}/${x} &>/dev/null
@@ -562,7 +562,7 @@ prepare_env() {
     )
     einfo "Mounting livecd data files"
     for x in "${LIVECD_EXCLUDES[@]}"; do
-      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 
+      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 1>/dev/null
     done
   fi
 
@@ -684,7 +684,7 @@ UCLIBC="${DATA_DIR}/uclibc"
 UCLIBC_SCRIPT=\$(mktemp /tmp/XXX)
 UCLIBC_SRC_URI="http://gentoo.mirrors.tds.net/gentoo/experimental/x86/embedded/stages/stage3-x86-uclibc-2008.0.tar.bz2"
 BUSYBOX_SRC_URI="http://www.busybox.net/downloads/busybox-1.14.0.tar.gz"
-BUSYBOX_ARCHIVE=\$(echo \${BUSYBOX_SRC_URI} | cut -d/ -f5)
+BUSYBOX_ARCHIVE=\$(echo \${BUSYBOX_SRC_URI} | egrep -o 'busybox-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.tar\.gz')
 BUSYBOX_CONF=${DATA_DIR}/busybox/.config
 BUSYBOX=\${BUSYBOX_ARCHIVE/.tar.gz/}
 BLK='\e[1;48;30m'
@@ -972,7 +972,7 @@ prepare_kernel() {
   einfo "Done with \${RED}\${ARCH}\${BLK} kernel"
   if ${LETMEIN}; then
     einfo "letmein flag used. Type \${RED}exit\${BLK} when finished to continue with build."
-    /bin/bash -i
+    exec /bin/bash -i
   fi
 }
 
