@@ -871,8 +871,8 @@ prepare_kernel_opts() {
       [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-i586-config.patch
       [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-i686-config.patch
       case ${PROCS[${CPU}]} in                                        
-        MK8) patch -p0 <${KERNEL_SOURCES}-x86-k8_proc.config.patch;;
-        MCORE2) patch -p0 <${KERNEL_SOURCES}-x86-core2_proc.config.patch
+        MK8) patch -sp0 <${KERNEL_SOURCES}-x86-k8_proc.config.patch;;
+        MCORE2) patch -sp0 <${KERNEL_SOURCES}-x86-core2_proc.config.patch
       esac
       ;;
     x86_64)
