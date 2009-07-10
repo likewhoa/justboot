@@ -664,16 +664,17 @@ CLEANUP
 
 # Livecd creation function
 create_livecd() {
+  local DATE=$(date +%m%d%Y-%H%M)
   do_exec touch ${LIVEDIR}/target/livecd
 
   einfo "Building SquashFS."
   do_exec mksquashfs ${LIVEDIR}/target/files/${ARCH}/ ${LIVEDIR}/target/livecd.squashfs
   einfo "Generating bootable JustBOOT(tm) livecd image."
   do_exec mkisofs -volid \"${VOLID}\" -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table \
--iso-level 4 -hide-rr-moved -c boot.catalog -o ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-$(date +%m%d%Y-%H%M).iso -x files ${LIVEDIR}/target/
+-iso-level 4 -hide-rr-moved -c boot.catalog -o ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-${DATE}.iso -x files ${LIVEDIR}/target/
   
   do_exec rm -rf ${LIVEDIR}/{target,boot}
-  einfo "All Done. ${ARCH} livecd located at ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-$(date +%m%d%Y-%H%M).iso"
+  einfo "All Done. ${ARCH} livecd located at ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-${DATE}.iso"
 }
 
 cat >> ${CHROOT_SCRIPT} << CHROOT
