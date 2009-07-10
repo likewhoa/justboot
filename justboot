@@ -53,7 +53,7 @@ BLUE="$(tput setaf 4)"
 RED="$(tput setaf 1)"
 NOCOLOR="$(tput setaf 9)"
 
-einfo() { echo -e "\a${BLK}.: ${1} :."; sleep 1; }
+einfo() { echo -e ".: ${1} :."; sleep 1; }
 ewarn() { echo -e "\a${RED}.: ${1} :."; }
 error() { echo -e "\a${RED}.: ${1} :."; exit 1; }
 
@@ -687,16 +687,16 @@ BUSYBOX_SRC_URI="http://www.busybox.net/downloads/busybox-1.14.0.tar.gz"
 BUSYBOX_ARCHIVE=\$(echo \${BUSYBOX_SRC_URI} | egrep -o 'busybox-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.tar\.gz')
 BUSYBOX_CONF=${DATA_DIR}/busybox/.config
 BUSYBOX=\${BUSYBOX_ARCHIVE/.tar.gz/}
-BLUE="$(tput setaf 4)"
-RED="$(tput setaf 1)"
-NOCOLOR="$(tput setaf 9)"
+BLUE="\$(tput setaf 4)"
+RED="\$(tput setaf 1)"
+NOCOLOR="\$(tput setaf 9)"
 
 trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
 #  Cleans up the environment if script interrupted by control-c.
 
 env-update 1>/dev/null && source /etc/profile
 
-einfo() { echo -e "\a\${BLK}.: \${1} :."; sleep 1; }
+einfo() { echo -e ".: \${1} :."; sleep 1; }
 ewarn() { echo -e "\a\${RED}.: \${1} :."; }
 error() { echo -e "\a\${RED}.: \${1} :."; exit 1; }
 
@@ -868,11 +868,11 @@ prepare_kernel_opts() {
       if [[ ${PROCS[${CPU}]} != M486 ]]; then
         sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
       fi
-      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -p0 <${KERNEL_SOURCES}-i586-config.patch
-      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -p0 <${KERNEL_SOURCES}-i686-config.patch
+      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-i586-config.patch
+      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-i686-config.patch
       case ${PROCS[${CPU}]} in                                        
-        MK8) patch -sp0 <${KERNEL_SOURCES}-x86-k8_proc.config.patch;;
-        MCORE2) patch -sp0 <${KERNEL_SOURCES}-x86-core2_proc.config.patch
+        MK8) patch -p0 <${KERNEL_SOURCES}-x86-k8_proc.config.patch;;
+        MCORE2) patch -p0 <${KERNEL_SOURCES}-x86-core2_proc.config.patch
       esac
       ;;
     x86_64)
