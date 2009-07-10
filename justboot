@@ -54,8 +54,8 @@ RED="$(tput setaf 1)"
 NOCOLOR="$(tput setaf 9)"
 
 einfo() { echo -e ".: ${1} :."; sleep 1; }
-ewarn() { echo -e "\a${RED}.: ${1} :."; }
-error() { echo -e "\a${RED}.: ${1} :."; exit 1; }
+ewarn() { echo -e "\a${RED}.: ${1} :.${NOCOLOR}"; }
+error() { echo -e "\a${RED}.: ${1} :.${NOCOLOR}"; exit 1; }
 
 exec_chkdir() { local DIR="${1}"; [[ ! -d ${DIR} ]] && mkdir -p ${DIR}; }
 
@@ -697,8 +697,8 @@ trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
 env-update 1>/dev/null && source /etc/profile
 
 einfo() { echo -e ".: \${1} :."; sleep 1; }
-ewarn() { echo -e "\a\${RED}.: \${1} :."; }
-error() { echo -e "\a\${RED}.: \${1} :."; exit 1; }
+ewarn() { echo -e "\a\${RED}.: \${1} :.\${NOCOLOR}"; }
+error() { echo -e "\a\${RED}.: \${1} :.\${NOCOLOR}"; exit 1; }
 
 exec_chklink() {
   local SRC="\${1}" DEST="\${2}"
