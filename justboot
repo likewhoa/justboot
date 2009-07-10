@@ -315,7 +315,7 @@ fi
 # the livecd exclude folders. See the /etc/justboot/files/{ramfs-directories,excluded-directories}.lst file 
 release_env() {            
   einfo "Releasing livecd environment, please wait..."
-#  do_exec rm -rf ${ARCH}/tmp/* 
+  do_exec rm -rf ${ARCH}/tmp/* 
   do_exec umount ${ARCH_DIR}/{proc,dev} ${ARCH}${DATA_DIR} 
                            
   if [ ${RAMFS} ]; then    
@@ -935,7 +935,7 @@ prepare_kernel() {
     do_exec prepare_initramfs
   else
     if [[ -f /usr/src/linux/.config ]]; then
-      einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}"
+      einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}\${NOCOLOR}"
       do_exec cp /usr/src/linux/.config /usr/src/linux/.config.${KERNEL_SOURCES}-\${DATE}
     fi
 
