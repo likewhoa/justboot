@@ -31,6 +31,7 @@ MENUCONFIG=false
 DELETE_ARCH=false
 VERBOSE=false
 DEBUG=false
+BASH4=false
 
 # Check for bash associated array support.
 if ! declare -A &>/dev/null; then
@@ -259,7 +260,7 @@ for i in ${ARCHES[@]}; do
     INVALID_ARCH=false; break
   fi
 done
-${INVALID_ARCH} && { einfo "${RED}${ARCH}${NOCOLOR} is invalid, valid options are ${ARCHES[@]}"; error "Exiting!!!"; }
+${INVALID_ARCH} && { einfo "${RED}${ARCH}${NOCOLOR} arch is invalid, valid options are ${ARCHES[*]}"; error "Exiting!!!"; }
 
 # Convert ARCH value for /etc/make.conf 
 case ${ARCH} in
