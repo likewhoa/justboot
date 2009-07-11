@@ -999,7 +999,6 @@ check_toolchain_days() {
     date -u -d 'now' '+%F %T.%N %Z'>/etc/toolchain_age
     return 0
   else
-    # Set first start of toolchain build 
     [ ! -f /etc/toolchain_age ] && date -u -d 'now' '+%F %T.%N %Z'>/etc/toolchain_age
 
     local CURRENT=\$(date -u -d 'now' '+%F %T.%N %Z') TARGET=\$(</etc/toolchain_age)
@@ -1013,14 +1012,13 @@ check_toolchain_days() {
     TOOLCHAIN_DAYS=\$(printf '%s' "\$DAYS")
     DAYS_LEFT=\$((LIMIT-TOOLCHAIN_DAYS))
       
-    # If this is the first day of the build, increment date by 2 days to skip toolchain rebuild.
     if ((TOOLCHAIN_DAYS>LIMIT)); then
       ewarn "Your toolchain is \${TOOLCHAIN_DAYS} days old passed the \${LIMIT} days limit."
       date -u -d '1 day' '+%F %T.%N %Z'>/etc/toolchain_age
       einfo "Preparing to rebuild the toolchain."
       return 0
-    elif ((TOOLCHAIN_DAYS==0)); then
-      date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
+    elif ((TOOLCHAIN_DAYS==0)); then # First day of toolchain build, increment by 1 day
+      date -u -d '1 day' '+%F %T.%N %Z'>/etc/toolchain_age
       ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap."
       einfo "Preparing to build the toolchain."
       return 0
@@ -1033,27 +1031,23 @@ check_toolchain_days() {
 
 bootstrap() {
   # Enable livecd and user locales (see /etc/justboot/locale.gen)
-  if [[ ! \$(grep '#en_US' /etc/locale.gen &>/dev/null) ]]; then
+  if grep '#en_US ISO-8859-1' /etc/locale.gen &>/dev/null; then
     einfo "Setting locales"
     for i in "${LOCALES[@]}" "#en_US ISO-8859-1"; do
       sed -i "s/#\${i}/\${i}/" /etc/locale.gen
     done
   fi
 
-  # Generate locales
   do_exec locale-gen 1>/dev/null
 
-  # Set localtime
   einfo "Setting localtime"
-  [[ -e /etc/localtime ]] && do_exec rm /etc/localtime
+  [ -e /etc/localtime ] && do_exec rm /etc/localtime
   do_exec cp -a /usr/share/zoneinfo/UTC /etc/localtime
 
-  einfo "Running emerge --sync"
+  einfo "Updating portage tree"
   do_exec emerge --sync -q 1>/dev/null
 
-  # Compile toolchain if --skip-toolchain is not set
   if ! ${NO_TOOL}; then
-    # Begin the bootstrap
     einfo "Compiling the toolchain, this maybe take a while depending on hardware."
     for i in gcc-config linux-headers glibc binutils gcc portage; do
       einfo "Compiling \${BLUE}\${i}."
@@ -1061,15 +1055,13 @@ bootstrap() {
     done
     do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
   
-    # Enable new gnu hash style
-    [[ ! \$(grep "\-\-hash\-style\=gnu" /etc/make.conf) ]] && sed -i 's/once/once,--hash-style=gnu/' /etc/make.conf 
+    ! grep "\-\-hash\-style\=gnu" /etc/make.conf && sed -i 's/LDFLAGS="/LDFLAGS="--hash-style=gnu,/' /etc/make.conf 
 
-    # Recompile toolchain
     for i in linux-headers glibc binutils gcc; do
       einfo "Compiling \${BLUE}\${i}."
       do_exec ${PMS} -1 \${i} 1>/dev/null && einfo "\${BLUE}\${i}\${NOCOLOR} compiled."
     done
-    einfo "Toolchain finished, compiling system packages against the new toolchain"
+    einfo "Toolchain finished, compiling system packages"
 
     while read ebuild; do
       einfo "Compiling \${BLUE}\"\${ebuild}\""
@@ -1099,7 +1091,7 @@ cat >> \${UCLIBC_SCRIPT} << BUSYBOX
 
   echo "Compiling Busybox."
   cd \${BUSYBOX} && make -s
-  [[ ! -f busybox.links ]] && make busybox.links
+  [ ! -f busybox.links ] && make busybox.links
 
   echo "Busybox has been compiled."
   exit
@@ -1115,6 +1107,6 @@ BUSYBOX
 CHROOT
 
 # Lets go already!
-[[ ! -d ${LIVEDIR} ]] && exec_chkdir ${LIVEDIR} # I trust it but i really don't.
+[[ ! -d ${LIVEDIR} ]] && exec_chkdir ${LIVEDIR} 
 do_exec cd ${LIVEDIR} || error "Failed to switch to livecd data directory, Exiting."
 do_exec check_deps && do_exec prepare_stage
