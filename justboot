@@ -999,7 +999,7 @@ check_toolchain_days() {
     return 1
   elif ${YES_TOOL}; then
     ewarn "Forcing a toolchain build"
-    date -u -d '1 day' '+%F %T.%N %Z'>/etc/toolchain_age
+    date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
     return 0
   else
     [ ! -f /etc/toolchain_age ] && date -u -d 'now' '+%F %T.%N %Z'>/etc/toolchain_age
@@ -1021,7 +1021,7 @@ check_toolchain_days() {
       einfo "Preparing to rebuild the toolchain."
       return 0
     elif ((TOOLCHAIN_DAYS==0)); then # First day of toolchain build, increment by 1 day
-      date -u -d '1 day' '+%F %T.%N %Z'>/etc/toolchain_age
+      date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
       ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap.."
       einfo "Preparing to build the toolchain."
       return 0
