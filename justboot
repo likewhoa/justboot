@@ -975,7 +975,7 @@ prepare_kernel() {
 }
 
 prepare_useropts() {
-  einfo "Setting root password to \"\${RED}${ROOT_PASSWD}\""
+  einfo "Setting root password to \"\${RED}${ROOT_PASSWD}\"${NOCOLOR}"
 
   # Set the livecd root password according to --root-passwd otherwise use "gentoo" for root
   echo "root:${ROOT_PASSWD}" | chpasswd 1>/dev/null # BUG #275555
