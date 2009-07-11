@@ -21,7 +21,7 @@ VERSION=0.3.0
 if [[ $1 =~ ^(--version|-[Vv])$ ]]; then echo "JustBOOT-${VERSION} see --help for more options"; exit 0; fi
 if [ $(id -u) != 0 ]; then echo "This script must be run as root."; exit 1; fi
 
-# Set some script variables before hand
+# Set some variables
 NO_TOOL=false
 YES_TOOL=false
 LETMEIN=false
@@ -33,7 +33,7 @@ VERBOSE=false
 DEBUG=false
 BASH4=false
 
-# Check for bash associated array support.
+# Check for bash associated array support
 if ! declare -A &>/dev/null; then
   echo "This script uses bash4 only features, consider upgrading"
 else
@@ -238,6 +238,8 @@ while [ $# -gt 0 ]; do
         ewarn "${CPU} is an invalid --coprocessor option."
         einfo "Available procs are: ${BLUE}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"
         ewarn "Exiting now."; exit 1
+      else
+        ewarn "--coprocessor argument only works with >=bash-4.0"
       fi
       ;;
     --coprocessor-list) einfo "Available procs are: ${BLUE}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"; exit 0;;
@@ -250,7 +252,7 @@ while [ $# -gt 0 ]; do
 done
 
 # Allow for user default $ARCH options i.e ~/.justboot/x86_64.conf
-[[ -f ~/.justboot/${ARCH}.conf ]] && { exec_chkdir ~/.justboot; . ~/.justboot/${ARCH}.conf; }
+[ -f ~/.justboot/${ARCH}.conf ] && . ~/.justboot/${ARCH}.conf
 
 # Check that we are using a valid $ARCH
 for i in ${ARCHES[@]}; do 
@@ -271,9 +273,9 @@ esac
 # Source JustBOOT global configuration options
 . /etc/justboot/config.globals
 
-# When no --data-directory is set we default to /usr/share/justboot, but we check for existing symbolic link
-# so our $LIVEDIR always points to the correct arch sources
-if [[ -h /usr/share/justboot/${ARCH} ]]; then
+# When no --data-directory is set we default to /usr/share/justboot, but first we check for an existing $ARCH
+# symbolic link, so our $LIVEDIR always points to the correct arch sources
+if [ -h /usr/share/justboot/${ARCH} ]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
   DATA_DIR=${LIVEDIR}/data
@@ -281,8 +283,8 @@ if [[ -h /usr/share/justboot/${ARCH} ]]; then
   EXCLUDES_DIR=${LIVEDIR}/excludes/${ARCH}
 fi
 
-# Check if we previously set a package manager for compiles on ${ARCH}
-if [[ ! -f /etc/justboot/${ARCH}-pms ]]; then PMS="emerge -q"; else PMS="$(cat /etc/justboot/${ARCH}-pms)"; fi
+# Check if we previously set a package manager for compiles on $ARCH
+if [ ! -f /etc/justboot/${ARCH}-pms ]; then PMS="emerge -q"; else PMS="$(cat /etc/justboot/${ARCH}-pms)"; fi
 
 # Remove old data directories (--purge/--delete-arch)
 if ${PURGE} || ${DELETE_ARCH}; then
