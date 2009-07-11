@@ -358,7 +358,7 @@ trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 
 # Check local system for requires packages.
 check_deps() {
-  local -a DEPS=( 'mkfsquashfs:sys-apps/squashfs-tool' 'mkisofs:app-cdr/cdrkit' )
+  local -a DEPS=( 'mkquashfs:sys-apps/squashfs-tool' 'mkisofs:app-cdr/cdrkit' )
 
   if [[ ${PMS} = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then
