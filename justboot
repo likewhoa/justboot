@@ -358,6 +358,8 @@ trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 
 # Check local system for requires packages.
 check_deps() {
+  local -a DEPS=( 'mkfsquashfs:sys-apps/squashfs-tool' 'mkisofs:app-cdr/cdrkit' )
+
   if [[ ${PMS} = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
@@ -365,10 +367,13 @@ check_deps() {
     fi
   fi
 
-  if ! hash mksquashfs &>/dev/null; then
-    einfo "Compiling ${BLUE}squashfs-tools."
-    do_exec ${PMS} squashfs-tools 1>/dev/null
-  fi
+  for i in ${DEPS[@]}; do
+    if ! hash ${i/:*/} &>/dev/null; then
+      einfo "Compiling ${BLUE}${i/:*/}"
+      do_exec ${PMS} ${i/*:/} 1>/dev/null
+      einfo "${BLUE}${i/:*/}${NOCOLOR} compiled"
+    fi
+  done
 }
 
 # Preparation of the stage1 build - we skip most of this and only run through half of it once
@@ -765,7 +770,7 @@ MAKECONF
 prepare_packages() {
   local -a GLOBAL_PACKAGES=( 'grub:sys-boot/grub' 'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/reiser4progs' \
 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'screen:app-misc/screen' \
-'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
+'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo')
 
   einfo "Preparing livecd and user packages, please wait."
   for i in \${GLOBAL_PACKAGES[@]}; do
@@ -1022,11 +1027,11 @@ check_toolchain_days() {
       return 0
     elif ((TOOLCHAIN_DAYS==0)); then # First day of toolchain build, increment by 1 day
       date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
-      ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap.."
+      ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap."
       einfo "Preparing to build the toolchain."
       return 0
     else
-      ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap."
+      ewarn "You have \${DAYS_LEFT:-60} days left until your next schedule bootstrap"
       return 1
     fi
   fi
