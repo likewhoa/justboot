@@ -369,9 +369,9 @@ check_deps() {
 
   for i in ${DEPS[@]}; do
     if ! hash ${i/:*/} &>/dev/null; then
-      einfo "Compiling ${BLUE}${i/:*/}"
+      einfo "Compiling ${BLUE}${i/*:/}"
       do_exec ${PMS} ${i/*:/} 1>/dev/null
-      einfo "${BLUE}${i/:*/}${NOCOLOR} compiled"
+      einfo "${BLUE}${i/*:/}${NOCOLOR} compiled"
     fi
   done
 }
