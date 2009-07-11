@@ -767,6 +767,7 @@ prepare_packages() {
 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'screen:app-misc/screen' \
 'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
 
+  einfo "Preparing livecd and user packages, please wait."
   for i in \${GLOBAL_PACKAGES[@]}; do
     if ! hash \${i/:*/} &>/dev/null; then
       einfo "Compiling \${BLUE}\${i/*:/}."
