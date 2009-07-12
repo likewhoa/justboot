@@ -360,7 +360,7 @@ trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 check_deps() {
   local -a DEPS=( 'mksquashfs:sys-apps/squashfs-tools' 'genisoimage:app-cdr/cdrkit' )
 
-  if [[ ${PMS} = pmerge ]]; then
+  if [[ "${PMS}" = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then
       einfo "Compiling sys-apps/pkgcore."
       do_exec emerge pkgcore 1>/dev/null
