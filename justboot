@@ -740,11 +740,11 @@ prepare_packages() {
 
   einfo "Preparing livecd and user packages. please wait..."
   for i in \${GLOBAL_PACKAGES[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i/*:/}."; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi
+    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i/*:/}.\${NOCOLOR}"; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi
   done
 
   for i in ${EXTRA_PACKAGES=[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i}."; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi 
+    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i}.\${NOCOLOR}"; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi 
   done
 
   if ! hash memtest86+ &>/dev/null; then do_exec ${PMS} memtest86+ 1>/dev/null; fi
@@ -1043,9 +1043,9 @@ bootstrap() {
 
     python-updater &>/dev/null
 
-    einfo "Toolchain build completed, compiling livecd packages."
+    einfo "Toolchain build completed"
   else
-    einfo "Toolchain built skipped, compiling livecd packages."
+    einfo "Toolchain built skipped"
   fi
 }
 
