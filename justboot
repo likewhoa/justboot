@@ -834,7 +834,7 @@ prepare_kernel_opts() {
   cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
   case ${ARCH} in
     i[4,5,6]86)
-      if [[ ${PROCS[${CPU}]} != M486 ]]; then
+      if [[ ${PROCS[${CPU}]} != M486 ]]; then 
         sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
       fi
       [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-i586-config.patch
@@ -867,10 +867,7 @@ prepare_kernel() {
   case ${ARCH} in i[4,5,6]86) local ARCH=x86;; esac
 
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
-    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then
-      einfo "Compiling \${BLUE}layman"
-      do_exec ${PMS} layman # 1>/dev/null
-    fi
+    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then einfo "Compiling \${BLUE}layman"; do_exec ${PMS} layman 1>/dev/null; fi
  
     if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
       do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
