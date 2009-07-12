@@ -333,7 +333,7 @@ release_env() {
       einfo "Removing ${RED}${x}${NOCOLOR} from memory.. please wait."
       do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
       do_exec umount ${ARCH}/${x} 1>/dev/null
-      einfo "Copied ${BLUE}${x}${NOCOLOR} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
+      einfo "Copied ${BLUE}${x}${NOCOLOR} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${NOCOLOR}"
     done
   else  
     for x in "${LIVECD_EXCLUDES[@]}"; do do_exec umount ${ARCH}/${x} 1>/dev/null; done
@@ -374,7 +374,7 @@ prepare_stage() {
       local REAL_ARCH_DIR=$(readlink /usr/share/justboot/${ARCH})
       local REAL_EXCLUDES_DIR=$(readlink /usr/share/justboot/excludes/${ARCH})
 
-      einfo "Moving data directory from ${RED}${REAL_ARCH_DIR}${NOCOLOR} to ${RED}${LIVEDIR}/${ARCH}..${NOCOLOR} please wait..."
+      einfo "Moving data directory from ${RED}${REAL_ARCH_DIR}${NOCOLOR} to ${RED}${LIVEDIR}/${ARCH}${NOCOLOR}. please wait..."
       for i in /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}; do do_exec unlink ${i}; done
 
       exec_chkdir ${LIVEDIR}/excludes
@@ -392,10 +392,10 @@ prepare_stage() {
         [[ -d ${REAL_ARCH_DIR/${ARCH}/${i}} ]] && { REMOVAL=true; break; }
       done
       if ${REMOVAL}; then
-        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}"
+        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR}${NOCOLOR}"
         do_exec rm -rf ${REAL_ARCH_DIR} ${REAL_EXCLUDES_DIR} 
       else
-        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}"
+        ewarn "Removing old data directory ${RED}${REAL_ARCH_DIR/\/${ARCH}}${NOCOLOR}"
         do_exec unlink ${REAL_ARCH_DIR/\/${ARCH}//data}
         do_exec rm -rf ${REAL_ARCH_DIR/\/${ARCH}/}
       fi        
@@ -554,7 +554,7 @@ prepare_env() {
   fi
 
   [[ ! -d ${ARCH_DIR}/mnt/livecd ]] && do_exec mkdir -p ${ARCH_DIR}/mnt/livecd/{static,image,dynamic}
-  
+
   einfo "Entering the livecd chroot environment"
   do_exec chmod +x ${CHROOT_SCRIPT} && do_exec mv ${CHROOT_SCRIPT} ${ARCH_DIR}/tmp
   do_exec cp /etc/resolv.conf ${ARCH_DIR}/etc
