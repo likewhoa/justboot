@@ -27,6 +27,7 @@ YES_TOOL=false
 LETMEIN=false
 PURGE=false
 PURGE_KERNEL=false
+RAMFS=false
 MENUCONFIG=false
 DELETE_ARCH=false
 VERBOSE=false
@@ -49,22 +50,17 @@ declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/files/extra-packages.lst | grep 
 declare -a ARCHES=( x86_64 i386 i486 i586 i686 )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 
-# Set colors
+# Set terminal colors
 BLUE="$(tput setaf 4)"
 RED="$(tput setaf 1)"
 NOCOLOR="$(tput setaf 9)"
 
+# Functions
 einfo() { echo -e ".: ${1} :."; sleep 1; }
 ewarn() { echo -e "\a${RED}.: ${1} :.${NOCOLOR}"; }
 error() { echo -e "\a${RED}.: ${1} :.${NOCOLOR}"; exit 1; }
-
 exec_chkdir() { local DIR="${1}"; [[ ! -d ${DIR} ]] && mkdir -p ${DIR}; }
-
-exec_chklink() { 
-  local SRC="${1}" DEST="${2}"
-  [[ -h ${DEST} ]] && unlink ${DEST}
-  ln -s ${SRC} ${DEST}
-}
+exec_chklink() { local SRC="${1}" DEST="${2}"; [[ -h ${DEST} ]] && unlink ${DEST}; ln -s ${SRC} ${DEST}; }
 
 do_exec() {
   if ${DEBUG}; then
@@ -77,7 +73,7 @@ do_exec() {
   fi
 }
 
-# Help menu - TODO add moar examples!
+# Help menu
 print_help() {
 cat << HELP
 Usage: justboot [arguments] [make opts] [kernel opts]
@@ -85,17 +81,17 @@ Usage: justboot [arguments] [make opts] [kernel opts]
 Arguments:
 
 --arch=	                - Set arch for livecd build i.e --arch=x86_64
---kernel=               - Kernel sources for livecd (Currently on zen-sources is supported)
+--kernel=               - Kernel sources for livecd (Currently only zen-sources is supported)
 --root-passwd=          - ROOT password for the livecd
 --init-compression      - Currently only gzip and lzma compression is supported
---volid=		- Set a label for the livecd image.
+-L, --volid=		- Set a label for the livecd image
 --ramfs			- Compile in RAMFS "Must have ~4GB of available RAM"
 --force-toolchain	- Force a rebuilt of the toolchain
 --skip-toolchain	- Skips toolchain built for those in a hurry
 --data-directory=	- Set the data directory for compiles
---package-manager=	- Enable the package manager for all builds. 
+--package-manager=	- Enable the package manager for all builds 
 	Currently only pkgcore is supported, by default justboot uses portage
---letmein               - Will run /bin/bash at end of chroot stage for self maintanance
+--letmein               - Will run interactive bash at end of chroot stage for self maintanance
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
 --delete-arch		- Like --purge but exits script after
@@ -105,16 +101,16 @@ Gentoo make.conf options:
 
 --cflags		- Compiler FLAGS
 --ldflags=              - Linker FLAGS
---make-opts=            - MAKEOPTS 
---keywords=             - Accepted KEYWORDS i.e x86
+--make-opts=            - MAKEOPTS
+--keywords=             - Accepted KEYWORDS i.e ~x86
 --jobs=                 - Specifies the number of packages to build simultaneously
 --use=                  - Packages USE flags
 --features=             - make.conf specific FEATURES
---gentoo-mirrors=	- JustBOOT and make.conf space-seperated list of local mirrors
---rsync-mirror=		- Sets default rsync mirror
+--gentoo-mirrors=	- JustBOOT and make.conf space separated list of local mirrors
+--rsync-mirror=		- Sets the default rsync mirror
 --niceness=		- make.conf specific PORTAGE_NICENESS
 
-Linux Kernel options:
+Linux Kernel options: >=bash-4.0 Only
 
 --coprocessor=		- Processor type for the livecd kernel i.e --coprocessor=core2
 --coprocessor-list	- List the currently supported coprocessors
@@ -122,36 +118,38 @@ Linux Kernel options:
 --purge-kernel          - Purge any kernel sources and start fresh
 
 Usage examples:
- Generate a 64bit livecd using gentoo-sources and set 'gentoo' for root password
-# justboot --arch=x86_64 --kernel=gentoo-sources --root-passwd="gentoo"
- Generate a i686 livecd using zen-sources, with 'let me in!' as password with 'gentoo' for livecd label
-# justboot --arch=i686 --kernel=zen-sources --volid="gentoo rocks" --root-passwd="let me in!"
+ Generate a x86_64 livecd using gentoo-sources and set 'gentoo' for root password
+# justboot --arch=x86_64 --root-passwd="gentoo"
+ Generate a i686 livecd with 'let me in!' as password and 'gentoo' for livecd label
+# justboot --arch=i686 --volid="gentoo rocks" --root-passwd="let me in!"
  Generate a x86_64 livecd with optional gzip compression (Default is to use lzma)
 # justboot --arch=x86_64 --init-compression lzma
- Generate a livecd but compile packages in ram
+ Generate a livecd but compile packages in ram (see /etc/justboot/files/ramfs-directories.lst)
 # justboot --arch=x86_64 -ramfs -L "Fast is good"
- Generate a livecd but delete old data directories first.
-# justboot --arch=x86_64 --kernel=gentoo-sources --purge
+ Generate a livecd but delete old sources first.
+# justboot --arch=x86_64 --purge
  Generate a livecd for x86_64 using -j8 for makeopts and -19 for portage niceness
-# justboot --arch=x86_64 --kernel=gentoo-sources --make-opts="-j8" --niceness="-19"
- Change the data directory for livecd creation
-# justboot --arch=x86_64 --kernel=zen-sources --data-directory=/home/username
- Change the RSYNC and Gentoo Mirrors used for package downloads
-# justboot --gentoo-mirrors="http://gentoo.mirrors.tera-byte.com/ http://mirror.datapipe.net/gentoo ftp://gentoo.chem.wisc.edu/gentoo/" --rsync-mirror="http://localhost/portage"
- Generater a livecd for a Opteron AMD processor
+# justboot --arch=x86_64 --make-opts="-j8" --niceness="-19"
+ Change the livecd data directory
+# justboot --arch=x86_64 --data-directory=/home/username
+ Change the rsync and gentoo mirrors setting
+# justboot --arch=i486 --gentoo-mirrors="http://mirror.datapipe.net/gentoo ftp://gentoo.chem.wisc.edu/gentoo/" --rsync-mirror="http://localhost/portage"
+ Generate a livecd for opteron processors
 # justboot --coprocessor=opteron --arch=x86_64 --cflags="-march=opteron -Os -pipe" --make-opts=-j3
- Generater a livecd for a Intel Core2 Quad processor
-# justboot --coprocessor=core2 --arch=core2 --cflags="-march=core2 -Os -pipe" --make-opts=-j5
- Generate x86_64 livecd with interactive kernel menu and custom rsync mirror
-  justboot --arch=x86_64 --menuconfig --make-opts=-j5 --rsync-mirror=http://localhost/portage
+ Generater a livecd for an Intel Core2 Quad processor
+# justboot --coprocessor=core2 --arch=x86_64 --cflags="-march=core2 -Os -pipe" --make-opts=-j5
+ Generate a x86_64 livecd with interactive kernel menu and custom rsync mirror
+  justboot --arch=x86_64 --menuconfig --make-opts=-j5 --rsync-mirror="http://localhost/portage"
 # Use sys-apps/pkgcore for all livecd builds instead of portage
   justboot --arch=i486 --package-manager=pkgcore --root-passwd=letmein
-
+ Remove old sources (This deletes all livecd data for that arch)
+# justboot --arch=i586 --delete-arch
+ 
 HELP
 exit 0
 }
 
-einfo "${BLUE}JustBOOT(tm)${NOCOLOR} initiated."
+einfo "${BLUE}JustBOOT(tm)${NOCOLOR} initiated"
 
 # Parse Command Line Arguments.
 while [ $# -gt 0 ]; do
@@ -178,7 +176,7 @@ while [ $# -gt 0 ]; do
       ACCEPT_KEYWORDS="${1##*=}"
       einfo "Setting ${BLUE}${ACCEPT_KEYWORDS}${NOCOLOR} for make.conf"
       ;;
-    --ramfs|-ricer)
+    --ramfs)
       RAMFS=true
       einfo "${RED}RAMFS${NOCOLOR} compiles enabled!!!"
       ;;
@@ -188,7 +186,6 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     --volid=*|-L)
-      # We force underscore on Volume ID for compatibility.
       if [ ${1%%=*} = -L ]; then
         VOLID="${2// /_}"
         [ ${#VOLID} -gt 32 ] && error "${NOCOLOR}Volume label ${RED}\"${VOLID//_/ }\"${NOCOLOR} is greater than the 32 allowed characters"
@@ -214,7 +211,7 @@ while [ $# -gt 0 ]; do
       ;; 
     --gentoo-mirrors=*)
       OPT="$(echo ${1##*=} | awk '{print$1}')"
-      GENTOO_MIRROR="${OPT/%\/}" # Lets get rid of leading slash
+      GENTOO_MIRROR="${OPT/%\/}"
       GENTOO_MIRRORS="${1##*=}"
       ;;
     --rsync-mirror=*) SYNC="${1##*=}";;
@@ -255,13 +252,8 @@ done
 [ -f ~/.justboot/${ARCH}.conf ] && . ~/.justboot/${ARCH}.conf
 
 # Check that we are using a valid $ARCH
-for i in ${ARCHES[@]}; do 
-  if [[ ${ARCH} != ${i} ]]; then
-    INVALID_ARCH=true
-  else
-    INVALID_ARCH=false; break
-  fi
-done
+for i in ${ARCHES[@]}; do if [[ ${ARCH} != ${i} ]]; then INVALID_ARCH=true; else INVALID_ARCH=false; break; fi; done
+
 ${INVALID_ARCH} && { einfo "${RED}${ARCH}${NOCOLOR} arch is invalid, valid options are ${ARCHES[*]}"; error "Exiting!!!"; }
 
 # Convert ARCH value for /etc/make.conf 
@@ -270,11 +262,11 @@ case ${ARCH} in
   i[4,5,6]86) [[ ${ACCEPT_KEYWORDS} ]] || MAKE_KEYWORDS="~x86"
 esac
 
-# Source JustBOOT global configuration options
+# Source JustBOOT(tm) global configuration options
 . /etc/justboot/config.globals
 
 # When no --data-directory is set we default to /usr/share/justboot, but first we check for an existing $ARCH
-# symbolic link, so our $LIVEDIR always points to the correct arch sources
+# symbolic link, so our $LIVEDIR always points to the correct arch path
 if [ -h /usr/share/justboot/${ARCH} ]; then
   LINK=$(readlink /usr/share/justboot/${ARCH})
   LIVEDIR=${LINK/\/${ARCH}/}
@@ -293,14 +285,13 @@ if ${PURGE} || ${DELETE_ARCH}; then
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
     do_exec rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
     do_exec rm -rf $(readlink /usr/share/justboot/${ARCH})
-      for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do
-        do_exec unlink ${i}
-      done
-  elif [[ -d /usr/share/justboot/${ARCH} ]]; then
+      for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do do_exec unlink ${i}; done
+  elif [ -d /usr/share/justboot/${ARCH} ]; then
     do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
   else
     einfo "No ARCH to purge or remove! Exiting"; exit 1
   fi
+
   for i in i{4,5,6}86 x86_64; do
     [[ ${i} = ${ARCH} ]] && continue 2
     [[ -d ${src/${ARCH}/${i}} ]] && { REMOVAL=true; break; }
@@ -313,10 +304,10 @@ if ${PURGE} || ${DELETE_ARCH}; then
   ${DELETE_ARCH} && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 fi
 
-# The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories
+# The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories.
 # First we remove local livecd folders i.e proc,dev and the data directory, then we copy any ramfs changes to
-# the livecd exclude folders. See the /etc/justboot/files/{ramfs-directories,excluded-directories}.lst file 
-release_env() {            
+# the livecd exclude folders. See the /etc/justboot/files/{ramfs-directories,excluded-directories}.lst file to customize
+release_env() {
   einfo "Releasing livecd environment, please wait..."
   do_exec rm -rf ${ARCH}/tmp/* 
   do_exec umount ${ARCH_DIR}/{proc,dev} ${ARCH}${DATA_DIR} 
@@ -345,9 +336,7 @@ release_env() {
       einfo "Copied ${BLUE}${x}${NOCOLOR} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}"
     done
   else  
-    for x in "${LIVECD_EXCLUDES[@]}"; do
-      do_exec umount ${ARCH}/${x} 1>/dev/null
-    done
+    for x in "${LIVECD_EXCLUDES[@]}"; do do_exec umount ${ARCH}/${x} 1>/dev/null; done
   fi
   [ ! $1 ] && do_exec clean_env
 }
@@ -356,14 +345,15 @@ USER_INTERRUPT=13
 trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 #  Cleans up the livecd environment if script is interrupted by Control-C.
 
-# Check local system for requires packages.
+# Check local system for requires packages
 check_deps() {
   local -a DEPS=( 'mksquashfs:sys-apps/squashfs-tools' 'genisoimage:app-cdr/cdrkit' )
 
-  if [[ "${PMS}" = pmerge ]]; then
-    if ! hash pmerge &>/dev/null; then
-      einfo "Compiling sys-apps/pkgcore."
+  if [[ ${PMS} = pmerge ]]; then
+    if ! hash pmerge &>/dev/null; then 
+      einfo "Compiling sys-apps/pkgcore"
       do_exec emerge pkgcore 1>/dev/null
+      einfo "${BLUE}sys-apps/pkgcore${NOCOLOR} compiled"
     fi
   fi
 
@@ -380,14 +370,12 @@ check_deps() {
 # unless we are starting fresh or ran justboot with --purge argument.
 prepare_stage() {
   if [[ ! -d ${ARCH_DIR} || ${LIVEDIR} = /usr/share/justboot ]]; then
-    if [[ -h /usr/share/justboot/${ARCH} ]]; then
+    if [ -h /usr/share/justboot/${ARCH} ]; then
       local REAL_ARCH_DIR=$(readlink /usr/share/justboot/${ARCH})
       local REAL_EXCLUDES_DIR=$(readlink /usr/share/justboot/excludes/${ARCH})
 
       einfo "Moving data directory from ${RED}${REAL_ARCH_DIR}${NOCOLOR} to ${RED}${LIVEDIR}/${ARCH}..${NOCOLOR} please wait..."
-      for i in /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}; do
-        do_exec unlink ${i} 
-      done
+      for i in /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}; do do_exec unlink ${i}; done
 
       exec_chkdir ${LIVEDIR}/excludes
       do_exec mv ${REAL_ARCH_DIR} ${ARCH_DIR}
@@ -429,15 +417,13 @@ prepare_stage() {
     x86_64) local GENTOO_ARCH=amd64 STAGE=amd64;;
     i[4,5,6]86)
       if [[ ${ARCH} = i586 ]]; then
-        local STAGE=i486
-        local GENTOO_ARCH=x86
+        local STAGE=i486 GENTOO_ARCH=x86
       else
-        local STAGE=${ARCH}
-        local GENTOO_ARCH=x86
+        local STAGE=${ARCH} GENTOO_ARCH=x86
       fi
   esac
 
-  if [[ ! -d ${ARCH_DIR} ]]; then
+  if [ ! -d ${ARCH_DIR} ]; then
     einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${NOCOLOR}. please wait..."
 
     do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/current
@@ -500,11 +486,11 @@ prepare_env() {
     fi
   done
 
-  if [ ${RAMFS} ]; then
+  if ${RAMFS}; then
     for x in "${LIVECD_EXCLUDES[@]}"; do
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
-          einfo "Mounting ${BLUE}${x}${NOCOLOR} in memory.. please wait"
+          einfo "Mounting ${BLUE}${x}${NOCOLOR} in memory. please wait..."
           do_exec mount -t ramfs ${x} ${ARCH}/${x} 1>/dev/null 
 
           [[ ! -d ${EXCLUDES_DIR}/${x//\//:} ]] && exec_chkdir ${EXCLUDES_DIR}/${x//\//:}
@@ -518,9 +504,7 @@ prepare_env() {
     done
 
     for x in "${RAMFS_DIR[@]}"; do
-      for y in "${LIVECD_EXCLUDES[@]}"; do
-        [[ ${x} = ${y} ]] && continue 2
-      done
+      for y in "${LIVECD_EXCLUDES[@]}"; do [[ ${x} = ${y} ]] && continue 2; done
       einfo "Mounting ${BLUE}${x}${NOCOLOR} in memory.. please wait."
 
       if [[ $(ls ${ARCH}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
@@ -538,44 +522,40 @@ prepare_env() {
       fi
     done
 
-    declare -a DIRS
     ( 
     cd ${EXCLUDES_DIR}
     DIRS=( * )
-    for y in "${DIRS[@]}"; do
-      for z in "${LIVECD_EXCLUDES[@]}" "${RAMFS_DIR[@]}"; do
-        [[ ${y} = ${z//\//:} ]] && continue 2
+    for x in "${DIRS[@]}"; do
+      for y in "${LIVECD_EXCLUDES[@]}" "${RAMFS_DIR[@]}"; do
+        [[ ${x} = ${y//\//:} ]] && continue 2
       done
-      einfo "${BLUE}${y}${NOCOLOR} is an orphan directory."
-      einfo "Moving data to ${RED}${ARCH}/${y//://}.${NOCOLOR} please wait..."
-      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} &>/dev/null
-      do_exec rm -rf ${EXCLUDES_DIR}/${y}
+      einfo "${BLUE}${x}${NOCOLOR} is an orphan directory."
+      einfo "Moving data to ${RED}${ARCH}/${x//://}.${NOCOLOR} please wait..."
+      do_exec mv ${EXCLUDES_DIR}/${x}/* ${ARCH}/${x//://} &>/dev/null
+      do_exec rm -rf ${EXCLUDES_DIR}/${x}
     done
     )
   else
-    declare -a DIRS
     ( 
     cd ${EXCLUDES_DIR}
     DIRS=( * )
-    for y in "${DIRS[@]}"; do
-      for z in "${LIVECD_EXCLUDES[@]}"; do
-        [[ ${y} = ${z//\//:} ]] && continue 2
+    for x in "${DIRS[@]}"; do
+      for y in "${LIVECD_EXCLUDES[@]}"; do
+        [[ ${x} = ${y//\//:} ]] && continue 2
       done
-      einfo "${BLUE}${y}${NOCOLOR} is either an orphan directory or part of an old ${BLUE}ramfs (--ramfs)${NOCOLOR} run."
-      einfo "Moving data to ${RED}${ARCH}/${y//://}.${NOCOLOR} please wait..."
-      do_exec mv ${EXCLUDES_DIR}/${y}/* ${ARCH}/${y//://} &>/dev/null
-      do_exec rm -rf ${EXCLUDES_DIR}/${y}
+      einfo "${BLUE}${x}${NOCOLOR} is either an orphan directory or part of an old ${BLUE}ramfs (--ramfs)${NOCOLOR} run."
+      einfo "Moving data to ${RED}${ARCH}/${x//://}.${NOCOLOR} please wait..."
+      do_exec mv ${EXCLUDES_DIR}/${x}/* ${ARCH}/${x//://} &>/dev/null
+      do_exec rm -rf ${EXCLUDES_DIR}/${x}
     done
     )
     einfo "Mounting livecd data files"
-    for x in "${LIVECD_EXCLUDES[@]}"; do
-      do_exec mount -o bind ${EXCLUDES_DIR}/${x//\//:} ${ARCH}/${x} 1>/dev/null
-    done
+    for i in "${LIVECD_EXCLUDES[@]}"; do do_exec mount -o bind ${EXCLUDES_DIR}/${i//\//:} ${ARCH}/${i} 1>/dev/null; done
   fi
 
   [[ ! -d ${ARCH_DIR}/mnt/livecd ]] && do_exec mkdir -p ${ARCH_DIR}/mnt/livecd/{static,image,dynamic}
   
-  einfo "Entering the livecd chroot environment."
+  einfo "Entering the livecd chroot environment"
   do_exec chmod +x ${CHROOT_SCRIPT} && do_exec mv ${CHROOT_SCRIPT} ${ARCH_DIR}/tmp
   do_exec cp /etc/resolv.conf ${ARCH_DIR}/etc
   
@@ -585,23 +565,21 @@ prepare_env() {
     do_exec linux64 chroot ${ARCH_DIR} ${CHROOT_SCRIPT} && do_exec rm ${ARCH_DIR}${CHROOT_SCRIPT}
   fi
 
-  [[ $? = 13 ]] && do_exec release_env now
+  [ $? = 13 ] && do_exec release_env now
 
-  einfo "Exiting livecd chroot environment."
+  einfo "Exiting the livecd chroot environment"
   do_exec env-update 1>/dev/null && do_exec source /etc/profile
   do_exec release_env 
 }
 
 # Before we create our iso image we will clean up the environment of any excluded packages and common directories or files that
-# we don't require for livecd operations
+# we don't require for livecd operations ( see /etc/justboot{excluded-directories,remove-packages,remove-files}.lst for options.
 clean_env() {
-  local TARGET=${LIVEDIR}/target/files/${ARCH}
-  local CLEANUP_SCRIPT=$(mktemp /tmp/XXX)
+  local TARGET=${LIVEDIR}/target/files/${ARCH} CLEANUP_SCRIPT=$(mktemp /tmp/XXX)
 
-  [[ -d ${LIVEDIR}/target ]] && do_exec rm -rf ${LIVEDIR}/{boot,target}
-  exec_chkdir ${TARGET}
+  [[ -d ${LIVEDIR}/target ]] && { do_exec rm -rf ${LIVEDIR}/{boot,target}; exec_chkdir ${TARGET}; }
 
-  einfo "Performing livecd cleanup, please wait..."
+  einfo "Performing livecd cleanup. please wait..."
   do_exec cp -a ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} &>/dev/null
 
   if [[ -d ${EXCLUDES_DIR}/boot ]]; then
@@ -619,7 +597,7 @@ clean_env() {
     fi
   done
 
-  if [ ${RAMFS} ]; then
+  if ${RAMFS}; then
     for x in "${RAMFS_DIR[@]}"; do
       for y in "${LIVECD_EXCLUDES[@]}"; do
         [[ ${x} = ${y} ]] && continue 2
@@ -639,12 +617,9 @@ cat >> ${CLEANUP_SCRIPT} << CLEANUP
   echo "Entering livecd environment"
   env-update 1>/dev/null && source /etc/profile
 
-  for i in ${REMOVE_PACKAGES[@]}; do
-    echo "Removing \${i} from livecd"
-    ${PMS} -C \${i} &>/dev/null
-  done
+  for i in ${REMOVE_PACKAGES[@]}; do echo "Removing \${i} from livecd"; ${PMS} -C \${i} &>/dev/null; done
 
-  echo -e "${RED}${#REMOVE_PACKAGES[@]}${NOCOLOR} Packages removed."
+  echo -e "${RED}${#REMOVE_PACKAGES[@]}${NOCOLOR} Packages removed"
   exit
 CLEANUP
   do_exec chmod +x ${CLEANUP_SCRIPT} && do_exec mv ${CLEANUP_SCRIPT} ${TARGET}/tmp
@@ -655,29 +630,27 @@ CLEANUP
     do_exec linux64 chroot ${TARGET} ${CLEANUP_SCRIPT}
   fi
 
-  [[ $? = 13 ]] && do_exec release_env now
+  [ $? = 13 ] && do_exec release_env now
 
   do_exec cd ${TARGET}
   do_exec rm -rf ${REMOVE_FILES[@]} ${LIVECD_EXCLUDES[@]}
 
-  for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb var/cache/hald var/log root var/log; do
-    do_exec exec_chkdir ${i}
-  done
+  for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb var/cache/hald var/log root var/log; do do_exec exec_chkdir ${i}; done
 
-  # Create mtab file
   >etc/mtab
 
   do_exec create_livecd
 }
 
-# Livecd creation function
+# Livecd creation 
 create_livecd() {
   local DATE=$(date +%m%d%Y-%H%M)
   do_exec touch ${LIVEDIR}/target/livecd
 
-  einfo "Building SquashFS."
+  einfo "Building squashfs image"
   do_exec mksquashfs ${LIVEDIR}/target/files/${ARCH}/ ${LIVEDIR}/target/livecd.squashfs
-  einfo "Generating bootable JustBOOT(tm) livecd image."
+
+  einfo "Generating bootable JustBOOT(tm) livecd image"
   do_exec genisoimage -volid \"${VOLID}\" -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table \
 -iso-level 4 -hide-rr-moved -c boot.catalog -o ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-${DATE}.iso -x files ${LIVEDIR}/target/
   
@@ -708,11 +681,7 @@ einfo() { echo -e ".: \${1} :."; sleep 1; }
 ewarn() { echo -e "\a\${RED}.: \${1} :.\${NOCOLOR}"; }
 error() { echo -e "\a\${RED}.: \${1} :.\${NOCOLOR}"; exit 1; }
 
-exec_chklink() {
-  local SRC="\${1}" DEST="\${2}"
-  [[ -h \${DEST} ]] && unlink \${DEST}
-  ln -s \${SRC} \${DEST}
-}
+exec_chklink() { local SRC="\${1}" DEST="\${2}"; [[ -h \${DEST} ]] && unlink \${DEST}; ln -s \${SRC} \${DEST}; }
  
 do_exec() {
   if ${DEBUG}; then
@@ -727,11 +696,8 @@ do_exec() {
 
 check_deps() {
   # Check for pkgcore if --package-manager=pkgcore is used"
-  if [[ "${PMS}" = pmerge ]]; then   
-    if ! hash pmerge &>/dev/null; then
-      einfo "Compiling sys-apps/pkgcore."
-      do_exec emerge pkgcore 1>/dev/null
-    fi
+  if [[ ${PMS} = pmerge ]]; then   
+    if ! hash pmerge &>/dev/null; then einfo "Compiling sys-apps/pkgcore"; do_exec emerge pkgcore 1>/dev/null; fi
   fi
 } 
 
@@ -770,21 +736,15 @@ MAKECONF
 prepare_packages() {
   local -a GLOBAL_PACKAGES=( 'grub:sys-boot/grub' 'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/reiser4progs' \
 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'screen:app-misc/screen' \
-'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo')
+'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
 
-  einfo "Preparing livecd and user packages, please wait."
+  einfo "Preparing livecd and user packages. please wait..."
   for i in \${GLOBAL_PACKAGES[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then
-      einfo "Compiling \${BLUE}\${i/*:/}."
-      do_exec ${PMS} \${i/*:/} 1>/dev/null
-    fi
+    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i/*:/}."; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi
   done
 
   for i in ${EXTRA_PACKAGES=[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then
-      einfo "Compiling \${BLUE}\${i}."
-      do_exec ${PMS} \${i/*:/} 1>/dev/null
-    fi 
+    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i}."; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi 
   done
 
   if ! hash memtest86+ &>/dev/null; then do_exec ${PMS} memtest86+ 1>/dev/null; fi
@@ -793,7 +753,7 @@ prepare_packages() {
 }
 
 prepare_bootloader() {
-  [[ -h /boot/grub/menu.lst ]] && do_exec unlink /boot/grub/menu.lst
+  [ -h /boot/grub/menu.lst ] && do_exec unlink /boot/grub/menu.lst
 
   # Always a fresh grub.conf, eventually it will parse for changes then update.
   >/boot/grub/menu.lst
@@ -864,11 +824,11 @@ prepare_initramfs() {
 
   do_exec cp -a /lib/modules/\${KERNEL_MODULE_SRC} lib/modules/
 
-  [[ -f /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION} ]] && do_exec rm /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
+  [ -f /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION} ] && do_exec rm /boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
   find | cpio --quiet -o -H newc | ${INIT_COMPRESSION} -9 >/boot/${ARCH}-initramfs_data.cpio.${INIT_COMPRESSION}
 }
 
-# This function handles the custom kernel options with --coprocessor argument
+# This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
 prepare_kernel_opts() {
   ( # Spawn a new shell to avoid leaving current working path
   cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
@@ -898,7 +858,7 @@ prepare_kernel() {
   local DATE=$(date +%Y%m%d-%H%m)
 
   if ${PURGE_KERNEL}; then
-    ewarn "--purge-kernel used,.. removing sources."
+    ewarn "--purge-kernel used, removing sources..."
     do_exec unlink /usr/src/linux
     do_exec rm -rf /usr/src/* /lib/modules/*
   fi
@@ -921,12 +881,12 @@ prepare_kernel() {
       echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     fi
     # Bug with pkgcore and zen-sources
-    if [ ${PMS} = pmerge ]; then do_exec emerge ${KERNEL_SOURCES} 1>/dev/null; else do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null; fi
+    if [[ ${PMS} = pmerge ]]; then do_exec emerge ${KERNEL_SOURCES} 1>/dev/null; else do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null; fi
 
     einfo "Compiling \${BLUE}\${ARCH}\${NOCOLOR} kernel image"
-    if declare -A &>/dev/null; then
+    if declare -A &>/dev/null; then 
       prepare_kernel_opts \${ARCH}
-    else
+    else 
       do_exec cp ${DATA_DIR}/kernel/${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
       
@@ -943,12 +903,12 @@ prepare_kernel() {
     einfo "\${RED}\${ARCH}\${NOCOLOR} kernel compiled, preparing initramfs image."
     do_exec prepare_initramfs
   else
-    if [[ -f /usr/src/linux/.config ]]; then
+    if [ -f /usr/src/linux/.config ]; then
       einfo "Backing up old kernel config to \${RED}/usr/src/linux/.config.\${DATE}\${NOCOLOR}"
       do_exec cp /usr/src/linux/.config /usr/src/linux/.config.${KERNEL_SOURCES}-\${DATE}
     fi
 
-    einfo "Compiling \${RED}\${ARCH}\${NOCOLOR} kernel image."
+    einfo "Compiling \${RED}\${ARCH}\${NOCOLOR} kernel image"
     if declare -A &>/dev/null; then
       prepare_kernel_opts \${ARCH}
     else
@@ -1069,7 +1029,7 @@ bootstrap() {
       einfo "Compiling \${BLUE}\${i}."
       do_exec ${PMS} -1 \${i} 1>/dev/null && einfo "\${BLUE}\${i}\${NOCOLOR} compiled."
     done
-    einfo "Toolchain finished, compiling system packages"
+    einfo "Toolchain build finished, compiling system packages"
 
     while read ebuild; do
       einfo "Compiling \${BLUE}\"\${ebuild}\""
@@ -1097,11 +1057,11 @@ cat >> \${UCLIBC_SCRIPT} << BUSYBOX
 #!/bin/bash
   env-update 1>/dev/null && source /etc/profile
 
-  echo "Compiling Busybox."
+  echo "Compiling Busybox"
   cd \${BUSYBOX} && make -s
   [ ! -f busybox.links ] && make busybox.links
 
-  echo "Busybox has been compiled."
+  echo "Busybox has been compiled"
   exit
 BUSYBOX
   do_exec prepare_configs

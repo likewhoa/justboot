@@ -1,5 +1,5 @@
 sys-apps/pkgcore **
-sys-apps/openrc **
+#sys-apps/openrc **
 sys-apps/baselayout **
 app-admin/testdisk **
 app-backup/backup-manager **
