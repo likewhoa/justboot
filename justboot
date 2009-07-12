@@ -524,7 +524,7 @@ prepare_env() {
 
     ( 
     cd ${EXCLUDES_DIR}
-    DIRS=( * )
+    declare -a DIRS=( * )
     for x in "${DIRS[@]}"; do
       for y in "${LIVECD_EXCLUDES[@]}" "${RAMFS_DIR[@]}"; do
         [[ ${x} = ${y//\//:} ]] && continue 2
@@ -538,7 +538,7 @@ prepare_env() {
   else
     ( 
     cd ${EXCLUDES_DIR}
-    DIRS=( * )
+    declare -a DIRS=( * )
     for x in "${DIRS[@]}"; do
       for y in "${LIVECD_EXCLUDES[@]}"; do
         [[ ${x} = ${y//\//:} ]] && continue 2
