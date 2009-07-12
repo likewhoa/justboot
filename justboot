@@ -318,12 +318,12 @@ release_env() {
         if [[ ${x} = ${y} ]]; then
           einfo "Removing ${RED}${x}${NOCOLOR} from memory.. please wait"
           do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
-          do_exec umount ${ARCH}/${x} 1>/dev/null 
+          do_exec umount ${ARCH}/${x} &>/dev/null 
           einfo "Copied ${BLUE}${x}${NOCOLOR} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${NOCOLOR}"
           continue 2
         fi
       done                 
-      do_exec umount ${ARCH}/${x} 1>/dev/null
+      do_exec umount ${ARCH}/${x} &>/dev/null
     done
                            
     for x in "${RAMFS_DIR[@]}"; do
@@ -332,11 +332,11 @@ release_env() {
       done                 
       einfo "Removing ${RED}${x}${NOCOLOR} from memory.. please wait."
       do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
-      do_exec umount ${ARCH}/${x} 1>/dev/null
+      do_exec umount ${ARCH}/${x} &>/dev/null
       einfo "Copied ${BLUE}${x}${NOCOLOR} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${NOCOLOR}"
     done
   else  
-    for x in "${LIVECD_EXCLUDES[@]}"; do do_exec umount ${ARCH}/${x} 1>/dev/null; done
+    for x in "${LIVECD_EXCLUDES[@]}"; do do_exec umount ${ARCH}/${x} &>/dev/null; done
   fi
   [ ! $1 ] && do_exec clean_env
 }
@@ -1036,7 +1036,7 @@ bootstrap() {
 
     while read ebuild; do
       einfo "Compiling \${BLUE}\"\${ebuild}\"\${NOCOLOR}"
-      do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null 
+      do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null
       einfo "\${BLUE}\"\${ebuild}\"\${NOCOLOR} compiled"
     done < <(cat failed)
     do_exec rm failed
