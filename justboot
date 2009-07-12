@@ -1018,7 +1018,7 @@ bootstrap() {
   if ! ${NO_TOOL}; then
     einfo "Compiling the toolchain, this maybe take a while depending on hardware."
     for i in gcc-config linux-headers glibc binutils gcc portage; do
-      einfo "Compiling \${BLUE}\${i}."
+      einfo "Compiling \${BLUE}\${i}.\${NOCOLOR}"
       do_exec ${PMS} -1 \${i} 1>/dev/null && einfo "\${BLUE}\${i}\${NOCOLOR} compiled."
     done
     do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
@@ -1026,7 +1026,7 @@ bootstrap() {
     ! grep "\-\-hash\-style\=gnu" /etc/make.conf &>/dev/null && sed -i 's/LDFLAGS="/LDFLAGS="--hash-style=gnu,/' /etc/make.conf 
 
     for i in linux-headers glibc binutils gcc; do
-      einfo "Compiling \${BLUE}\${i}."
+      einfo "Compiling \${BLUE}\${i}.\${NOCOLOR}"
       do_exec ${PMS} -1 \${i} 1>/dev/null && einfo "\${BLUE}\${i}\${NOCOLOR} compiled."
     done
     einfo "Toolchain build finished, compiling system packages"
