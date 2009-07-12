@@ -358,7 +358,7 @@ trap 'release_env now; exit $USER_INTERRUPT' TERM INT
 
 # Check local system for requires packages.
 check_deps() {
-  local -a DEPS=( 'mkquashfs:sys-apps/squashfs-tool' 'mkisofs:app-cdr/cdrkit' )
+  local -a DEPS=( 'mksquashfs:sys-apps/squashfs-tools' 'genisoimage:app-cdr/cdrkit' )
 
   if [[ ${PMS} = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then
@@ -369,7 +369,7 @@ check_deps() {
 
   for i in ${DEPS[@]}; do
     if ! hash ${i/:*/} &>/dev/null; then
-      einfo "Compiling ${BLUE}${i/*:/}"
+      einfo "Compiling ${BLUE}${i/*:/}${NOCOLOR}"
       do_exec ${PMS} ${i/*:/} 1>/dev/null
       einfo "${BLUE}${i/*:/}${NOCOLOR} compiled"
     fi
@@ -678,7 +678,7 @@ create_livecd() {
   einfo "Building SquashFS."
   do_exec mksquashfs ${LIVEDIR}/target/files/${ARCH}/ ${LIVEDIR}/target/livecd.squashfs
   einfo "Generating bootable JustBOOT(tm) livecd image."
-  do_exec mkisofs -volid \"${VOLID}\" -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table \
+  do_exec genisoimage -volid \"${VOLID}\" -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table \
 -iso-level 4 -hide-rr-moved -c boot.catalog -o ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-${DATE}.iso -x files ${LIVEDIR}/target/
   
   do_exec rm -rf ${LIVEDIR}/{target,boot}
