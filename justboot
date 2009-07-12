@@ -1035,7 +1035,7 @@ bootstrap() {
     done < <(emerge -ep --columns --color=n system | grep ebuild | awk '{print\$4}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)") 
 
     while read ebuild; do
-      einfo "Compiling \${BLUE}\"\${ebuild}\""
+      einfo "Compiling \${BLUE}\"\${ebuild}\"\${NOCOLOR}"
       do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null 
       einfo "\${BLUE}\"\${ebuild}\"\${NOCOLOR} compiled"
     done < <(cat failed)
