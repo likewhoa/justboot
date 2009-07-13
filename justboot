@@ -311,7 +311,7 @@ release_env() {
   do_exec rm -rf ${ARCH}/tmp/* 
   do_exec umount ${ARCH_DIR}/{proc,dev} ${ARCH}${DATA_DIR} 
                            
-  if [ ${RAMFS} ]; then    
+  if ${RAMFS}; then    
     for x in "${LIVECD_EXCLUDES[@]}"; do
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
