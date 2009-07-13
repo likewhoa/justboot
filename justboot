@@ -1001,7 +1001,6 @@ bootstrap() {
       sed -i "s/#\${i}/\${i}/" /etc/locale.gen
     done
   fi
-
   do_exec locale-gen 1>/dev/null
 
   einfo "Setting localtime"
@@ -1019,7 +1018,7 @@ bootstrap() {
     done
     do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
   
-    ! grep "\-\-hash\-style\=gnu" /etc/make.conf &>/dev/null && sed -i 's/LDFLAGS="/LDFLAGS="--hash-style=gnu,/' /etc/make.conf 
+    ! grep "\-\-hash\-style" /etc/make.conf &>/dev/null && sed -i 's/LDFLAGS="/LDFLAGS="--hash-style=gnu,/' /etc/make.conf 
 
     for i in binutils linux-headers glibc gcc; do
       einfo "Compiling \${BLUE}\${i}.\${NOCOLOR}"
@@ -1037,10 +1036,8 @@ bootstrap() {
       einfo "Compiling \${BLUE}\"\${ebuild}\"\${NOCOLOR}"
       do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null
       einfo "\${BLUE}\"\${ebuild}\"\${NOCOLOR} compiled"
-    done < <(cat failed)
-    do_exec rm failed
-
-    python-updater &>/dev/null
+    done <failed
+    do_exec rm failed && python-updater &>/dev/null
 
     einfo "Toolchain build completed"
   else
@@ -1062,7 +1059,7 @@ cat >> \${UCLIBC_SCRIPT} << BUSYBOX
 BUSYBOX
   do_exec prepare_configs
   do_exec check_deps
-  do_exec check_toolchain_days && bootstrap
+  do_exec check_toolchain_days && do_exec bootstrap
   do_exec prepare_packages
   do_exec prepare_bootloader
   do_exec prepare_busybox
@@ -1072,5 +1069,5 @@ CHROOT
 
 # Lets go already!
 [[ ! -d ${LIVEDIR} ]] && exec_chkdir ${LIVEDIR} 
-do_exec cd ${LIVEDIR} || error "Failed to switch to livecd data directory, Exiting."
+do_exec cd ${LIVEDIR} || error "Failed to switch to livecd data directory! Exiting."
 do_exec check_deps && do_exec prepare_stage
