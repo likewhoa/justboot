@@ -1,3 +1,4 @@
+sys-apps/portage
 net-wireless/iwlwifi 
 net-wireless/iwl3945-ucode
 net-wireless/iwl4965-ucode
