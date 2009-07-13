@@ -1013,7 +1013,7 @@ bootstrap() {
 
   if ! ${NO_TOOL}; then
     einfo "Compiling the toolchain, this maybe take a while depending on hardware."
-    for i in gcc-config linux-headers glibc binutils gcc portage; do
+    for i in portage gcc-config linux-headers glibc binutils gcc; do
       einfo "Compiling \${BLUE}\${i}.\${NOCOLOR}"
       do_exec ${PMS} -1 \${i} 1>/dev/null && einfo "\${BLUE}\${i}\${NOCOLOR} compiled."
     done
