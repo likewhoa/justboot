@@ -315,7 +315,7 @@ release_env() {
     for x in "${LIVECD_EXCLUDES[@]}"; do
       for y in "${RAMFS_DIR[@]}"; do
         if [[ ${x} = ${y} ]]; then
-          einfo "Removing ${RED}${x}${NOCOLOR} from memory.. please wait"
+          einfo "Removing ${RED}${x}${NOCOLOR} from memory. please wait..."
           do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
           do_exec umount ${ARCH}/${x} &>/dev/null 
           einfo "Copied ${BLUE}${x}${NOCOLOR} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${NOCOLOR}"
@@ -329,7 +329,7 @@ release_env() {
       for y in "${LIVECD_EXCLUDES[@]}"; do
         [[ ${x} = ${y} ]] && continue 2
       done                 
-      einfo "Removing ${RED}${x}${NOCOLOR} from memory.. please wait."
+      einfo "Removing ${RED}${x}${NOCOLOR} from memory. please wait..."
       do_exec rsync -caq --delete-before ${ARCH}/${x}/* ${EXCLUDES_DIR}/${x//\//:} &>/dev/null
       do_exec umount ${ARCH}/${x} &>/dev/null
       einfo "Copied ${BLUE}${x}${NOCOLOR} changes to ${RED}${EXCLUDES_DIR}/${x//\//:}${NOCOLOR}"
