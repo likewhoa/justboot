@@ -279,9 +279,8 @@ fi
 if [ ! -f /etc/justboot/${ARCH}-pms ]; then PMS="emerge -q"; else PMS="$(cat /etc/justboot/${ARCH}-pms)"; fi
 
 # Remove old data directories (--purge/--delete-arch)
-[[ ! -h /usr/share/justboot/${ARCH} && ! -d /usr/share/justboot/${ARCH} ]] && { einfo "No ARCH to purge or remove! Exiting"; exit 1; }
-
 if ${PURGE} || ${DELETE_ARCH}; then
+  [[ ! -h /usr/share/justboot/${ARCH} && ! -d /usr/share/justboot/${ARCH} ]] && { einfo "No ARCH to purge or remove! Exiting"; exit 1; }
   SRC=$(readlink /usr/share/justboot/${ARCH}); einfo "${RED}--purge or --delete-arch flag used.${NOCOLOR} Removing ${RED}${ARCH}${NOCOLOR} sources."
 
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
