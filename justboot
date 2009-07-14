@@ -282,14 +282,14 @@ if [ ! -f /etc/justboot/${ARCH}-pms ]; then PMS="emerge -q"; else PMS="$(cat /et
 [[ ! -h /usr/share/justboot/${ARCH} && ! -d /usr/share/justboot/${ARCH} ]] && { einfo "No ARCH to purge or remove! Exiting"; exit 1; }
 
 if ${PURGE} || ${DELETE_ARCH}; then
-  SRC=$(readlink /usr/share/justboot/${ARCH})
-  einfo "${RED}--purge or --delete-arch flag used.${NOCOLOR} Removing ${RED}${ARCH}${NOCOLOR} sources."
+  SRC=$(readlink /usr/share/justboot/${ARCH}); einfo "${RED}--purge or --delete-arch flag used.${NOCOLOR} Removing ${RED}${ARCH}${NOCOLOR} sources."
+
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
-    echo rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
-    echo rm -rf $(readlink /usr/share/justboot/${ARCH})
-      for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do do_exec unlink ${i}; done
+    do_exec rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
+    do_exec rm -rf $(readlink /usr/share/justboot/${ARCH})
+    for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do do_exec unlink ${i}; done
   elif [ -d /usr/share/justboot/${ARCH} ]; then
-    echo rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
+    do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
   fi
 
   for i in i{4,5,6}86 x86_64; do
@@ -298,8 +298,8 @@ if ${PURGE} || ${DELETE_ARCH}; then
   done
   if ${REMOVAL}; then
     ewarn "Removing orphan data directory ${RED}${SRC/\/${ARCH}}${NOCOLOR}"
-    echo unlink ${SRC/\/${ARCH}//data} 
-    echo rm -rf ${SRC/\/${ARCH}}
+    do_exec unlink ${SRC/\/${ARCH}//data} 
+    do_exec rm -rf ${SRC/\/${ARCH}}
   fi
   ${DELETE_ARCH} && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 fi
