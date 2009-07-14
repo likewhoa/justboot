@@ -576,8 +576,8 @@ prepare_env() {
 clean_env() {
   local TARGET=${LIVEDIR}/targets/${ARCH}/targets/files/${ARCH} CLEANUP_SCRIPT=$(mktemp /tmp/XXX)
 
-  exec_chkdir ${TARGET}
-  [[ -d ${LIVEDIR}/target ]] && { do_exec rm -rf ${TARGET}/* ${LIVEDIR}/targets/${ARCH}/boot/*; }
+  [[ -d ${TARGET} ]] && do_exec rm -rf ${TARGET}/* ${LIVEDIR}/targets/${ARCH}/boot/* ${LIVEDIR}/targets/${ARCH}/targets/boot/*
+  for i in "${TARGET}" "${LIVEDIR}/targets/${ARCH}/targets/boot" "${LIVEDIR}/targets/${ARCH}"; do exec_chkdir ${i}; done
 
   einfo "Performing livecd cleanup. please wait..."
   do_exec cp -a ${ARCH_DIR}/* ${TARGET} &>/dev/null
