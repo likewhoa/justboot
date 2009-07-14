@@ -574,19 +574,20 @@ prepare_env() {
 # Before we create our iso image we will clean up the environment of any excluded packages and common directories or files that
 # we don't require for livecd operations ( see /etc/justboot{excluded-directories,remove-packages,remove-files}.lst for options.
 clean_env() {
-  local TARGET=${LIVEDIR}/target/files/${ARCH} CLEANUP_SCRIPT=$(mktemp /tmp/XXX)
+  local TARGET=${LIVEDIR}/targets/${ARCH}/targets/files/${ARCH} CLEANUP_SCRIPT=$(mktemp /tmp/XXX)
 
-  [[ -d ${LIVEDIR}/target ]] && { do_exec rm -rf ${LIVEDIR}/{boot,target}; exec_chkdir ${TARGET}; }
+  exec_chkdir ${TARGET}
+  [[ -d ${LIVEDIR}/target ]] && { do_exec rm -rf ${TARGET}/* ${LIVEDIR}/targets/${ARCH}/boot/*; }
 
   einfo "Performing livecd cleanup. please wait..."
-  do_exec cp -a ${ARCH_DIR}/* ${LIVEDIR}/target/files/${ARCH} &>/dev/null
+  do_exec cp -a ${ARCH_DIR}/* ${TARGET} &>/dev/null
 
   if [[ -d ${EXCLUDES_DIR}/boot ]]; then
-    do_exec cp -a ${EXCLUDES_DIR}/boot ${LIVEDIR}/target 
-    do_exec cp -a ${EXCLUDES_DIR}/boot ${LIVEDIR} 
+    do_exec cp -a ${EXCLUDES_DIR}/boot ${LIVEDIR}/targets/${ARCH}/targets 
+    do_exec cp -a ${EXCLUDES_DIR}/boot ${LIVEDIR}/targets/${ARCH}
   else
-    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR}/target 
-    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR} 
+    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR}/targets/${ARCH}/targets
+    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR}/targets/${ARCH
   fi
 
   for i in "${LIVECD_EXCLUDES[@]}"; do
