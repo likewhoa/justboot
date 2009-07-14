@@ -587,7 +587,7 @@ clean_env() {
     do_exec cp -a ${EXCLUDES_DIR}/boot ${LIVEDIR}/targets/${ARCH}
   else
     do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR}/targets/${ARCH}/targets
-    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR}/targets/${ARCH
+    do_exec cp -a ${ARCH_DIR}/boot ${LIVEDIR}/targets/${ARCH}
   fi
 
   for i in "${LIVECD_EXCLUDES[@]}"; do
