@@ -280,7 +280,7 @@ if [ ! -f /etc/justboot/${ARCH}-pms ]; then PMS="emerge -q"; else PMS="$(cat /et
 
 # Remove old data directories (--purge/--delete-arch)
 if ${PURGE} || ${DELETE_ARCH}; then
-  local src=$(readlink /usr/share/justboot/${ARCH})
+  SRC=$(readlink /usr/share/justboot/${ARCH})
   einfo "${RED}--purge or --delete-arch flag used.${NOCOLOR} Removing ${RED}${ARCH}${NOCOLOR} sources."
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
     echo rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
@@ -294,12 +294,12 @@ if ${PURGE} || ${DELETE_ARCH}; then
 
   for i in i{4,5,6}86 x86_64; do
     [[ ${i} = ${ARCH} ]] && continue 2
-    [[ -d ${src/${ARCH}/${i}} ]] && { REMOVAL=false; einfo "${RED}${src/${ARCH}/${i}}${NOCOLOR} found, deleting ${src/\/${ARCH}} only"; break; }
+    [[ -d ${SRC/${ARCH}/${i}} ]] && { REMOVAL=false; einfo "${RED}${SRC/${ARCH}/${i}}${NOCOLOR} found, deleting ${SRC/\/${ARCH}} only"; break; }
   done
   if ${REMOVAL}; then
-    ewarn "Removing orphan data directory ${RED}${src/\/${ARCH}}${NOCOLOR}"
-    echo unlink ${src/\/${ARCH}//data} 
-    echo rm -rf ${src/\/${ARCH}}
+    ewarn "Removing orphan data directory ${RED}${SRC/\/${ARCH}}${NOCOLOR}"
+    echo unlink ${SRC/\/${ARCH}//data} 
+    echo rm -rf ${SRC/\/${ARCH}}
   fi
   ${DELETE_ARCH} && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 fi
