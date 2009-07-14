@@ -277,17 +277,17 @@ fi
 
 # Check if we previously set a package manager for compiles on $ARCH
 if [ ! -f /etc/justboot/${ARCH}-pms ]; then PMS="emerge -q"; else PMS="$(cat /etc/justboot/${ARCH}-pms)"; fi
-set -x
+
 # Remove old data directories (--purge/--delete-arch)
 if ${PURGE} || ${DELETE_ARCH}; then
   local src=$(readlink /usr/share/justboot/${ARCH})
   einfo "${RED}--purge or --delete-arch flag used.${NOCOLOR} Removing ${RED}${ARCH}${NOCOLOR} sources."
   if [[ -h /usr/share/justboot/${ARCH} ]]; then
-    do_exec rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
-    do_exec rm -rf $(readlink /usr/share/justboot/${ARCH})
+    echo rm -rf $(readlink /usr/share/justboot/excludes/${ARCH})
+    echo rm -rf $(readlink /usr/share/justboot/${ARCH})
       for i in /usr/share/justboot/excludes/${ARCH} /usr/share/justboot/${ARCH}; do do_exec unlink ${i}; done
   elif [ -d /usr/share/justboot/${ARCH} ]; then
-    do_exec rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
+    echo rm -rf /usr/share/justboot/${ARCH} /usr/share/justboot/excludes/${ARCH}
   else
     einfo "No ARCH to purge or remove! Exiting"; exit 1
   fi
@@ -298,8 +298,8 @@ if ${PURGE} || ${DELETE_ARCH}; then
   done
   if ${REMOVAL}; then
     ewarn "Removing orphan data directory ${RED}${src/\/${ARCH}}${NOCOLOR}"
-    do_exec unlink ${src/\/${ARCH}//data} 
-    do_exec rm -rf ${src/\/${ARCH}}
+    echo unlink ${src/\/${ARCH}//data} 
+    echo rm -rf ${src/\/${ARCH}}
   fi
   ${DELETE_ARCH} && { einfo "All done ${ARCH} sources removed, exiting"; exit 0; }
 fi
