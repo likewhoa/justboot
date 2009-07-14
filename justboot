@@ -867,13 +867,13 @@ prepare_kernel() {
   case ${ARCH} in i[4,5,6]86) local ARCH=x86;; esac
 
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
-    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then einfo "Compiling \${BLUE}layman"; do_exec ${PMS} layman 1>/dev/null; fi
+    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec ${PMS} layman 1>/dev/null; fi
  
     if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
       do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
     fi
   
-    einfo "Compiling \${BLUE}${KERNEL_SOURCES}"
+    einfo "Compiling \${BLUE}${KERNEL_SOURCES}\${NOCOLOR}"
     if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then 
       echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     fi
@@ -935,7 +935,7 @@ prepare_kernel() {
   einfo "Done with \${RED}\${ARCH}\${NOCOLOR} kernel"
   if ${LETMEIN}; then
     einfo "letmein flag used. Type \${RED}exit\${NOCOLOR} when finished to continue with build."
-    exec /bin/bash -i
+    ( exec /bin/bash -i )
   fi
 }
 
