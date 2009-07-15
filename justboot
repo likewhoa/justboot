@@ -1019,7 +1019,7 @@ bootstrap() {
     done
     do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
   
-    ! grep "\-\-hash\-style" /etc/make.conf &>/dev/null && sed -i 's/LDFLAGS="/LDFLAGS="--hash-style=gnu,/' /etc/make.conf 
+    ! grep "\-\-hash\-style" /etc/make.conf &>/dev/null && sed -i 's/-Wl,/-Wl,--hash-style=gnu,/' /etc/make.conf 
 
     for i in binutils linux-headers glibc gcc; do
       einfo "Compiling \${BLUE}\${i}.\${NOCOLOR}"
