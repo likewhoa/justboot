@@ -645,16 +645,16 @@ CLEANUP
 # Livecd creation 
 create_livecd() {
   local DATE=$(date +%m%d%Y-%H%M)
-  do_exec touch ${LIVEDIR}/target/livecd
+  do_exec touch ${LIVEDIR}/targets/${ARCH}/targets/livecd
 
   einfo "Building squashfs image"
-  do_exec mksquashfs ${LIVEDIR}/target/files/${ARCH}/ ${LIVEDIR}/target/livecd.squashfs
+  do_exec mksquashfs ${LIVEDIR}/targets/${ARCH}/targets/files/${ARCH}/ ${LIVEDIR}/targets/${ARCH}/targets/livecd.squashfs
 
   einfo "Generating bootable JustBOOT(tm) livecd image"
   do_exec genisoimage -volid \"${VOLID}\" -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table \
--iso-level 4 -hide-rr-moved -c boot.catalog -o ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-${DATE}.iso -x files ${LIVEDIR}/target/
+-iso-level 4 -hide-rr-moved -c boot.catalog -o ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-${DATE}.iso -x files ${LIVEDIR}/targets/${ARCH}/targets/
   
-  do_exec rm -rf ${LIVEDIR}/{target,boot}
+  do_exec rm -rf ${LIVEDIR}/targets/${ARCH}/{targets,boot}
   einfo "All Done. ${ARCH} livecd located at ${LIVEDIR}/${ARCH}-${KERNEL_SOURCES}-${DATE}.iso"
 }
 
