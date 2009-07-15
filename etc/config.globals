@@ -8,13 +8,14 @@ CHOST="${CHOST:-${ARCH}-pc-linux-gnu}"
 MAKEOPTS="${MAKEOPTS:--j1}"
 LDFLAGS="${LDFLAGS:--Wl,-O1 -Wl,--sort-common -Wl,--warn-once}"
 CXXFLAGS="${CFLAGS}"
-USE="${USE:--X -doc threads bash-completion subversion git cvs minimal userlocales ipv6 -berkdb -tcpd bash-completion \
-openntpd nptl nptlonly mmx sse sse2 unicode} livecd cdroot"
+USE="${USE:--doc bash-completion subversion cvs userlocales ipv6 -berkdb -tcpd bash-completion \
+openntpd nptl nptlonly mmx sse sse2 unicode} livecd cdroot git minimal threads -X"
 LINGUAS="${LINGUAS:-en}"
 FEATURES="${FEATURES:-parallel-fetch userfetch userpriv usersandbox candy distlocks sandbox}"
 PORTAGE_NICENESS="${PORTAGE_NICENESS:-7}"
 ACCEPT_KEYWORDS="${MAKE_KEYWORDS:-${ACCEPT_KEYWORDS}}"
-GENTOO_MIRRORS="${GENTOO_MIRRORS:-http://gentoo.mirrors.tds.net/gentoo http://gentoo.arcticnetwork.ca http://gd.tuwien.ac.at/opsys/linux/gentoo http://ftp-stud.fht-esslingen.de/pub/Mirrors/gentoo}"
+GENTOO_MIRRORS="${GENTOO_MIRRORS:-http://gentoo.mirrors.tds.net/gentoo http://gentoo.arcticnetwork.ca \
+http://gd.tuwien.ac.at/opsys/linux/gentoo http://ftp-stud.fht-esslingen.de/pub/Mirrors/gentoo}"
 SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}"
 [[ ${JOBS} ]] && EMERGE_DEFAULT_OPTS="--jobs=${JOBS}"
 
