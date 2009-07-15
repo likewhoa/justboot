@@ -350,7 +350,7 @@ check_deps() {
 
   if [[ "${PMS}" = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then 
-      einfo "Compiling sys-apps/pkgcore"
+      einfo "Compiling ${BLUE}sys-apps/pkgcore${NOCOLOR}"
       do_exec emerge pkgcore 1>/dev/null
       einfo "${BLUE}sys-apps/pkgcore${NOCOLOR} compiled"
     fi
@@ -697,7 +697,7 @@ do_exec() {
 check_deps() {
   # Check for pkgcore if --package-manager=pkgcore is used"
   if [[ "${PMS}" = pmerge ]]; then   
-    if ! hash pmerge &>/dev/null; then einfo "Compiling sys-apps/pkgcore"; do_exec emerge pkgcore 1>/dev/null; fi
+    if ! hash pmerge &>/dev/null; then einfo "Compiling \${BLUE}sys-apps/pkgcore\${NOCOLOR}"; do_exec emerge pkgcore 1>/dev/null; fi
   fi
 } 
 
@@ -740,11 +740,11 @@ prepare_packages() {
 
   einfo "Preparing livecd and user packages. please wait..."
   for i in \${GLOBAL_PACKAGES[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i/*:/}.\${NOCOLOR}"; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi
+    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i/*:/}\${NOCOLOR}"; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi
   done
 
   for i in ${EXTRA_PACKAGES=[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i}.\${NOCOLOR}"; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi 
+    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${BLUE}\${i}\${NOCOLOR}"; do_exec ${PMS} \${i/*:/} 1>/dev/null; fi 
   done
 
   if ! hash memtest86+ &>/dev/null; then do_exec ${PMS} memtest86+ 1>/dev/null; fi
@@ -1031,6 +1031,7 @@ bootstrap() {
       einfo "Compiling \${BLUE}\"\${ebuild}\""
       do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
       einfo "\${BLUE}\"\${ebuild}\"\${NOCOLOR} compiled"
+      [[ ${ebuild} = dev-lang/python && "${PMS}" = pmerge ]] && python-updater &>/dev/null 
     done < <(emerge -ep --columns --color=n system | grep ebuild | awk '{print\$4}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)") 
 
     while read ebuild; do
@@ -1038,7 +1039,7 @@ bootstrap() {
       do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null
       einfo "\${BLUE}\"\${ebuild}\"\${NOCOLOR} compiled"
     done <failed
-    do_exec rm failed && python-updater &>/dev/null
+    do_exec rm failed
 
     einfo "Toolchain build completed"
   else
