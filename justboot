@@ -1028,7 +1028,7 @@ bootstrap() {
     einfo "Toolchain build finished, compiling system packages"
 
     while read ebuild; do
-      einfo "Compiling \${BLUE}\"\${ebuild}\""
+      einfo "Compiling \${BLUE}\"\${ebuild}\"\${NOCOLOR}"
       do_exec ${PMS} -1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
       einfo "\${BLUE}\"\${ebuild}\"\${NOCOLOR} compiled"
       [[ \${ebuild} = dev-lang/python && "${PMS}" = pmerge ]] && python-updater &>/dev/null 
