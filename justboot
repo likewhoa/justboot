@@ -867,7 +867,7 @@ prepare_kernel() {
   case ${ARCH} in i[4,5,6]86) local ARCH=x86;; esac
 
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
-    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec ${PMS} layman 1>/dev/null; fi
+    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null; fi
  
     if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
       do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
