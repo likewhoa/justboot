@@ -882,7 +882,7 @@ prepare_kernel() {
 
     einfo "Compiling \${BLUE}\${ARCH}\${NOCOLOR} kernel image"
     if declare -A &>/dev/null; then 
-      prepare_kernel_opts \${ARCH}
+      do_exec prepare_kernel_opts \${ARCH}
     else 
       do_exec cp ${DATA_DIR}/kernel/${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
@@ -907,7 +907,7 @@ prepare_kernel() {
 
     einfo "Compiling \${RED}\${ARCH}\${NOCOLOR} kernel image"
     if declare -A &>/dev/null; then
-      prepare_kernel_opts \${ARCH}
+      do_exec prepare_kernel_opts \${ARCH}
     else
       do_exec cp ${DATA_DIR}/kernel/${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
