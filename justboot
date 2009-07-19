@@ -884,7 +884,7 @@ prepare_kernel() {
     if declare -A &>/dev/null; then 
       do_exec prepare_kernel_opts \${ARCH}
     else 
-      do_exec cp ${DATA_DIR}/kernel/${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
+      do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
       
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
@@ -909,7 +909,7 @@ prepare_kernel() {
     if declare -A &>/dev/null; then
       do_exec prepare_kernel_opts \${ARCH}
     else
-      do_exec cp ${DATA_DIR}/kernel/${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
+      do_exec cp ${DATA_DIR}/kernel/\${ARCH}/${KERNEL_SOURCES} /usr/src/linux/.config
     fi
     do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
 
