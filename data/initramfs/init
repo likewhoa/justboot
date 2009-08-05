@@ -54,15 +54,15 @@ do_modprobe_group() {
 
   echo "LiveCD found in ${CDROM}"
 
-  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs  /mnt/livecd/static
-  mount -t tmpfs -o size=300M none /mnt/livecd/dynamic
-  mount -t aufs -o dirs=/mnt/livecd/dynamic=rw:/mnt/livecd/static=ro aufs /new-root
+#  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs  /mnt/livecd/static
+#  mount -t tmpfs -o size=300M none /mnt/livecd/dynamic
+#  mount -t aufs -o dirs=/mnt/livecd/dynamic=rw:/mnt/livecd/static=ro aufs /new-root
 
-  >/proc/sys/kernel/hotplug
-  umount /sys /dev /proc
+#  >/proc/sys/kernel/hotplug
+#  umount /sys /dev /proc
 
   echo "Starting init"
-  exec switch_root /new-root /sbin/init
+#  exec switch_root /new-root /sbin/init
 
   echo "Failed to switch root!!"
   echo "Dropping to minimal shell"
