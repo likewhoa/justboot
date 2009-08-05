@@ -64,6 +64,6 @@ do_modprobe_group() {
   echo "Starting init"
 #  exec switch_root /new-root /sbin/init
 
-  echo "Failed to switch root!!"
+#  echo "Failed to switch root!!"
   echo "Dropping to minimal shell"
   exec /bin/sh
