@@ -55,7 +55,7 @@ do_modprobe_group() {
   echo "LiveCD found in ${CDROM}"
 
   mount -n -t tmpfs tmpfs /new-root
-  for i in dev mnt mnt/cdrom mnt/livecd tmp mnt/gentoo sys; do
+  for i in dev mnt mnt/cdrom mnt/livecd tmp mnt/gentoo sys proc; do
     mkdir /new-root/${i} && chmod 755 /new-root/${i}
   done
   
