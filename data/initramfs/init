@@ -1,9 +1,12 @@
 #!/bin/sh
 
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
-NEW_ROOT=/newroot
+NEW_ROOT=/new-root
 COMMAND_LINE=$(cat /proc/cmdline)
 CONSOLE=/dev/console
+ROOT_LINKS="bin sbin lib lib32 lib64 boot usr opt"
+ROOT_TREES="etc root home var"
+
 
 do_modprobe_group() {
   local var_group="/etc/modules/$1"
@@ -54,29 +57,30 @@ do_modprobe_group() {
 
   echo "LiveCD found in ${CDROM}"
 
-  mount -n -t tmpfs tmpfs /new-root
-  for i in dev mnt mnt/cdrom mnt/livecd tmp mnt/gentoo sys proc; do
-    mkdir /new-root/${i} && chmod 755 /new-root/${i}
+  mount -n -t tmpfs tmpfs ${NEW_ROOT}
+  for dir in dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp mnt/gentoo sys proc; do
+    mkdir ${NEW_ROOT}/${dir} && chmod 755 ${NEW_ROOT}/${dir}
   done
   
-  mknod /new-root/dev/null c 1 3
-  mknod /new-root/dev/console c 5 1
-  mknod /new-root/dev/tty1 c 4 1
+  for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
+    mknod ${NEW_ROOT}/dev/$node
+  done
 
-  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs /new-root/mnt/livecd
+  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs ${NEW_ROOT}/mnt/livecd
 
   ( 
-  cd /new-root/mnt/livecd
-  echo "Copying squashfs data..." && cp -a etc root home var /new-root
-  cd /new-root
-  for i in boot bin lib lib32 lib64 opt sbin usr; do ln -s mnt/livecd/$i $i; done
+  cd ${NEW_ROOT}/mnt/livecd
+  echo "Copying squashfs data..." && cp -a ${ROOT_TREES} ${NEW_ROOT}
+  cd ${NEW_ROOT}
+  for dir in ${ROOT_LINKS}; do ln -s mnt/livecd/$dir $dir; done
   )
  
-  umount /proc /sys
+  >/proc/sys/kernel/hotplug && umount /proc /sys
 
   echo "Starting init"
-  exec switch_root -c /dev/console /new-root /sbin/init 
-    
+  exec switch_root -c ${CONSOLE} ${NEW_ROOT} /sbin/init 
+
+# AUFS method - zen-sources only    
 #  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs  /mnt/livecd/static
 #  mount -t tmpfs -o size=300M none /mnt/livecd/dynamic
 #  mount -t aufs -o dirs=/mnt/livecd/dynamic=rw:/mnt/livecd/static=ro aufs /new-root
