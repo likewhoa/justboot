@@ -875,7 +875,7 @@ prepare_kernel() {
     if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then
       echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     fi
-    if [[ ! $(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${KERNEL_SOURCES} = zen-sources ]]; then 
+    if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${KERNEL_SOURCES} = zen-sources ]]; then 
       einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null
       do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
       do_exec emerge ${KERNEL_SOURCES} 1>/dev/null
