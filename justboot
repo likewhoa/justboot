@@ -872,17 +872,14 @@ prepare_kernel() {
   case ${ARCH} in i[4,5,6]86) local ARCH=x86;; esac
 
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
+    if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then
+      echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
+    fi
     if [[ ! $(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${KERNEL_SOURCES} = zen-sources ]]; then 
       einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null
       do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
-    done
-  
-    einfo "Compiling \${BLUE}${KERNEL_SOURCES}\${NOCOLOR}"
-    if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then 
-      echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
+      do_exec emerge ${KERNEL_SOURCES} 1>/dev/null
     fi
-    # Bug with pkgcore and zen-sources
-    if [[ "${PMS}" = pmerge ]]; then do_exec emerge ${KERNEL_SOURCES} 1>/dev/null; else do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null; fi
 
     einfo "Compiling \${BLUE}\${ARCH}\${NOCOLOR} kernel image"
     if declare -A &>/dev/null; then 
