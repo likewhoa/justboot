@@ -837,17 +837,22 @@ prepare_kernel_opts() {
       if [[ ${PROCS[${CPU}]} != M486 ]]; then 
         sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
       fi
-      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-i586-config.patch
-      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-i686-config.patch
+      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-i586.patch
+      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-i686.patch
       case ${PROCS[${CPU}]} in                                        
-        MK8) patch -sp0 <${KERNEL_SOURCES}-x86-k8_proc.config.patch;;
-        MCORE2) patch -sp0 <${KERNEL_SOURCES}-x86-core2_proc.config.patch
+        MK8) patch -sp0 <${KERNEL_SOURCES}-k8.patch;;
+        MCORE2) patch -sp0 <${KERNEL_SOURCES}-core2.patch
       esac
       ;;
     x86_64)
       if [[ ${PROCS[${CPU}]} != GENERIC_CPU ]]; then                                                                
       sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
       fi
+      case ${PROCS[${CPU}]} in
+        MK8) patch -sp0 <${KERNEL_SOURCES}-k8.patch;;
+        MCORE2) patch -sp0 <${KERNEL_SOURCES}-core2.patch;;
+        PENTIUM4) patch -sp0 <${KERNEL_SOURCES}-pentium4.patch
+      esac
   esac                                                                   
   if [[ ${PROCS[${CPU}]} =~ ^(M486|GENERIC_CPU)$ ]]; then do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config; else do_exec cp ${KERNEL_SOURCES}-custom /usr/src/linux/.config; fi
   )
@@ -867,11 +872,10 @@ prepare_kernel() {
   case ${ARCH} in i[4,5,6]86) local ARCH=x86;; esac
 
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
-    if ! ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null; then einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null; fi
- 
-    if [[ ${KERNEL_SOURCES} = zen-sources ]]; then
+    if [[ ! $(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${KERNEL_SOURCES} = zen-sources ]]; then 
+      einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null
       do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
-    fi
+    done
   
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}\${NOCOLOR}"
     if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then 
