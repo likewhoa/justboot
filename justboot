@@ -236,8 +236,6 @@ while [ $# -gt 0 ]; do
         ewarn "${CPU} is an invalid --coprocessor option."
         einfo "Available procs are: ${BLUE}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"
         ewarn "Exiting now."; exit 1
-      else
-        ewarn "--coprocessor argument only works with >=bash-4.0"
       fi
       ;;
     --coprocessor-list) einfo "Available procs are: ${BLUE}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"; exit 0;;
@@ -849,9 +847,9 @@ prepare_kernel_opts() {
       sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >${KERNEL_SOURCES}-custom
       fi
       case ${PROCS[${CPU}]} in
-        MK8) patch -sp0 <${KERNEL_SOURCES}-k8.patch;;
-        MCORE2) patch -sp0 <${KERNEL_SOURCES}-core2.patch;;
-        PENTIUM4) patch -sp0 <${KERNEL_SOURCES}-pentium4.patch
+        MK8) patch -p0 <${KERNEL_SOURCES}-k8.patch;;
+        MCORE2) patch -p0 <${KERNEL_SOURCES}-core2.patch;;
+        PENTIUM4) patch -p0 <${KERNEL_SOURCES}-pentium4.patch
       esac
   esac                                                                   
   if [[ ${PROCS[${CPU}]} =~ ^(M486|GENERIC_CPU)$ ]]; then do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config; else do_exec cp ${KERNEL_SOURCES}-custom /usr/src/linux/.config; fi
@@ -875,7 +873,7 @@ prepare_kernel() {
     if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then
       echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
     fi
-    einfo "Compiling \${BLUE}\${KERNEL_SOURCES}\${NOCOLOR}."
+    einfo "Compiling \${BLUE}${KERNEL_SOURCES}\${NOCOLOR}."
     if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${KERNEL_SOURCES} = zen-sources ]]; then 
       einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null
       do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
