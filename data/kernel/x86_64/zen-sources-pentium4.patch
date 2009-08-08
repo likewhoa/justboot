@@ -1,5 +1,5 @@
---- zen-sources			2009-08-06 20:17:33.435427530 -0400
-+++ zen-sources-pentium4.patch	2009-08-06 20:20:25.292580916 -0400
+--- zen-sources-custom			2009-08-06 20:17:33.435427530 -0400
++++ zen-sources-pentium4.patch		2009-08-06 20:20:25.292580916 -0400
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit

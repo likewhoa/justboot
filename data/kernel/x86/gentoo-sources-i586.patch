@@ -1,5 +1,5 @@
---- gentoo-sources	2009-08-06 20:54:23.625512812 -0400
-+++ gentoo-sources-i586	2009-08-06 20:54:43.375610124 -0400
+--- gentoo-sources-custom	2009-08-06 20:54:23.625512812 -0400
++++ gentoo-sources-i586		2009-08-06 20:54:43.375610124 -0400
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit

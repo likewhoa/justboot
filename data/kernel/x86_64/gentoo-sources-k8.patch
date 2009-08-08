@@ -1,5 +1,5 @@
---- gentoo-sources	2009-08-07 18:09:13.810063039 -0400
-+++ gentoo-sources-k8	2009-08-07 20:37:06.579949911 -0400
+--- gentoo-sources-custom	2009-08-07 18:09:13.810063039 -0400
++++ gentoo-sources-k8		2009-08-07 20:37:06.579949911 -0400
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit
