@@ -1,5 +1,5 @@
---- gentoo-sources-custom	2009-08-06 20:54:23.625512812 -0400
-+++ gentoo-sources-pentium4	2009-08-06 20:57:04.124183892 -0400
+--- .config-custom	2009-08-06 20:54:23.625512812 -0400
++++ .config-custom	2009-08-06 20:57:04.124183892 -0400
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit

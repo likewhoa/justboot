@@ -1,11 +1,11 @@
---- gentoo-sources-custom	2009-08-07 18:09:13.810063039 -0400
-+++ gentoo-sources-core2	2009-08-07 20:34:14.321332313 -0400
+--- .config-custom	2009-08-08 09:45:09.284398514 +0000
++++ .config-custom	2009-08-08 09:45:30.396224492 +0000
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit
  # Linux kernel version: 2.6.30-gentoo-r2
 -# Fri Aug  7 22:07:29 2009
-+# Sat Aug  8 00:33:57 2009
++# Sat Aug  8 09:45:30 2009
  #
  CONFIG_64BIT=y
  # CONFIG_X86_32 is not set
@@ -18,17 +18,7 @@
  CONFIG_CGROUPS=y
  # CONFIG_CGROUP_DEBUG is not set
  CONFIG_CGROUP_NS=y
-@@ -219,14 +217,17 @@
- # CONFIG_MVIAC3_2 is not set
- # CONFIG_MVIAC7 is not set
- # CONFIG_MPSC is not set
--# CONFIG_MCORE2 is not set
--CONFIG_GENERIC_CPU=y
-+CONFIG_MCORE2=y
-+# CONFIG_GENERIC_CPU is not set
- CONFIG_X86_CPU=y
- CONFIG_X86_L1_CACHE_BYTES=64
- CONFIG_X86_INTERNODE_CACHE_BYTES=64
+@@ -227,6 +225,9 @@
  CONFIG_X86_CMPXCHG=y
  CONFIG_X86_L1_CACHE_SHIFT=6
  CONFIG_X86_WP_WORKS_OK=y

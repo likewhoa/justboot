@@ -1,5 +1,5 @@
---- zen-sources-custom	2009-08-06 21:05:07.979091252 -0400
-+++ zen-sources-core2	2009-08-06 21:11:39.846199137 -0400
+--- .config-custom	2009-08-06 21:05:07.979091252 -0400
++++ .config-custom	2009-08-06 21:11:39.846199137 -0400
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit
