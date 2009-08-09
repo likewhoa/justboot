@@ -39,17 +39,17 @@ do_modprobe_group() {
 
   do_modprobe_group boot
 
-  for x in /dev/hd*; do
-    mount -t iso9660 ${x} /mnt/livecd/image
-      if [ "$?" == "0" ]
-        then
-          CDROM=${x}
-          break
-      fi
+  mount -n -t tmpfs tmpfs ${NEW_ROOT}
+  for dir in dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp mnt/gentoo sys proc; do
+    mkdir ${NEW_ROOT}/${dir} && chmod 755 ${NEW_ROOT}/${dir}
   done
 
-  if [ "${CDROM}" == "" ]
-    then
+  for x in /dev/hd*; do
+    mount -t iso9660 ${x} /mnt/livecd/image
+      if [ "$?" == "0" ]; then CDROM=${x}; break; fi
+  done
+
+  if [ "${CDROM}" == "" ]; then
       echo "FATAL --- LIVECD NOT FOUND"
       exec /bin/sh
       exit
@@ -57,11 +57,6 @@ do_modprobe_group() {
 
   echo "LiveCD found in ${CDROM}"
 
-  mount -n -t tmpfs tmpfs ${NEW_ROOT}
-  for dir in dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp mnt/gentoo sys proc; do
-    mkdir ${NEW_ROOT}/${dir} && chmod 755 ${NEW_ROOT}/${dir}
-  done
-  
   for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
     mknod ${NEW_ROOT}/dev/$node
   done
