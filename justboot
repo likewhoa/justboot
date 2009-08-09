@@ -827,32 +827,37 @@ prepare_initramfs() {
 }
 
 # This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
+do_coprocessor() {
+  case ${PROCS[${CPU}]} in
+    MPENTIUMM) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
+    MPENTIUMII) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
+    MPENTIUMIII) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
+    MPENTIUM4) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
+    MCORE2) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
+    MK6) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
+    MK7) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
+    MK8) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
+  esac
+}
+
 prepare_kernel_opts() {
-  ( # Spawn a new shell to avoid leaving current working path
-  cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
+  ( cd ${DATA_DIR}/kernel/\${1} || error "Could not switch to kernel source directory"
   case ${ARCH} in
     i[4,5,6]86)
-      if [[ ${PROCS[${CPU}]} != M486 ]]; then 
+      if [[ ${PROCS[${CPU}]} != M486 || ${PROCS[${CPU}]} =~ ^([3,5-6]86)$ ]]; then 
         sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >.config-custom
       fi
-      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-i586.patch
-      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-i686.patch
-      case ${PROCS[${CPU}]} in                                        
-        MK8) patch -sp0 <${KERNEL_SOURCES}-k8.patch;;
-        MCORE2) patch -sp0 <${KERNEL_SOURCES}-core2.patch
-      esac
+      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
+      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
+      do_coprocessor
       ;;
     x86_64)
       if [[ ${PROCS[${CPU}]} != GENERIC_CPU ]]; then                                                                
       sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >.config-custom
       fi
-      case ${PROCS[${CPU}]} in
-        MK8) patch -p0 <${KERNEL_SOURCES}-k8.patch;;
-        MCORE2) patch -p0 <${KERNEL_SOURCES}-core2.patch;;
-        PENTIUM4) patch -p0 <${KERNEL_SOURCES}-pentium4.patch
-      esac
+      do_coprocessor
   esac                                                                   
-  if [[ ${PROCS[${CPU}]} =~ ^(M486|GENERIC_CPU)$ ]]; then do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config; else do_exec cp .config-custom /usr/src/linux/.config; fi
+  if [[ ${PROCS[${CPU}]} =~ ^(M486|GENERIC_CPU)$ ]]; then do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config; else do_exec cp .config-custom /usr/src/linux/.config; fi 
   )
 }
 
