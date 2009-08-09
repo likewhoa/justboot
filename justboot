@@ -234,7 +234,7 @@ while [ $# -gt 0 ]; do
       CPU="${1##*=}"
       if [[ ${BASH4} && -z ${PROCS[${CPU}]} ]]; then
         ewarn "${CPU} is an invalid --coprocessor option."
-        einfo "Available procs are: ${BLUE}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"
+        einfo "Available procs are: ${BLUE}i386,i486,i586,i686,pentium-mmx,pentium4,k6,k7,x86_64,k8,opteron,core2 & generic"
         ewarn "Exiting now."; exit 1
       fi
       ;;
