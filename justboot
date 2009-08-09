@@ -41,14 +41,14 @@ if ! declare -A &>/dev/null; then
 else
   BASH4=true
   declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
-[pentium-m]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
+[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 fi
 declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/files/excluded-directories.lst | grep -vE '^#') )
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | grep -vE '^#') )
 declare -a REMOVE_FILES=( $(cat /etc/justboot/files/remove-files.lst | grep -vE '^#') )
 declare -a RAMFS_DIR=( $(cat /etc/justboot/files/ramfs-directories.lst | grep -vE '^#') )
 declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/files/extra-packages.lst | grep -vE '^#') )
-declare -a ARCHES=( x86_64 i386 i486 i586 i686 )
+declare -a ARCHES=( x86_64 i486 i586 i686 )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 
 # Set terminal colors
@@ -828,6 +828,8 @@ prepare_initramfs() {
 
 # This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
 do_coprocessor() {
+  local COPROCESSORS=( core2 pentium4 k8 )
+  [[ ${1} = x86_64 && ${PROCS[${CPU}]} =~ ^(i[4-6]86|pentium-mmx|k[6-7])$ ]] && { ewarm "${PROCS[${CPU}]} invalid for x86_64 arch"; return 1; }
   case ${PROCS[${CPU}]} in
     MPENTIUMM) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
     MPENTIUMII) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
@@ -849,13 +851,13 @@ prepare_kernel_opts() {
       fi
       [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
       [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
-      do_coprocessor
+      do_coprocessor ${ARCH}
       ;;
     x86_64)
       if [[ ${PROCS[${CPU}]} != GENERIC_CPU ]]; then                                                                
       sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >.config-custom
       fi
-      do_coprocessor
+      do_coprocessor ${ARCH}
   esac                                                                   
   if [[ ${PROCS[${CPU}]} =~ ^(M486|GENERIC_CPU)$ ]]; then do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config; else do_exec cp .config-custom /usr/src/linux/.config; fi 
   )
