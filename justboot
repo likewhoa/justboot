@@ -829,7 +829,7 @@ prepare_initramfs() {
 # This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
 do_coprocessor() {
   local COPROCESSORS=( core2 pentium4 k8 )
-  [[ ${1} = x86_64 && ${PROCS[${CPU}]} =~ ^(i[4-6]86|pentium-mmx|k[6-7])$ ]] && { ewarm "${PROCS[${CPU}]} invalid for x86_64 arch"; return 1; }
+  [[ \$1 = x86_64 && ${PROCS[${CPU}]} =~ ^(i[4-6]86|pentium-mmx|k[6-7])$ ]] && { ewarm "${PROCS[${CPU}]} invalid for x86_64 arch"; return 1; }
   case ${PROCS[${CPU}]} in
     MPENTIUMM) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
     MPENTIUMII) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
