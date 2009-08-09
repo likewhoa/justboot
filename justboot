@@ -423,9 +423,9 @@ prepare_stage() {
   if [ ! -d ${ARCH_DIR} ]; then
     einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${NOCOLOR}. please wait..."
 
-    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/current
-    local GENTOO_STAGE=$(egrep -o stage3-${STAGE}-[[:digit:]]{8}.tar.bz2 index.html | uniq)
-    do_exec rm index.html
+    do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds/latest-iso.txt
+    local GENTOO_STAGE="${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/$(grep -v '^#' latest-iso.txt index.html)"
+    do_exec rm latest-iso.txt
 
     exec_chkdir ${ARCH_DIR}
     do_exec cd ${ARCH_DIR} || error "Failed to switch to ${ARCH_DIR}"
