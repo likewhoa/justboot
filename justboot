@@ -424,7 +424,7 @@ prepare_stage() {
     einfo "Building initial stage1 for ${BLUE}${GENTOO_ARCH}${NOCOLOR}. please wait..."
 
     do_exec wget -q ${GENTOO_MIRROR}/releases/${GENTOO_ARCH}/autobuilds/latest-stage3.txt
-    local GENTOO_STAGE=$(egrep -o [[:digit:]]{8}/stage3-${ARCH}-[[:digit:]]{8}.tar.bz2 latest-stage3.txt)
+    local GENTOO_STAGE=$(egrep -o [[:digit:]]{8}/stage3-${GENTOO_ARCH}-[[:digit:]]{8}.tar.bz2 latest-stage3.txt)
     egrep -o [[:digit:]]{8}/stage3-${ARCH}-[[:digit:]]{8}.tar.bz2 latest-stage3.txt;sleep 3
     do_exec rm latest-stage3.txt
 
