@@ -1,9 +1,9 @@
-JustBOOT(tm) a gentoo livecd generator is in early beta, below are some of the commands that you should run
+JustBOOT(tm) a gentoo livecd generator in early beta stage, below are some of the commands that you should run
 to help me focus on code and bug fixing. Any suggestions, comments or criticism is appreciated as long
 as it's constructive. Hope you enjoy the script and ideas are welcome.
 
 *** YOU MUST RUN ./install prior to running the justboot script ***
-*** NOTE that only zen-sources is supported with --kernel flag for now ***
+*** NOTE that only zen-sources & gentoo-sources are supported with --kernel flag for now ***
 
 Start by running all of some of the following commands:
 
@@ -19,7 +19,6 @@ FIle locations for extra packages, excluded directories and ramfs mounts are loc
 /etc/justboot/files
 
 Per user configuration options for gentoo make.conf can be set in ~/.justboot/arch.conf
-where arch is either i386,i486,i586,i686 or x86_64
 
 Thanks for your testing
 likewhoa

@@ -412,12 +412,7 @@ prepare_stage() {
   # Convert x86_64 arch for proper usage in Gentoo.
   case ${ARCH} in
     x86_64) local GENTOO_ARCH=amd64 STAGE=amd64;;
-    i[4,5,6]86)
-      if [[ ${ARCH} = i586 ]]; then
-        local STAGE=i486 GENTOO_ARCH=x86
-      else
-        local STAGE=${ARCH} GENTOO_ARCH=x86
-      fi
+    i[4,5,6]86) local STAGE=i686 GENTOO_ARCH=x86
   esac
 
   if [ ! -d ${ARCH_DIR} ]; then
