@@ -1,5 +1,5 @@
 #!/bin/bash 
-# JustBOOT(tm) v0.3.0 - A Gentoo Linux LiveCD Generator.
+# JustBOOT(tm) v0.4.0 - A Gentoo Linux LiveCD Generator.
 ##
 # Copyright (C) 2009-2012 Mission Accomplish, Inc.
 #
@@ -17,7 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
-VERSION=0.3.0
+VERSION=0.4.0
 [[ $1 =~ ^(--version|-[Vv])$ ]] && { echo "JustBOOT-${VERSION} see --help for more options"; exit 0; }
 [ $(id -u) != 0 ] && { echo "This script must be run as root."; exit 1; }
 
@@ -43,20 +43,19 @@ else
   declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
 [pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
 fi
-declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/files/excluded-directories.lst | grep -vE '^#') )
-declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | grep -vE '^#') )
-declare -a REMOVE_FILES=( $(cat /etc/justboot/files/remove-files.lst | grep -vE '^#') )
-declare -a RAMFS_DIR=( $(cat /etc/justboot/files/ramfs-directories.lst | grep -vE '^#') )
-declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/files/extra-packages.lst | grep -vE '^#') )
+declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/files/excluded-directories.lst | grep -v '^#') )
+declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | grep -v '^#') )
+declare -a REMOVE_FILES=( $(cat /etc/justboot/files/remove-files.lst | grep -v '^#') )
+declare -a RAMFS_DIR=( $(cat /etc/justboot/files/ramfs-directories.lst | grep -v '^#') )
+declare -a EXTRA_PACKAGES=( $(cat /etc/justboot/files/extra-packages.lst | grep -v '^#') )
 declare -a ARCHES=( x86_64 i486 i586 i686 )
 declare -a LOCALES=( $(cat /etc/justboot/locale.gen) )
 
-# Set terminal colors
 BLUE="$(tput setaf 4)"
 RED="$(tput setaf 1)"
 NOCOLOR="$(tput setaf 9)"
 
-# Functions
+# Main script functions
 einfo() { echo -e ".: ${1} :."; sleep 1; }
 ewarn() { echo -e "\a${RED}.: ${1} :.${NOCOLOR}"; }
 error() { echo -e "\a${RED}.: ${1} :.${NOCOLOR}"; exit 1; }
@@ -81,22 +80,22 @@ Usage: justboot [arguments] [make opts] [kernel opts]
 
 Arguments:
 
---arch=	                - Set arch for livecd build i.e --arch=x86_64
---kernel=               - Kernel sources for livecd (Currently only zen-sources is supported)
+--arch=                 - Set arch for livecd build i.e --arch=x86_64
+--kernel=               - Kernel sources for livecd
 --root-passwd=          - ROOT password for the livecd
 --init-compression      - Currently only gzip and lzma compression is supported
--L, --volid=		- Set a label for the livecd image
---ramfs			- Compile in RAMFS "Must have ~4GB of available RAM"
---force-toolchain	- Force a rebuilt of the toolchain
---skip-toolchain	- Skips toolchain built for those in a hurry
---data-directory=	- Set the data directory for compiles
---package-manager=	- Enable the package manager for all builds 
-	Currently only pkgcore is supported, by default justboot uses portage
---letmein               - Will run interactive bash at end of chroot stage for self maintanance
+-L, --volid=            - Set a label for the livecd image
+--ramfs                 - Compile in RAMFS "Must have ~4GB of available RAM"
+--force-toolchain       - Force a rebuilt of the toolchain
+--skip-toolchain        - Skips toolchain built for those in a hurry
+--data-directory=       - Set the data directory for compiles
+--package-manager=      - Enable the package manager for all builds 
+	.: Currently only pkgcore is supported, by default justboot uses portage :.
+--letmein               - Will run interactive bash at end of chroot stage so you can tweak the livecd environment
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
---delete-arch		- Like --purge but exits script after
---debug                 - Turn on debugging
+--delete-arch           - Like --purge but exits script after
+--debug                 - Turn on debugging 
 
 Gentoo make.conf options:
 
@@ -115,7 +114,7 @@ Linux Kernel options: >=bash-4.0 Only
 
 --coprocessor=		- Processor type for the livecd kernel i.e --coprocessor=core2
 --coprocessor-list	- List the currently supported coprocessors
---menuconfig            - Runs make menuconfig for interactive kernel
+--menuconfig            - Runs make menuconfig for interactive kernel configuration
 --purge-kernel          - Purge any kernel sources and start fresh
 
 Usage examples:
@@ -152,7 +151,7 @@ exit 0
 
 einfo "${BLUE}JustBOOT(tm)${NOCOLOR} initiated"
 
-# Parse Command Line Arguments.
+# Parse Command Line Arguments
 while [ $# -gt 0 ]; do
   case "$1" in
     --arch=*)
@@ -167,7 +166,7 @@ while [ $# -gt 0 ]; do
     --ldflags=*) LDFLAGS="${1##*=}";;
     --kernel=*)
       KERNEL_SOURCES="${1##*=}"
-      einfo "${BLUE}${KERNEL_SOURCES} set"
+      einfo "${BLUE}${KERNEL_SOURCES} kernel set"
       ;;
     --root-passwd=*)
       ROOT_PASSWD="${1##*=}"
@@ -178,8 +177,13 @@ while [ $# -gt 0 ]; do
       einfo "Setting ${BLUE}${ACCEPT_KEYWORDS}${NOCOLOR} for make.conf"
       ;;
     --ramfs)
-      RAMFS=true
-      einfo "${RED}RAMFS${NOCOLOR} compiles enabled!!!"
+      RAM_LIMIT=4194304;RAM_SIZE=$(sed -n 2p /proc/meminfo | awk '{print$2}')
+      if [[ $RAM_SIZE > $RAM_LIMIT ]]; then 
+        echo RAMFS=true
+        einfo "${RED}RAMFS${NOCOLOR} compiles enabled!!!"
+      else
+        ewarm "You ${RAM_SIZE} of free memory and you need >=${RAM_LIMIT}, --ramfs not enabled."
+      fi
       ;;
     --init-compression)
       INIT_COMPRESSION="${2}"
@@ -208,7 +212,7 @@ while [ $# -gt 0 ]; do
       [[ ${1##*=} =~ ^(pkgcore|portage)$ ]] || { einfo "--package-manager=${RED}${1##*=}${NOCOLOR} is invalid, try pkgcore or portage"; error "Exiting!"; }
       if [[ ${1##*=} = portage ]]; then PMS="emerge -q"; else PMS="pmerge"; fi
       einfo "${RED}${PMS}${NOCOLOR} permanently enabled, to override delete /etc/justboot/${ARCH}-pms"
-      echo ${PMS}>/etc/justboot/${ARCH}-pms # FIX/IMPROVE ME 
+      touch /etc/justboot/${ARCH}-pms # FIX/IMPROVE ME 
       ;; 
     --gentoo-mirrors=*)
       OPT="$(echo ${1##*=} | awk '{print$1}')"
@@ -338,11 +342,10 @@ release_env() {
   [ ! $1 ] && do_exec clean_env
 }
 
-USER_INTERRUPT=13
-trap 'release_env now; exit $USER_INTERRUPT' TERM INT
+trap 'release_env now; exit 13' TERM INT
 #  Cleans up the livecd environment if script is interrupted by Control-C.
 
-# Check local system for requires packages
+# Check local system for required packages
 check_deps() {
   local -a DEPS=( 'mksquashfs:sys-apps/squashfs-tools' 'genisoimage:app-cdr/cdrkit' )
 

@@ -22,7 +22,7 @@ SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}"
 ###
 # GLOBAL JUSTBOOT VARIABLES - DO NOT EDIT
 ###
-KERNEL_SOURCES=${KERNEL_SOURCES:-zen-sources}
+KERNEL_SOURCES=${KERNEL_SOURCES:-gentoo-sources}
 INIT_COMPRESSION=${INIT_COMPRESSION:-lzma}
 ROOT_PASSWD="${ROOT_PASSWD:-gentoo}"
 VOLID="${VOLID:-JustBOOT_livecd}"
