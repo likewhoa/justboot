@@ -182,7 +182,7 @@ while [ $# -gt 0 ]; do
         echo RAMFS=true
         einfo "${RED}RAMFS${NOCOLOR} compiles enabled!!!"
       else
-        ewarm "You ${RAM_SIZE} of free memory and you need >=${RAM_LIMIT}, --ramfs not enabled."
+        ewarn "You have ${RAM_SIZE} of free memory and you need >=${RAM_LIMIT}, --ramfs not enabled."
       fi
       ;;
     --init-compression)
@@ -826,8 +826,7 @@ prepare_initramfs() {
 
 # This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
 do_coprocessor() {
-  local COPROCESSORS=( core2 pentium4 k8 )
-  [[ \$1 = x86_64 && ${PROCS[${CPU}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ ]] && { ewarm "${PROCS[${CPU}]} invalid for x86_64 arch"; return 1; }
+  [[ \$1 = x86_64 && ${PROCS[${CPU}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ ]] && { ewarn "${PROCS[${CPU}]} invalid for x86_64 arch"; return 1; }
   case ${PROCS[${CPU}]} in
     MPENTIUMM) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
     MPENTIUMII) patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch;;
@@ -847,8 +846,8 @@ prepare_kernel_opts() {
       if [[ ${PROCS[${CPU}]} != M486 || ${PROCS[${CPU}]} =~ ^([3,5-6]86)$ ]]; then 
         sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${PROCS[${CPU}]} is not set/CONFIG_${PROCS[${CPU}]}=y/" ${KERNEL_SOURCES} >.config-custom
       fi
-      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -sp0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
-      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -sp0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
+      [[ ${ARCH} = i586 || ${PROCS[${CPU}]} = M586 ]] && patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
+      [[ ${ARCH} = i686 || ${PROCS[${CPU}]} = M686 ]] && patch -p0 <${KERNEL_SOURCES}-${PROCS[${CPU}]}.patch
       do_coprocessor ${ARCH}
       ;;
     x86_64)
@@ -859,6 +858,21 @@ prepare_kernel_opts() {
   esac                                                                   
   if [[ ${PROCS[${CPU}]} =~ ^(M486|GENERIC_CPU)$ ]]; then do_exec cp ${KERNEL_SOURCES} /usr/src/linux/.config; else do_exec cp .config-custom /usr/src/linux/.config; fi 
   )
+}
+
+do_kernel_compile() {
+  if ! grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 1>/dev/null; then
+    echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
+  fi
+
+  if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${KERNEL_SOURCES} = zen-sources ]]; then
+    einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null
+    do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
+  elif [[ ${KERNEL_SOURCES} = zen-sources ]]; then
+    do_exec emerge ${KERNEL_SOURCES} 1>/dev/null
+  else
+    do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null
+  fi
 }
 
 # JustBOOT kernel compilation and customization options
@@ -875,17 +889,8 @@ prepare_kernel() {
   case ${ARCH} in i[4,5,6]86) local ARCH=x86;; esac
 
   if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${KERNEL_SOURCES}-[0-9]* 2>/dev/null) ]]; then
-    if [[ ! \$(grep "sys-kernel/${KERNEL_SOURCES} symlink" /etc/portage/package.use 2>/dev/null) ]]; then
-      echo "sys-kernel/${KERNEL_SOURCES} symlink">>/etc/portage/package.use
-    fi
     einfo "Compiling \${BLUE}${KERNEL_SOURCES}\${NOCOLOR}."
-    if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${KERNEL_SOURCES} = zen-sources ]]; then 
-      einfo "Compiling \${BLUE}layman\${NOCOLOR}"; do_exec emerge layman 1>/dev/null
-      do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
-      do_exec emerge ${KERNEL_SOURCES} 1>/dev/null
-    else
-      do_exec ${PMS} ${KERNEL_SOURCES} 1>/dev/null
-    fi
+    do_kernel_compile
 
     einfo "Compiling \${BLUE}\${ARCH}\${NOCOLOR} kernel image"
     if declare -A &>/dev/null; then 
@@ -913,6 +918,8 @@ prepare_kernel() {
     fi
 
     einfo "Compiling \${RED}\${ARCH}\${NOCOLOR} kernel image"
+    do_kernel_compile
+
     if declare -A &>/dev/null; then
       do_exec prepare_kernel_opts \${ARCH}
     else
