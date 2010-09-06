@@ -41,7 +41,8 @@ if ! declare -A &>/dev/null; then
 else
   BASH4=true
   declare -A PROCS=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
-[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU [x86_64]=GENERIC_CPU )
+[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU 
+[x86_64]=GENERIC_CPU [atom]=MATOM )
 fi
 declare -a LIVECD_EXCLUDES=( $(cat /etc/justboot/files/excluded-directories.lst | grep -v '^#') )
 declare -a REMOVE_PACKAGES=( $(cat /etc/justboot/files/remove-packages.lst | grep -v '^#') )
@@ -660,10 +661,10 @@ ARCH=${ARCH}
 UCLIBC="${DATA_DIR}/uclibc"
 UCLIBC_SCRIPT=\$(mktemp /tmp/XXX)
 UCLIBC_SRC_URI="http://gentoo.mirrors.tds.net/gentoo/experimental/x86/embedded/stages/stage3-x86-uclibc-2008.0.tar.bz2"
-BUSYBOX_SRC_URI="http://www.busybox.net/downloads/busybox-1.14.0.tar.gz"
-BUSYBOX_ARCHIVE=\$(echo \${BUSYBOX_SRC_URI} | egrep -o 'busybox-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.tar\.gz')
+BUSYBOX_SRC_URI="http://busybox.net/downloads/busybox-1.17.2.tar.bz2"
+BUSYBOX_ARCHIVE=\$(echo \${BUSYBOX_SRC_URI} | egrep -o 'busybox-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.tar\.bz2')
 BUSYBOX_CONF=${DATA_DIR}/busybox/.config
-BUSYBOX=\${BUSYBOX_ARCHIVE/.tar.gz/}
+BUSYBOX=\${BUSYBOX_ARCHIVE/.tar.bz2/}
 BLUE="\$(tput setaf 4)"
 RED="\$(tput setaf 1)"
 NOCOLOR="\$(tput setaf 9)"
@@ -770,6 +771,14 @@ GRUB
   do_exec cp /boot/grub/menu.lst /boot/grub/grub.conf
 }
 
+fetch_busybox() { # TODO: make this work for other archives.
+    einfo "Fetching Busybox sources"
+    do_exec wget -q \${BUSYBOX_SRC_URI}
+    
+    einfo "Extracting Busybox sources"
+    do_exec tar xvjpf \${BUSYBOX_ARCHIVE}
+}
+
 prepare_busybox() {
   if [[ ! -d \${UCLIBC} ]]; then
     do_exec mkdir -p \${UCLIBC}
@@ -780,14 +789,11 @@ prepare_busybox() {
     
     einfo "Extracting Gentoo UCLIBC stage3 tarball"
     do_exec tar xjpf stage*
-
-    einfo "Fetching Busybox sources"
-    do_exec wget -q \${BUSYBOX_SRC_URI}
-    
-    einfo "Extracting Busybox sources"
-    do_exec tar zxf \${BUSYBOX_ARCHIVE}
+    do_exec fetch_busybox
+  elif  [[ ! -d \${UCLIBC}/\${BUSYBOX} ]]; then
+    do_exec cd \${UCLIBC} && do_exec fetch_busybox
   fi
-
+    
   do_exec cp -a ${DATA_DIR}/busybox/.config \${UCLIBC}/\${BUSYBOX}
 
   einfo "Entering UCLIBC environment"
@@ -1066,6 +1072,7 @@ cat >> \${UCLIBC_SCRIPT} << BUSYBOX
 #!/bin/bash
   env-update 1>/dev/null && source /etc/profile
 
+  echo "busybox location \${BUSYBOX}";read
   echo "Compiling Busybox"
   cd \${BUSYBOX} && make -s
   [ ! -f busybox.links ] && make busybox.links
