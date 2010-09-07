@@ -1,11 +1,11 @@
 #!/bin/sh
 
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
-NEW_ROOT=/new-root
-COMMAND_LINE=$(cat /proc/cmdline)
-CONSOLE=/dev/console
-ROOT_LINKS="bin sbin lib lib32 lib64 boot usr opt"
-ROOT_TREES="etc root home var"
+new_root=/new-root
+command_line=$(cat /proc/cmdline)
+console=/dev/console
+root_links="bin sbin lib lib32 lib64 boot usr opt"
+root_trees="etc root home var"
 
 
 do_modprobe_group() {
@@ -20,7 +20,7 @@ do_modprobe_group() {
 }
 
   # Clean input/output
-  exec >${CONSOLE} <${CONSOLE} 2>&1
+  exec >${console} <${console} 2>&1
   clear
   echo "Welcome to the JustBOOT(tm) livecd"
 
@@ -39,41 +39,41 @@ do_modprobe_group() {
 
   do_modprobe_group boot
 
-  mount -n -t tmpfs tmpfs ${NEW_ROOT}
+  mount -n -t tmpfs tmpfs ${new_root}
   for dir in dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp mnt/gentoo sys proc; do
-    mkdir ${NEW_ROOT}/${dir} && chmod 755 ${NEW_ROOT}/${dir}
+    mkdir ${new_root}/${dir} && chmod 755 ${new_root}/${dir}
   done
 
-  for x in /dev/hd*; do
+  for x in /dev/sr* /dev/sd*; do
     mount -t iso9660 ${x} /mnt/livecd/image
-      if [ "$?" == "0" ]; then CDROM=${x}; break; fi
+      if [ "$?" == "0" ]; then cdrom=${x}; break; fi
   done
 
-  if [ "${CDROM}" == "" ]; then
+  if [ "${cdrom}" == "" ]; then
       echo "FATAL --- LIVECD NOT FOUND"
       exec /bin/sh
       exit
   fi
 
-  echo "LiveCD found in ${CDROM}"
+  echo "LiveCD found in ${cdrom}"
 
   for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
-    mknod ${NEW_ROOT}/dev/$node
+    mknod ${new_root}/dev/$node
   done
 
-  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs ${NEW_ROOT}/mnt/livecd
+  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs ${new_root}/mnt/livecd
 
   ( 
-  cd ${NEW_ROOT}/mnt/livecd
-  echo "Copying squashfs data..." && cp -a ${ROOT_TREES} ${NEW_ROOT}
-  cd ${NEW_ROOT}
-  for dir in ${ROOT_LINKS}; do ln -s mnt/livecd/$dir $dir; done
+  cd ${new_root}/mnt/livecd
+  echo "Copying squashfs data..." && cp -a ${root_trees} ${new_root}
+  cd ${new_root}
+  for dir in ${root_links}; do ln -s mnt/livecd/$dir $dir; done
   )
  
   >/proc/sys/kernel/hotplug && umount /proc /sys
 
   echo "Starting init"
-  exec switch_root -c ${CONSOLE} ${NEW_ROOT} /sbin/init 
+  exec switch_root -c ${console} ${new_root} /sbin/init 
 
 # AUFS method - zen-sources only    
 #  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs  /mnt/livecd/static

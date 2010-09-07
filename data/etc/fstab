@@ -1,3 +1,4 @@
-aufs		/		aufs		defaults	0 0
-none		/proc   	proc            defaults        0 0
-none		/dev/shm	tmpfs           defaults        0 0
+tmpfs   /                               tmpfs   defaults        0 0
+tmpfs   /lib/firmware                   tmpfs   defaults        0 0
+tmpfs   /usr/portage                    tmpfs   defaults        0 0
+
