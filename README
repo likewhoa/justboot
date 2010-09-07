@@ -15,7 +15,7 @@ justboot --arch=x86_64 --root-passwd="gentoo rocks" --volid=gentoo --data-direct
 justboot --arch=x86_64 --make-opts=-j3 --niceness=-5
 justboot --arch=i686 --package-manager=pkgcore
 
-FIle locations for extra packages, excluded directories and ramfs mounts are located at
+File locations for extra packages, excluded directories and ramfs mounts are located at
 /etc/justboot/files
 
 Per user configuration options for gentoo make.conf can be set in ~/.justboot/arch.conf
