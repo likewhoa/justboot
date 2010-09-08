@@ -1,5 +1,5 @@
-#!/bin/bash 
-# JustBOOT(tm) v0.4.0 - A Gentoo Linux LiveCD Generator.
+#!/bin/bash
+# JustBOOT(tm) v0.5.0 - A Gentoo Linux LiveCD Generator.
 ##
 # Copyright (C) 2009-2012 Mission Accomplish, Inc.
 #
@@ -17,7 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
-version=0.4.0
+version=0.5.0
 [[ $1 =~ ^(--version|-[Vv])$ ]] && { echo "JustBOOT-${version} see --help for more options"; exit 0; }
 [ $(id -u) != 0 ] && { echo "This script must be run as root."; exit 1; }
 
@@ -243,7 +243,7 @@ while [ $# -gt 0 ]; do
         ewarn "Exiting now."; exit 1
       fi
       ;;
-    --coprocessor-list) einfo "Available procs are: ${blue}i386,i486,i586,i686,k6,k7,k8,opteron,core2 & generic"; exit 0;;
+    --coprocessor-list) einfo "Available procs are: ${blue}i386,i486,i586,i686,k6,k7,k8,opteron,core2,atom & generic"; exit 0;;
     --verbose) verbose=true;;
     --debug|-db) debug=true; einfo "Running in debug mode";;
     --help|-h) print_help;;
@@ -348,7 +348,7 @@ trap 'release_env now; exit 13' TERM INT
 
 # Check local system for required packages
 check_deps() {
-  local -a deps=( 'mksquashfs:sys-apps/squashfs-tools' 'genisoimage:app-cdr/cdrkit' )
+  local -a deps=( 'mksquashfs:sys-fs/squashfs-tools' 'genisoimage:app-cdr/cdrkit' )
 
   if [[ "${pms}" = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then 
@@ -358,7 +358,6 @@ check_deps() {
     fi
   fi
 
-set -x
   for i in ${deps[@]}; do
     if ! hash ${i/:*/} &>/dev/null; then
       einfo "Compiling ${blue}${i/*:/}${nocolor}"
@@ -423,7 +422,7 @@ prepare_stage() {
   if [ ! -d ${arch_dir} ]; then
     einfo "Building initial stage1 for ${blue}${arch}${nocolor}. please wait..."
 
-    do_exec wget -q ${GENTOO_MIRROR}/releases/${gentoo_arch}/autobuilds/latest-stage3.txt
+    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}/autobuilds/latest-stage3.txt
     local gentoo_stage=$(egrep -o [[:digit:]]{8}/stage3-${stage_arch}-[[:digit:]]{8}.tar.bz2 latest-stage3.txt)
     do_exec rm latest-stage3.txt
 
@@ -431,14 +430,14 @@ prepare_stage() {
     do_exec cd ${arch_dir} || error "Failed to switch to ${arch_dir}"
 
     einfo "Fetching gentoo ${gentoo_stage#*/} autobuild stage"
-    do_exec wget -q ${GENTOO_MIRROR}/releases/${gentoo_arch}/autobuilds/${gentoo_stage}
+    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}/autobuilds/${gentoo_stage}
 
     einfo "Extracting ${gentoo_stage#*/}"
     do_exec tar xjpf ${gentoo_stage#*/} 
     do_exec rm ${gentoo_stage#*/}
 
     einfo "Fetching portage tree snapshot"
-    do_exec wget -q ${GENTOO_MIRROR}/snapshots/portage-latest.tar.bz2
+    do_exec wget -q ${gentoo_mirror}/snapshots/portage-latest.tar.bz2
 
     einfo "Extracting portage-latest.tar.bz2"
     do_exec tar xjpf portage-latest.tar.bz2 -C usr/ 
@@ -749,13 +748,6 @@ prepare_packages() {
 
   # Setup sudoers
   [ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
-
-  # Allow root logins to our CD by default
-  [ -e /etc/sshd/sshd_config ] && sed -i 's:^#PermitRootLogin\ yes:PermitRootLogin\ yes:' /etc/ssh/sshd_config
-
-  # Comment out current getty settings
-  sed -i -e '/^c[0-9]/ s/^/#/' -e '/^s[01]/ s/^/#/' /etc/inittab
-  echo "s0:12345:respawn:/sbin/agetty -nl /bin/bashlogin 9600 /dev/console vt100" >> /etc/inittab
 }
 
 prepare_bootloader() {

@@ -4,7 +4,7 @@
 # See justboot --help for command line options
 ###
 CFLAGS="${CFLAGS:--Os -march=${make_arch:-${arch}} -pipe}"
-CHOST="${CHOST:-${ARCH}-pc-linux-gnu}"
+CHOST="${CHOST:-${arch}-pc-linux-gnu}"
 MAKEOPTS="${MAKEOPTS:--j1}"
 LDFLAGS="${LDFLAGS:--Wl,-O1 -Wl,--sort-common -Wl,--warn-once}"
 CXXFLAGS="${CFLAGS}"
@@ -26,7 +26,7 @@ kernel_sources=${kernel_sources:-gentoo-sources}
 init_compression=${init_compression:-lzma}
 root_passwd="${root_passwd:-gentoo}"
 volid="${volid:-JustBOOT_livecd}"
-arch=${ARCH:-i486}
+arch=${arch:-i486}
 cpu=${cpu:-${arch}}
 livedir="${livedir:-/usr/share/justboot}"
 data_dir="${livedir}/data"
