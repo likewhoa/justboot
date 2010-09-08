@@ -842,7 +842,8 @@ do_coprocessor() {
     MCORE2) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
     MK6) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
     MK7) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MK8) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
+    MK8) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
+    MATOM) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
   esac
 }
 

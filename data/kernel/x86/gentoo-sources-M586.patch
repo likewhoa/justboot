@@ -1,31 +1,33 @@
---- .config-custom	2009-08-06 20:54:23.625512812 -0400
-+++ .config-custom	2009-08-06 20:54:43.375610124 -0400
+--- custom	2010-09-08 18:01:32.457000006 +0000
++++ .config	2010-09-08 18:01:43.784000006 +0000
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit
- # Linux kernel version: 2.6.30-gentoo-r4
--# Fri Aug  7 00:54:20 2009
-+# Fri Aug  7 00:54:37 2009
+ # Linux kernel version: 2.6.35-gentoo-r5
+-# Wed Sep  8 03:16:34 2010
++# Wed Sep  8 18:01:43 2010
  #
  # CONFIG_64BIT is not set
  CONFIG_X86_32=y
-@@ -195,8 +195,8 @@
- # CONFIG_PARAVIRT_GUEST is not set
- # CONFIG_MEMTEST is not set
- # CONFIG_M386 is not set
--CONFIG_M486=y
--# CONFIG_M586 is not set
-+# CONFIG_M486 is not set
-+CONFIG_M586=y
- # CONFIG_M586TSC is not set
- # CONFIG_M586MMX is not set
- # CONFIG_M686 is not set
-@@ -224,7 +224,7 @@
- CONFIG_X86_L1_CACHE_BYTES=64
- CONFIG_X86_INTERNODE_CACHE_BYTES=64
- CONFIG_X86_CMPXCHG=y
--CONFIG_X86_L1_CACHE_SHIFT=4
-+CONFIG_X86_L1_CACHE_SHIFT=5
+@@ -150,11 +150,13 @@
+ CONFIG_EVENTFD=y
+ CONFIG_SHMEM=y
+ CONFIG_AIO=y
++CONFIG_HAVE_PERF_EVENTS=y
+ 
+ #
+ # Kernel Performance Events And Counters
+ #
+ CONFIG_PERF_EVENTS=y
++# CONFIG_PERF_COUNTERS is not set
+ # CONFIG_DEBUG_PERF_USE_VMALLOC is not set
+ CONFIG_VM_EVENT_COUNTERS=y
+ CONFIG_PCI_QUIRKS=y
+@@ -293,7 +295,6 @@
  CONFIG_X86_XADD=y
- # CONFIG_X86_PPRO_FENCE is not set
+ CONFIG_X86_PPRO_FENCE=y
  CONFIG_X86_F00F_BUG=y
+-CONFIG_X86_INVD_BUG=y
+ CONFIG_X86_WP_WORKS_OK=y
+ CONFIG_X86_INVLPG=y
+ CONFIG_X86_BSWAP=y
