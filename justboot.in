@@ -18,8 +18,15 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
 version=@VERSION@
-[[ $1 =~ ^(--version|-[Vv])$ ]] && { echo "JustBOOT-${version} see --help for more options"; exit 0; }
-[ $(id -u) != 0 ] && { echo "This script must be run as root."; exit 1; }
+if [[ $1 =~ ^(--version|-[Vv])$ ]]; then
+	echo "JustBOOT-${version} see --help for more options"
+	exit 0
+fi
+
+if [ $(id -u) != 0 ]; then
+	echo "This script must be run as root."
+	exit 1
+fi
 
 # Set some variables
 no_tool=false
@@ -37,18 +44,26 @@ bash4=false
 
 # Check for =bash-4.* associated array support
 if ! declare -A &>/dev/null; then
-  echo "This script uses bash4 only features, consider upgrading"
+	echo "This script uses bash4 only features, consider upgrading"
 else
-  bash4=true
-  declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586 [i686]=M686 [pentiumII]=MPENTIUMII [pentiumII]=MPENTIUMIII
-[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU 
-[x86_64]=GENERIC_CPU [atom]=MATOM )
+	bash4=true
+	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586 \
+		[i686]=M686	[pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII \
+		[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 \
+		[k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 \
+		[generic]=GENERIC_CPU [x86_64]=GENERIC_CPU [atom]=MATOM )
 fi
-declare -a livecd_excludes=( $(cat @confdir@/files/excluded-directories.lst | grep -v '^#') )
-declare -a remove_packages=( $(cat @confdir@/files/remove-packages.lst | grep -v '^#') )
-declare -a remove_files=( $(cat @confdir@/files/remove-files.lst | grep -v '^#') )
-declare -a ramfs_dir=( $(cat @confdir@/files/ramfs-directories.lst | grep -v '^#') )
-declare -a extra_packages=( $(cat @confdir@/files/extra-packages.lst | grep -v '^#') )
+
+declare -a livecd_excludes=( $(cat \
+@confdir@/files/excluded-directories.lst | grep -v '^#') ) 
+declare -a remove_packages=( $(cat @confdir@/files/remove-packages.lst \
+	| grep -v '^#') ) 
+declare -a remove_files=( $(cat @confdir@/files/remove-files.lst | \
+	grep -v '^#') ) 
+declare -a ramfs_dir=( $(cat @confdir@/files/ramfs-directories.lst | \
+	grep -v '^#') ) 
+declare -a extra_packages=( $(cat @confdir@/files/extra-packages.lst | \
+	grep -v '^#') )
 declare -a arches=( x86_64 i486 i586 i686 )
 declare -a locales=( $(cat @confdir@/locale.gen) )
 
@@ -873,6 +888,7 @@ do_kernel_compile() {
     echo "sys-kernel/${kernel_sources} symlink">>/etc/portage/package.use
   fi
 
+  # Removed due to zen-overlay no longer in layman and zen-sources in tree
   if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${kernel_sources} = zen-sources ]]; then
     einfo "Compiling \${blue}layman\${nocolor}"; do_exec emerge layman 1>/dev/null
     do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
