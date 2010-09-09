@@ -44,11 +44,11 @@ else
 [pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU 
 [x86_64]=GENERIC_CPU [atom]=MATOM )
 fi
-declare -a livecd_excludes=( $(cat @confdir@/files/excluded-directories.lst | grep -v '^#') )
-declare -a remove_packages=( $(cat @confdir@/files/remove-packages.lst | grep -v '^#') )
-declare -a remove_files=( $(cat @confdir@/files/remove-files.lst | grep -v '^#') )
-declare -a ramfs_dir=( $(cat @confdir@/files/ramfs-directories.lst | grep -v '^#') )
-declare -a extra_packages=( $(cat @confdir@/files/extra-packages.lst | grep -v '^#') )
+declare -a livecd_excludes=( $(grep -v '^#' @confdir@/files/excluded-directories.lst ) )
+declare -a remove_packages=( $(grep -v '^#'  @confdir@/files/remove-packages.lst ) )
+declare -a remove_files=( $(grep -v '^#'  @confdir@/files/remove-files.lst ) )
+declare -a ramfs_dir=( $(grep -v '^#'  @confdir@/files/ramfs-directories.lst ) )
+declare -a extra_packages=( $(grep -v '^#'  @confdir@/files/extra-packages.lst ) )
 declare -a arches=( x86_64 i486 i586 i686 )
 declare -a locales=( $(cat @confdir@/locale.gen) )
 
