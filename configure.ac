@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([justboot], [0.5.0], [BUG-REPORT-ADDRESS])
+AC_INIT([justboot], [0.5.0], [bugs@justboot.org])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([configure.ac])
 
