@@ -5,6 +5,5 @@ autom4te.cache
 config.*
 configure
 depcomp
-install-sh
 justboot
 missing

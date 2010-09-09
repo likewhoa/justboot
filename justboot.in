@@ -72,12 +72,25 @@ red="$(tput setaf 1)"
 nocolor="$(tput setaf 9)"
 
 # Main script functions
-einfo() { echo -e ".: ${1} :."; sleep 1; }
-ewarn() { echo -e "\a${red}.: ${1} :.${nocolor}"; }
-error() { echo -e "\a${red}.: ${1} :.${nocolor}"; exit 1; }
-exec_chkdir() { local dir="${1}"; [[ ! -d ${dir} ]] && mkdir -p ${dir}; }
-exec_chklink() { local src="${1}" dest="${2}"; [[ -h ${dest} ]] && unlink ${dest}; ln -s ${src} ${dest}; }
-
+einfo() {
+	echo -e ".: ${1} :."
+	sleep 1
+}
+ewarn() { 
+	echo -e "\a${red}.: ${1} :.${nocolor}"
+}
+error() {
+	echo -e "\a${red}.: ${1} :.${nocolor}"
+	exit 1
+}
+exec_chkdir() {
+	local dir="${1}"
+	[[ ! -d ${dir} ]] && mkdir -p ${dir}
+}
+exec_chklink() {
+	local src="${1}" dest="${2}"
+	[[ -h ${dest} ]] && { unlink ${dest}; ln -s ${src} ${dest}; }
+}
 do_exec() {
   if ${debug}; then
     echo -e "\a${red}debug:${nocolor}${blue} (${@})"${nocolor}
@@ -97,17 +110,21 @@ Usage: justboot [arguments] [make opts] [kernel opts]
 Arguments:
 
 --arch=                 - Set arch for livecd build i.e --arch=x86_64
---kernel=               - Kernel sources for livecd
---root-passwd=          - ROOT password for the livecd
---init-compression      - Currently only gzip and lzma compression is supported
--L, --volid=            - Set a label for the livecd image
---ramfs                 - Compile in ramfs "Must have ~4GB of available RAM"
---force-toolchain       - Force a rebuilt of the toolchain
---skip-toolchain        - Skips toolchain built for those in a hurry
---data-directory=       - Set the data directory for compiles
+--kernel=               - Kernel sources for livecd 
+--root-passwd=			- ROOT password for the livecd 
+--init-compression      - Currently only gzip and lzma compression is
+	supported 
+-L, --volid=            - Set a label for the livecd image 
+--ramfs                 - Compile in ramfs "Must have ~4GB of available
+	RAM" 
+--force-toolchain       - Force a rebuilt of the toolchain 
+--skip-toolchain        - Skips toolchain built for those in a hurry 
+--data-directory=       - Set the data directory for compiles 
 --package-manager=      - Enable the package manager for all builds 
-	.: Currently only pkgcore is supported, by default justboot uses portage :.
---letmein               - Will run interactive bash at end of chroot stage so you can tweak the livecd environment
+	.: Currently only pkgcore is supported, by default justboot uses 
+	portage :.  
+--letmein               - Will run interactive bash at end of chroot 
+	stage so you can tweak the livecd environment
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
 --delete-arch           - Like --purge but exits script after
@@ -115,50 +132,65 @@ Arguments:
 
 Gentoo make.conf options:
 
---cflags		- Compiler FLAGS
+--cflags				- Compiler FLAGS
 --ldflags=              - Linker FLAGS
 --make-opts=            - MAKEOPTS
 --keywords=             - Accepted KEYWORDS i.e ~x86
---jobs=                 - Specifies the number of packages to build simultaneously
---use=                  - Packages USE flags
---features=             - make.conf specific FEATURES
---gentoo-mirrors=	- JustBOOT and make.conf space separated list of local mirrors
---rsync-mirror=		- Sets the default rsync mirror
---niceness=		- make.conf specific PORTAGE_NICENESS
+--jobs=                 - Specifies the number of packages to build
+	simultaneously 
+--use=                  - Packages USE flags 
+--features=				- make.conf specific FEATURES 
+--gentoo-mirrors=		- JustBOOT and make.conf space separated list
+	of local mirrors
+--rsync-mirror=			- Sets the default rsync mirror
+--niceness=				- make.conf specific PORTAGE_NICENESS
 
 Linux Kernel options: >=bash-4.0 Only
 
---coprocessor=		- Processor type for the livecd kernel i.e --coprocessor=core2
---coprocessor-list	- List the currently supported coprocessors
---menuconfig            - Runs make menuconfig for interactive kernel configuration
+--coprocessor=			- Processor type for the livecd kernel i.e
+	--coprocessor=core2 
+--coprocessor-list		- List the currently supported coprocessors 
+--menuconfig            - Runs make menuconfig for interactive kernel 
+	configuration 
 --purge-kernel          - Purge any kernel sources and start fresh
 
-Usage examples:
- Generate a x86_64 livecd using gentoo-sources and set 'gentoo' for root password
+Usage examples: 
+
+Generate a x86_64 livecd using gentoo-sources and set 'gentoo'
+	for root password
 # justboot --arch=x86_64 --root-passwd="gentoo"
- Generate a i686 livecd with 'let me in!' as password and 'gentoo' for livecd label
+Generate a i686 livecd with 'let me in!' as password and 'gentoo' for
+	livecd label
 # justboot --arch=i686 --volid="gentoo rocks" --root-passwd="let me in!"
- Generate a x86_64 livecd with optional gzip compression (Default is to use lzma)
+Generate a x86_64 livecd with optional gzip compression 
+	(Default is to use lzma)
 # justboot --arch=x86_64 --init-compression lzma
- Generate a livecd but compile packages in ram (see @confdir@/files/ramfs-directories.lst)
+Generate a livecd but compile packages in ram (see
+	@confdir@/files/ramfs-directories.lst)
 # justboot --arch=x86_64 -ramfs -L "Fast is good"
- Generate a livecd but delete old sources first.
+Generate a livecd but delete old sources first.
 # justboot --arch=x86_64 --purge
- Generate a livecd for x86_64 using -j8 for makeopts and -19 for portage niceness
+Generate a livecd for x86_64 using -j8 for makeopts and -19 for portage
+	niceness
 # justboot --arch=x86_64 --make-opts="-j8" --niceness="-19"
- Change the livecd data directory
+Change the livecd data directory
 # justboot --arch=x86_64 --data-directory=/home/username
- Change the rsync and gentoo mirrors setting
-# justboot --arch=i486 --gentoo-mirrors="http://mirror.datapipe.net/gentoo ftp://gentoo.chem.wisc.edu/gentoo/" --rsync-mirror="http://localhost/portage"
- Generate a livecd for opteron processors
-# justboot --coprocessor=opteron --arch=x86_64 --cflags="-march=opteron -Os -pipe" --make-opts=-j3
- Generater a livecd for an Intel Core2 Quad processor
-# justboot --coprocessor=core2 --arch=x86_64 --cflags="-march=core2 -Os -pipe" --make-opts=-j5
- Generate a x86_64 livecd with interactive kernel menu and custom rsync mirror
-  justboot --arch=x86_64 --menuconfig --make-opts=-j5 --rsync-mirror="http://localhost/portage"
-# Use sys-apps/pkgcore for all livecd builds instead of portage
-  justboot --arch=i486 --package-manager=pkgcore --root-passwd=letmein
- Remove old sources (This deletes all livecd data for that arch)
+Change the rsync and gentoo mirrors setting
+# justboot --arch=i486 --gentoo-mirrors="http://mirror.datapipe.net/gentoo
+	ftp://gentoo.chem.wisc.edu/gentoo/"
+	--rsync-mirror="http://localhost/portage"
+Generate a livecd for opteron processors
+# justboot --coprocessor=opteron --arch=x86_64 --cflags="-march=opteron
+	-Os -pipe" --make-opts=-j3
+Generate a livecd for an Intel Core2 Quad processor
+# justboot --coprocessor=core2 --arch=x86_64 --cflags="-march=core2 -Os -pipe"
+	--make-opts=-j5
+Generate a x86_64 livecd with interactive kernel menu and custom rsync mirror
+# justboot --arch=x86_64 --menuconfig --make-opts=-j5
+	--rsync-mirror="http://localhost/portage"
+Use sys-apps/pkgcore for all livecd builds instead of portage
+# justboot --arch=i486 --package-manager=pkgcore --root-passwd=letmein
+Remove old sources (This deletes all livecd data for that arch)
 # justboot --arch=i586 --delete-arch
  
 HELP
@@ -363,7 +395,7 @@ trap 'release_env now; exit 13' TERM INT
 
 # Check local system for required packages
 check_deps() {
-  local -a deps=( 'mksquashfs:sys-fs/squashfs-tools' 'genisoimage:app-cdr/cdrkit' )
+  local -a deps=( 'mksquashfs:sys-fs/squashfs-tools' 'mkisofs:virtual/cdrtools' )
 
   if [[ "${pms}" = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then 
