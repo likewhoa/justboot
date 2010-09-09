@@ -1,5 +1,5 @@
 #!/bin/bash
-# JustBOOT(tm) v0.5.0 - A Gentoo Linux LiveCD Generator.
+# JustBOOT(tm) v@VERSION@ - A Gentoo Linux LiveCD Generator.
 ##
 # Copyright (C) 2009-2012 Mission Accomplish, Inc.
 #
@@ -17,7 +17,7 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA
 ###
-version=0.5.0
+version=@VERSION@
 [[ $1 =~ ^(--version|-[Vv])$ ]] && { echo "JustBOOT-${version} see --help for more options"; exit 0; }
 [ $(id -u) != 0 ] && { echo "This script must be run as root."; exit 1; }
 
@@ -44,13 +44,13 @@ else
 [pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 [k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 [generic]=GENERIC_CPU 
 [x86_64]=GENERIC_CPU [atom]=MATOM )
 fi
-declare -a livecd_excludes=( $(cat /etc/justboot/files/excluded-directories.lst | grep -v '^#') )
-declare -a remove_packages=( $(cat /etc/justboot/files/remove-packages.lst | grep -v '^#') )
-declare -a remove_files=( $(cat /etc/justboot/files/remove-files.lst | grep -v '^#') )
-declare -a ramfs_dir=( $(cat /etc/justboot/files/ramfs-directories.lst | grep -v '^#') )
-declare -a extra_packages=( $(cat /etc/justboot/files/extra-packages.lst | grep -v '^#') )
+declare -a livecd_excludes=( $(cat @confdir@/files/excluded-directories.lst | grep -v '^#') )
+declare -a remove_packages=( $(cat @confdir@/files/remove-packages.lst | grep -v '^#') )
+declare -a remove_files=( $(cat @confdir@/files/remove-files.lst | grep -v '^#') )
+declare -a ramfs_dir=( $(cat @confdir@/files/ramfs-directories.lst | grep -v '^#') )
+declare -a extra_packages=( $(cat @confdir@/files/extra-packages.lst | grep -v '^#') )
 declare -a arches=( x86_64 i486 i586 i686 )
-declare -a locales=( $(cat /etc/justboot/locale.gen) )
+declare -a locales=( $(cat @confdir@/locale.gen) )
 
 blue="$(tput setaf 4)"
 red="$(tput setaf 1)"
@@ -125,7 +125,7 @@ Usage examples:
 # justboot --arch=i686 --volid="gentoo rocks" --root-passwd="let me in!"
  Generate a x86_64 livecd with optional gzip compression (Default is to use lzma)
 # justboot --arch=x86_64 --init-compression lzma
- Generate a livecd but compile packages in ram (see /etc/justboot/files/ramfs-directories.lst)
+ Generate a livecd but compile packages in ram (see @confdir@/files/ramfs-directories.lst)
 # justboot --arch=x86_64 -ramfs -L "Fast is good"
  Generate a livecd but delete old sources first.
 # justboot --arch=x86_64 --purge
@@ -209,11 +209,11 @@ while [ $# -gt 0 ]; do
       einfo "Livecd data directory set to ${blue}\"${livedir}\"${nocolor}"
       ;;
     --package-manager=*)
-      [[ -f /etc/justboot/${arch}-pms ]] && error "Previously enabled package manager, delete /etc/justboot/${arch}-pms then try again to override"
+      [[ -f @confdir@/${arch}-pms ]] && error "Previously enabled package manager, delete @confdir@/${arch}-pms then try again to override"
       [[ ${1##*=} =~ ^(pkgcore|portage)$ ]] || { einfo "--package-manager=${red}${1##*=}${nocolor} is invalid, try pkgcore or portage"; error "Exiting!"; }
       if [[ ${1##*=} = portage ]]; then pms="emerge -q"; else pms="pmerge"; fi
-      einfo "${red}${pms}${nocolor} permanently enabled, to override delete /etc/justboot/${arch}-pms"
-      touch /etc/justboot/${arch}-pms # FIX/IMPROVE ME 
+      einfo "${red}${pms}${nocolor} permanently enabled, to override delete @confdir@/${arch}-pms"
+      touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
       ;; 
     --gentoo-mirrors=*)
       opt="$(echo ${1##*=} | awk '{print$1}')"
@@ -276,10 +276,10 @@ if [[ -h /usr/share/justboot/${arch} && ! ${livedir} ]]; then
 fi
 
 # Source JustBOOT(tm) global configuration options
-. /etc/justboot/config.globals
+. @confdir@/config.globals
 
 # Check if we previously set a package manager for compiles on $arch
-if [ ! -f /etc/justboot/${arch}-pms ]; then pms="emerge -q"; else pms=$(</etc/justboot/${arch}-pms); fi
+if [ ! -f @confdir@/${arch}-pms ]; then pms="emerge -q"; else pms=$(<@confdir@/${arch}-pms); fi
 
 # Remove old data directories (--purge/--delete-arch)
 if ${purge} || ${delete_arch}; then
@@ -308,7 +308,7 @@ fi
 
 # The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories.
 # First we remove local livecd folders i.e proc,dev and the data directory, then we copy any ramfs changes to
-# the livecd exclude folders. See the /etc/justboot/files/{ramfs-directories,excluded-directories}.lst file to customize
+# the livecd exclude folders. See the @confdir@/files/{ramfs-directories,excluded-directories}.lst file to customize
 release_env() {
   einfo "Releasing livecd environment, please wait..."
   do_exec rm -rf ${arch}/tmp/* 
@@ -569,7 +569,7 @@ prepare_env() {
 }
 
 # Before we create our iso image we will clean up the environment of any excluded packages and common directories or files that
-# we don't require for livecd operations ( see /etc/justboot{excluded-directories,remove-packages,remove-files}.lst for options.
+# we don't require for livecd operations ( see @confdir@{excluded-directories,remove-packages,remove-files}.lst for options.
 clean_env() {
   local target=${livedir}/targets/${arch}/targets/files/${arch} cleanup_script=$(mktemp /tmp/XXX)
 
@@ -1017,7 +1017,7 @@ check_toolchain_days() {
 }
 
 bootstrap() {
-  # Enable livecd and user locales (see /etc/justboot/locale.gen)
+  # Enable livecd and user locales (see @confdir@/locale.gen)
   if grep '#en_US ISO-8859-1' /etc/locale.gen &>/dev/null; then
     einfo "Setting locales"
     for i in "${locales[@]}" "#en_US ISO-8859-1"; do

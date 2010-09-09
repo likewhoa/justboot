@@ -6,4 +6,5 @@ config.*
 configure
 depcomp
 install-sh
+justboot
 missing
