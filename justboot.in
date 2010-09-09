@@ -160,8 +160,8 @@ while [ $# -gt 0 ]; do
       einfo "${blue}${arch}${nocolor} arch set"
       ;;
     --cflags=*) 
-      arg=$(echo ${1} | cut -d\= -f2-) # FIX ME
-      CFLAGS=${arg}
+      #arg=$(echo ${1} | cut -d\= -f2-) # FIX ME
+      CFLAGS="${1#*=}"  #${arg}  # any reason this couldn't be done over the cut?
       einfo "CFLAGS set to ${blue}\"${CFLAGS}\""
       ;;
     --ldflags=*) LDFLAGS="${1##*=}";;
