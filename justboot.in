@@ -48,7 +48,7 @@ if ! declare -A &>/dev/null; then
 else
 	bash4=true
 	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586
-		[i686]=M686 [pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII
+        [i686]=M686 [pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII
 		[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6
 		[k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2
 		[generic]=GENERIC_CPU [x86_64]=GENERIC_CPU [atom]=MATOM )
@@ -322,18 +322,19 @@ while [ $# -gt 0 ]; do
             cpu="${1#*=}"
             if [[ ${bash4} && -z ${procs[${cpu}]} ]]; then
                 ewarn "${cpu} is an invalid --coprocessor option."
-                einfo "Available procs are: ${blue}${procs[@]}"
+                einfo "Available procs are: ${blue}${!procs[@]}"
                 ewarn "Exiting now."
                 exit 1
             fi
             ;;
         --coprocessor-list)
             if ${bash4}; then
-                einfo "Available procs are: ${blue}${procs[@]}"
+                einfo "Available procs are: ${blue}${!procs[@]}"
                 exit 0
             else
                 einfo "Available procs are: ${blue}i386,i486,i586,i686\
-                    ,k6,k7,k8,opteron,core2,atom & generic"
+                    ,k6,k7,k8,opteron,core2,atom,pentiumII,pentiumIII \
+                    pentium4 & generic"
                 exit 0
             fi
             ;;
@@ -1100,9 +1101,11 @@ prepare_initramfs() {
 
 # This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
 do_coprocessor() {
+# Detect non x86_64 processors with --co-processor=x86_64
 [[ \$1 = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ ]] && { ewarn "${procs[${cpu}]} invalid for x86_64 arch"; return 1; }
 
-patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
+# We only patch what is needed here and we skip i{5,6}86 arches
+[[ ${procs[${cpu}]} =~ ^M(PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ ]] && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
 }
 
 prepare_kernel_opts() {
