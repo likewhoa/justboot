@@ -1105,7 +1105,7 @@ do_coprocessor() {
 [[ \$1 = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ ]] && { ewarn "${procs[${cpu}]} invalid for x86_64 arch"; return 1; }
 
 # We only patch what is needed here and we skip i{5,6}86 arches
-[[ ${procs[${cpu}]} =~ ^M(PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ ]] && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
+[[ ${procs[${cpu}]} =~ ^M(PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ ]] && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
 }
 
 prepare_kernel_opts() {
