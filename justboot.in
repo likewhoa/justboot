@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 # JustBOOT(tm) v@VERSION@ - A Gentoo Linux LiveCD Generator.
 ##
 # Copyright (C) 2009-2012 Mission Accomplish, Inc.
@@ -55,13 +55,13 @@ else
 fi
 
 declare -a livecd_excludes=( $(cat \
-@confdir@/files/excluded-directories.lst | grep -v '^#') ) 
+	@confdir@/files/excluded-directories.lst | grep -v '^#') )
 declare -a remove_packages=( $(cat @confdir@/files/remove-packages.lst \
-	| grep -v '^#') ) 
+	| grep -v '^#') )
 declare -a remove_files=( $(cat @confdir@/files/remove-files.lst | \
-	grep -v '^#') ) 
+	grep -v '^#') )
 declare -a ramfs_dir=( $(cat @confdir@/files/ramfs-directories.lst | \
-	grep -v '^#') ) 
+	grep -v '^#') )
 declare -a extra_packages=( $(cat @confdir@/files/extra-packages.lst | \
 	grep -v '^#') )
 declare -a arches=( x86_64 i486 i586 i686 )
@@ -93,12 +93,11 @@ exec_chklink() {
 }
 do_exec() {
   if ${debug}; then
-    echo -e "\a${red}debug:${nocolor}${blue} (${@})"${nocolor}
-    "${@}" 
+    echo -e "\a${red}debug:${nocolor}${blue} (${@})"${nocolor} "${@}"
   elif ${verbose}; then
-    "${@}" 
+    "${@}"
   else
-    "${@}" 2>/dev/null 
+    "${@}" 2>/dev/null
   fi
 }
 
@@ -110,86 +109,98 @@ Usage: justboot [arguments] [make opts] [kernel opts]
 Arguments:
 
 --arch=                 - Set arch for livecd build i.e --arch=x86_64
---kernel=               - Kernel sources for livecd 
---root-passwd=			- ROOT password for the livecd 
+--kernel=               - Kernel sources for livecd
+--root-passwd=          - ROOT password for the livecd
 --init-compression      - Currently only gzip and lzma compression is
-	supported 
--L, --volid=            - Set a label for the livecd image 
+	supported
+-L, --volid=            - Set a label for the livecd image
 --ramfs                 - Compile in ramfs "Must have ~4GB of available
-	RAM" 
---force-toolchain       - Force a rebuilt of the toolchain 
---skip-toolchain        - Skips toolchain built for those in a hurry 
---data-directory=       - Set the data directory for compiles 
---package-manager=      - Enable the package manager for all builds 
-	.: Currently only pkgcore is supported, by default justboot uses 
-	portage :.  
---letmein               - Will run interactive bash at end of chroot 
+	RAM"
+--force-toolchain       - Force a rebuilt of the toolchain
+--skip-toolchain        - Skips toolchain built for those in a hurry
+--data-directory=       - Set the data directory for compiles
+--package-manager=      - Enable the package manager for all builds
+	.: Currently only pkgcore is supported, by default justboot uses
+	portage :.
+--letmein               - Will run interactive bash at end of chroot
 	stage so you can tweak the livecd environment
 --verbose               - Run in verbose mode - lots of output
 --purge                 - Purge old data and start fresh
 --delete-arch           - Like --purge but exits script after
---debug                 - Turn on debugging 
+--debug                 - Turn on debugging
 
 Gentoo make.conf options:
 
---cflags				- Compiler FLAGS
+--cflags                - Compiler FLAGS
 --ldflags=              - Linker FLAGS
 --make-opts=            - MAKEOPTS
 --keywords=             - Accepted KEYWORDS i.e ~x86
 --jobs=                 - Specifies the number of packages to build
-	simultaneously 
---use=                  - Packages USE flags 
---features=				- make.conf specific FEATURES 
---gentoo-mirrors=		- JustBOOT and make.conf space separated list
+	simultaneously
+--use=                  - Packages USE flags
+--features=             - make.conf specific FEATURES
+--gentoo-mirrors=       - JustBOOT and make.conf space separated list
 	of local mirrors
---rsync-mirror=			- Sets the default rsync mirror
---niceness=				- make.conf specific PORTAGE_NICENESS
+--rsync-mirror=         - Sets the default rsync mirror
+--niceness=             - make.conf specific PORTAGE_NICENESS
 
 Linux Kernel options: >=bash-4.0 Only
 
---coprocessor=			- Processor type for the livecd kernel i.e
-	--coprocessor=core2 
---coprocessor-list		- List the currently supported coprocessors 
---menuconfig            - Runs make menuconfig for interactive kernel 
-	configuration 
+--coprocessor=          - Processor type for the livecd kernel i.e
+	--coprocessor=core2
+--coprocessor-list      - List the currently supported coprocessors
+--menuconfig            - Runs make menuconfig for interactive kernel
+	configuration
 --purge-kernel          - Purge any kernel sources and start fresh
 
-Usage examples: 
+Usage examples:
 
 Generate a x86_64 livecd using gentoo-sources and set 'gentoo'
-	for root password
+    for root password
 # justboot --arch=x86_64 --root-passwd="gentoo"
+
 Generate a i686 livecd with 'let me in!' as password and 'gentoo' for
-	livecd label
+    livecd label
 # justboot --arch=i686 --volid="gentoo rocks" --root-passwd="let me in!"
-Generate a x86_64 livecd with optional gzip compression 
-	(Default is to use lzma)
+
+Generate a x86_64 livecd with optional gzip compression
+    (Default is to use lzma)
 # justboot --arch=x86_64 --init-compression lzma
+
 Generate a livecd but compile packages in ram (see
-	@confdir@/files/ramfs-directories.lst)
+    @confdir@/files/ramfs-directories.lst)
 # justboot --arch=x86_64 -ramfs -L "Fast is good"
+
 Generate a livecd but delete old sources first.
 # justboot --arch=x86_64 --purge
+
 Generate a livecd for x86_64 using -j8 for makeopts and -19 for portage
-	niceness
+    niceness
 # justboot --arch=x86_64 --make-opts="-j8" --niceness="-19"
+
 Change the livecd data directory
 # justboot --arch=x86_64 --data-directory=/home/username
+
 Change the rsync and gentoo mirrors setting
 # justboot --arch=i486 --gentoo-mirrors="http://mirror.datapipe.net/gentoo
 	ftp://gentoo.chem.wisc.edu/gentoo/"
-	--rsync-mirror="http://localhost/portage"
+    --rsync-mirror="http://localhost/portage"
+
 Generate a livecd for opteron processors
 # justboot --coprocessor=opteron --arch=x86_64 --cflags="-march=opteron
-	-Os -pipe" --make-opts=-j3
+    -Os -pipe" --make-opts=-j3
+
 Generate a livecd for an Intel Core2 Quad processor
 # justboot --coprocessor=core2 --arch=x86_64 --cflags="-march=core2 -Os -pipe"
-	--make-opts=-j5
+    --make-opts=-j5
+
 Generate a x86_64 livecd with interactive kernel menu and custom rsync mirror
 # justboot --arch=x86_64 --menuconfig --make-opts=-j5
 	--rsync-mirror="http://localhost/portage"
+
 Use sys-apps/pkgcore for all livecd builds instead of portage
 # justboot --arch=i486 --package-manager=pkgcore --root-passwd=letmein
+
 Remove old sources (This deletes all livecd data for that arch)
 # justboot --arch=i586 --delete-arch
  
@@ -201,102 +212,132 @@ einfo "${blue}JustBOOT(tm)${nocolor} initiated"
 
 # Parse Command Line Arguments
 while [ $# -gt 0 ]; do
-  case "$1" in
-    --arch=*)
-      arch="${1##*=}"
-      einfo "${blue}${arch}${nocolor} arch set"
-      ;;
-    --cflags=*) 
-      #arg=$(echo ${1} | cut -d\= -f2-) # FIX ME
-      CFLAGS="${1#*=}"  #${arg}  # any reason this couldn't be done over the cut?
-      einfo "CFLAGS set to ${blue}\"${CFLAGS}\""
-      ;;
-    --ldflags=*) LDFLAGS="${1##*=}";;
-    --kernel=*)
-      kernel_sources="${1##*=}"
-      einfo "${blue}${kernel_sources} kernel set"
-      ;;
-    --root-passwd=*)
-      root_passwd="${1##*=}"
-      einfo "Setting ${red}\"${root_passwd}\"${nocolor} as livecd root password"
-      ;;
-    --keywords=*)
-      ACCEPT_KEYWORDS="${1##*=}"
-      einfo "Setting ${blue}${ACCEPT_KEYWORDS}${nocolor} for make.conf"
-      ;;
-    --ramfs)
-      ram_limit=4194304;ram_size=$(sed -n 2p /proc/meminfo | awk '{print$2}')
-      if [[ $ram_size > $ram_limit ]]; then 
-        echo ramfs=true
-        einfo "${red}ramfs${nocolor} compiles enabled!!!"
-      else
-        ewarn "You have ${ram_size} of free memory and you need >=${ram_limit}, --ramfs not enabled."
-      fi
-      ;;
-    --init-compression)
-      init_compression="${2}"
-      einfo "Using ${blue}${init_compression}${nocolor} for initramfs compression"
-      shift
-      ;;
-    --volid=*|-L)
-      if [ ${1%%=*} = -L ]; then
-        volid="${2// /_}"
-        [ ${#volid} -gt 32 ] && error "${nocolor}Volume label ${red}\"${volid//_/ }\"${nocolor} is greater than the 32 allowed characters"
-        shift
-      else
-        arg=${1##*=}
-        volid="${arg// /_}"
-        [ ${#volid} -gt 32 ] && error "${nocolor}Volume label ${red}\"${volid//_/ }\"${nocolor} is greater than the 32 allowed characters"
-      fi
-      einfo "Using ${red}\"${volid//_/ }\"${nocolor} for livecd label"
-      ;;
-    --data-directory=*)                 
-      dir="${1##*=}"                        
-      livedir="${dir/%\//}/justboot" # Remove leading slash
-      einfo "Livecd data directory set to ${blue}\"${livedir}\"${nocolor}"
-      ;;
-    --package-manager=*)
-      [[ -f @confdir@/${arch}-pms ]] && error "Previously enabled package manager, delete @confdir@/${arch}-pms then try again to override"
-      [[ ${1##*=} =~ ^(pkgcore|portage)$ ]] || { einfo "--package-manager=${red}${1##*=}${nocolor} is invalid, try pkgcore or portage"; error "Exiting!"; }
-      if [[ ${1##*=} = portage ]]; then pms="emerge -q"; else pms="pmerge"; fi
-      einfo "${red}${pms}${nocolor} permanently enabled, to override delete @confdir@/${arch}-pms"
-      touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
-      ;; 
-    --gentoo-mirrors=*)
-      opt="$(echo ${1##*=} | awk '{print$1}')"
-      gentoo_mirror="${opt/%\/}"
-      GENTOO_MIRRORS="${1##*=}"
-      ;;
-    --rsync-mirror=*) SYNC="${1##*=}";;
-    --menuconfig) menuconfig=true;;
-    --force-toolchain) yes_tool=true;;
-    --skip-toolchain) no_tool=true;;
-    --lang=*) LINGUAS="${1##*=}";;
-    --niceness=*) PORTAGE_NICENESS="${1##*=}";;
-    --use=*) USE="${1##*=}";;
-    --make-opts=*) MAKEOPTS="${1##*=}";;
-    --jobs=*) jobs="${1##*=}";;
-    --ldflags=*) LDFLAGS="${1##*=}";;
-    --features=*) FEATURES="${1##*=}";;
-    --letmein) letmein=true;;
-    --purge) purge=true;;
-    --purge-kernel) purge_kernel=true;;
-    --delete-arch) delete_arch=true;;
-    --coprocessor=*) 
-      cpu="${1##*=}"
-      if [[ ${bash4} && -z ${procs[${cpu}]} ]]; then
-        ewarn "${cpu} is an invalid --coprocessor option."
-        einfo "Available procs are: ${blue}i386,i486,i586,i686,pentium-mmx,pentium4,k6,k7,x86_64,k8,opteron,core2,atom & generic"
-        ewarn "Exiting now."; exit 1
-      fi
-      ;;
-    --coprocessor-list) einfo "Available procs are: ${blue}i386,i486,i586,i686,k6,k7,k8,opteron,core2,atom & generic"; exit 0;;
-    --verbose) verbose=true;;
-    --debug|-db) debug=true; einfo "Running in debug mode";;
-    --help|-h) print_help;;
-    *) error "${blue}Invalid argument ${red}${1}!${nocolor}, run \"$0 --help\" for help."
-  esac
-  shift
+    case "$1" in
+        --arch=*)
+            arch="${1#*=}"
+            einfo "${blue}${arch}${nocolor} arch set"
+            ;;
+        --cflags=*)
+            CFLAGS="${1#*=}"
+            einfo "CFLAGS set to ${blue}\"${CFLAGS}\""
+            ;;
+        --ldflags=*) LDFLAGS="${1#*=}";;
+        --kernel=*)
+            kernel_sources="${1#*=}"
+            einfo "${blue}${kernel_sources} kernel set"
+            ;;
+        --root-passwd=*)
+            root_passwd="${1#*=}"
+            einfo "Setting ${red}\"${root_passwd}\"${nocolor} as \
+livecd root password"
+            ;;
+        --keywords=*)
+            ACCEPT_KEYWORDS="${1#*=}"
+            einfo "Setting ${blue}${ACCEPT_KEYWORDS}${nocolor} for \
+make.conf"
+            ;;
+        --ramfs)
+            ram_limit=4194304
+            ram_size=$(sed -n 2p /proc/meminfo | awk '{print$2}')
+            
+            if [[ $ram_size > $ram_limit ]]; then
+                echo ramfs=true
+                einfo "${red}ramfs${nocolor} compiles enabled!!!"
+            else
+                ewarn "You have ${ram_size} of free memory and you \
+need >=${ram_limit}, --ramfs not enabled."
+            fi
+            ;;
+        --init-compression)
+            init_compression="${2}"
+            einfo "Using ${blue}${init_compression}${nocolor} for \
+initramfs compression"
+            shift
+            ;;
+        --volid=*|-L)
+            if [ ${1%%=*} = -L ]; then
+                volid="${2// /_}"
+                [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
+label ${red}\"${volid//_/ }\"${nocolor} is greater than the 32 \
+allowed characters"
+                shift
+            else
+                arg=${1##*=}
+                volid="${arg// /_}"
+                [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
+label ${red}\"${volid//_/ }\"${nocolor} is greater than the 32 \
+allowed characters"
+            fi
+            einfo "Using ${red}\"${volid//_/ }\"${nocolor} for \
+livecd label"
+            ;;
+        --data-directory=*)                 
+            dir="${1#*=}"                        
+            livedir="${dir/%\//}/justboot" # Remove leading slash
+            einfo "Livecd data directory set to \
+${blue}\"${livedir}\"${nocolor}"
+            ;;
+        --package-manager=*)
+            [[ -f @confdir@/${arch}-pms ]] && error "Previously \
+enabled package manager, delete @confdir@/${arch}-pms then try \
+again to override"
+            [[ ${1#*=} =~ ^(pkgcore|portage)$ ]] || { einfo \
+"--package-manager=${red}${1##*=}${nocolor} is invalid, try \
+pkgcore or portage"; error "Exiting!"; }
+
+            if [[ ${1#*=} = portage ]]; then
+                pms="emerge -q"
+            else 
+                pms="pmerge"
+            fi
+            
+            einfo "${red}${pms}${nocolor} permanently enabled, \
+to override delete @confdir@/${arch}-pms"
+            touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
+            ;; 
+        --gentoo-mirrors=*)
+            opt="$(echo ${1#*=} | awk '{print$1}')"
+            gentoo_mirror="${opt/%\/}"
+            GENTOO_MIRRORS="${1#*=}"
+            ;;
+        --rsync-mirror=*) SYNC="${1#*=}";;
+        --menuconfig) menuconfig=true;;
+        --force-toolchain) yes_tool=true;;
+        --skip-toolchain) no_tool=true;;
+        --lang=*) LINGUAS="${1#*=}";;
+        --niceness=*) PORTAGE_NICENESS="${1#*=}";;
+        --use=*) USE="${1#*=}";;
+        --make-opts=*) MAKEOPTS="${1#*=}";;
+        --jobs=*) jobs="${1#*=}";;
+        --ldflags=*) LDFLAGS="${1#*=}";;
+        --features=*) FEATURES="${1#*=}";;
+        --letmein) letmein=true;;
+        --purge) purge=true;;
+        --purge-kernel) purge_kernel=true;;
+        --delete-arch) delete_arch=true;;
+        --coprocessor=*) 
+            cpu="${1#*=}"
+            if [[ ${bash4} && -z ${procs[${cpu}]} ]]; then
+                ewarn "${cpu} is an invalid --coprocessor option."
+                einfo "Available procs are: \
+${blue}i386,i486,i586,i686,pentium-mmx,pentium4,k6,k7,x86_64,k8,\
+opteron,core2,atom & generic"
+                ewarn "Exiting now."
+                exit 1
+            fi
+            ;;
+        --coprocessor-list) 
+            einfo "Available procs are: \
+${blue}i386,i486,i586,i686,k6,k7,k8,opteron,core2,atom & generic"
+            exit 0
+            ;;
+        --verbose) verbose=true;;
+        --debug|-db) debug=true; einfo "Running in debug mode";;
+        --help|-h) print_help;;
+        *) error "${blue}Invalid argument ${red}${1}!${nocolor}, \
+run \"$0 --help\" for help."
+    esac
+    shift
 done
 
 # Check that we are using a valid $arch
