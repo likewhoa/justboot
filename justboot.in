@@ -47,10 +47,10 @@ if ! declare -A &>/dev/null; then
 	echo "This script uses bash4 only features, consider upgrading"
 else
 	bash4=true
-	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586 
-		[i686]=M686	[pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII 
-		[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 
-		[k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 
+	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586
+		[i686]=M686	[pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII
+		[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6
+		[k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2
 		[generic]=GENERIC_CPU [x86_64]=GENERIC_CPU [atom]=MATOM )
 fi
 
@@ -76,7 +76,7 @@ einfo() {
 	echo -e ".: "${@}" :."
 	sleep 1
 }
-ewarn() { 
+ewarn() {
 	echo -e "\a${red}.: "${@}" :.${nocolor}"
 }
 error() {
@@ -272,8 +272,8 @@ while [ $# -gt 0 ]; do
             einfo "Using ${red}\"${volid//_/ }\"${nocolor} for \
                 livecd label"
             ;;
-        --data-directory=*)                 
-            dir="${1#*=}"                        
+        --data-directory=*)
+            dir="${1#*=}"
             livedir="${dir/%\//}/justboot" # Remove leading slash
             einfo "Livecd data directory set to \
                 ${blue}\"${livedir}\"${nocolor}"
@@ -318,7 +318,7 @@ while [ $# -gt 0 ]; do
         --purge) purge=true;;
         --purge-kernel) purge_kernel=true;;
         --delete-arch) delete_arch=true;;
-        --coprocessor=*) 
+        --coprocessor=*)
             cpu="${1#*=}"
             if [[ ${bash4} && -z ${procs[${cpu}]} ]]; then
                 ewarn "${cpu} is an invalid --coprocessor option."
@@ -347,7 +347,7 @@ while [ $# -gt 0 ]; do
 done
 
 # Check that we are using a valid $arch
-for i in ${arches[@]}; do 
+for i in ${arches[@]}; do
     if [[ ${arch} != ${i} ]]; then
         invalid_arch=true
     else 
@@ -359,14 +359,14 @@ done
 ${invalid_arch} && { einfo "${red}${arch}${nocolor} arch is \
 invalid, valid options are ${arches[*]}"; error "Exiting!!!"; }
 
-# Convert arch value for /etc/make.conf 
-case ${arch} in 
-    x86_64) 
+# Convert arch value for /etc/make.conf
+case ${arch} in
+    x86_64)
         make_arch=x86-64
         [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86 ~amd64"
         ;;
     i[4,5,6]86)
-        [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86" 
+        [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86"
 esac
 
 # Allow for user default $arch options i.e ~/.justboot/x86_64.conf
@@ -379,7 +379,7 @@ esac
 if [[ -h /usr/share/justboot/${arch} && ! ${livedir} ]]; then
     link=$(readlink /usr/share/justboot/${arch})
     livedir=${link/\/${arch}/}
-    data_dir=${livedir}/data 
+    data_dir=${livedir}/data
     arch_dir=${livedir}/${arch}
     excludes_dir=${livedir}/excludes/${arch}
 fi
@@ -388,7 +388,7 @@ fi
 . @confdir@/config.globals
 
 # Check if we previously set a package manager for compiles on $arch
-if [ ! -f @confdir@/${arch}-pms ]; then 
+if [ ! -f @confdir@/${arch}-pms ]; then
     pms="emerge -q"
 else
     pms=$(<@confdir@/${arch}-pms)
@@ -398,8 +398,8 @@ fi
 if ${purge} || ${delete_arch}; then
     [[ ! -h /usr/share/justboot/${arch} && \
         ! -d /usr/share/justboot/${arch} ]] && { einfo "No arch to \
-            purge or remove! Exiting"; exit 1; } 
-    
+            purge or remove! Exiting"; exit 1; }
+
     src=$(readlink /usr/share/justboot/${arch})
     einfo "${red}--purge or --delete-arch flag used.${nocolor} \
         Removing ${red}${arch}${nocolor} sources."
@@ -412,7 +412,7 @@ if ${purge} || ${delete_arch}; then
             /usr/share/justboot/${arch}; do
                 do_exec unlink ${i}
         done
-  
+
     elif [ -d /usr/share/justboot/${arch} ]; then
         do_exec rm -rf /usr/share/justboot/${arch} \
             /usr/share/justboot/excludes/${arch}
@@ -446,9 +446,9 @@ fi
 release_env() {
 einfo "Releasing livecd environment, please wait..."
 do_exec rm -rf ${arch}/tmp/* 
-do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} 
-                           
-if ${ramfs}; then    
+do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir}
+
+if ${ramfs}; then
     for x in "${livecd_excludes[@]}"; do
         for y in "${ramfs_dir[@]}"; do
             if [[ ${x} = ${y} ]]; then
@@ -456,30 +456,30 @@ if ${ramfs}; then
                     please wait..."
                 do_exec rsync -caq --delete-before \
                     ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
-                do_exec umount ${arch}/${x} &>/dev/null 
+                do_exec umount ${arch}/${x} &>/dev/null
                 einfo "Copied ${blue}${x}${nocolor} changes to \
                 ${red}${excludes_dir}/${x//\//:}${nocolor}"
             continue 2
             fi
-        done                 
+        done
         do_exec umount ${arch}/${x} &>/dev/null
     done
-                           
+
     for x in "${ramfs_dir[@]}"; do
         for y in "${livecd_excludes[@]}"; do
             [[ ${x} = ${y} ]] && continue 2
-        done                 
+        done
 
     einfo "Removing ${red}${x}${nocolor} from memory. please wait..."
     do_exec rsync -caq --delete-before ${arch}/${x}/* \
-        ${excludes_dir}/${x//\//:} &>/dev/null 
+        ${excludes_dir}/${x//\//:} &>/dev/null
     do_exec umount ${arch}/${x} \
-        &>/dev/null 
+        &>/dev/null
     einfo "Copied ${blue}${x}${nocolor} changes to \
-        ${red}${excludes_dir}/${x//\//:}${nocolor}" 
-    done 
+        ${red}${excludes_dir}/${x//\//:}${nocolor}"
+    done
 else
-    for x in "${livecd_excludes[@]}"; do 
+    for x in "${livecd_excludes[@]}"; do
         do_exec umount ${arch}/${x} &>/dev/null
     done
 fi
@@ -497,7 +497,7 @@ local -a deps=( 'mksquashfs:sys-fs/squashfs-tools'
     'mkisofs:virtual/cdrtools' )
 
 if [[ "${pms}" = pmerge ]]; then
-    if ! hash pmerge &>/dev/null; then 
+    if ! hash pmerge &>/dev/null; then
         einfo "Compiling ${blue}sys-apps/pkgcore${nocolor}"
         do_exec emerge pkgcore 1>/dev/null
         einfo "${blue}sys-apps/pkgcore${nocolor} compiled"
@@ -525,22 +525,22 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
 
         einfo "Moving data directory from ${red}${real_arch_dir}\
             ${nocolor} to ${red}${livedir}/${arch}${nocolor}. \
-            please wait..." 
-        
+            please wait..."
+
         for i in /usr/share/justboot/${arch} \
-            /usr/share/justboot/excludes/${arch}; do 
+            /usr/share/justboot/excludes/${arch}; do
             do_exec unlink ${i}
         done
 
-        exec_chkdir ${livedir}/excludes 
-        do_exec mv ${real_arch_dir} ${arch_dir} 
+        exec_chkdir ${livedir}/excludes
+        do_exec mv ${real_arch_dir} ${arch_dir}
         do_exec mv ${real_excludes_dir} ${excludes_dir}
-      
-        if [[ ${livedir} != /usr/share/justboot ]]; then 
-            exec_chklink ${arch_dir} /usr/share/justboot/${arch} 
+
+        if [[ ${livedir} != /usr/share/justboot ]]; then
+            exec_chklink ${arch_dir} /usr/share/justboot/${arch}
             exec_chklink ${livedir}/excludes/${arch} \
                 /usr/share/justboot/excludes/${arch}
-            exec_chklink /usr/share/justboot/data ${data_dir} 
+            exec_chklink /usr/share/justboot/data ${data_dir}
         fi
 
         for i in i{4,5,6}86 x86_64; do
@@ -548,7 +548,7 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
             [[ -d ${real_arch_dir/${arch}/${i}} ]] && \
                 { removal=false; break; }
         done
-      
+
         if ! ${removal}; then
             ewarn "Removing old data directory \
                 ${red}${real_arch_dir/\/${arch}}${nocolor}"
@@ -557,11 +557,11 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
         else
             ewarn "Removing old data directory ${red}\
                 ${real_arch_dir}${nocolor}"
-            do_exec rm -rf ${real_arch_dir} ${real_excludes_dir} 
-        fi        
+            do_exec rm -rf ${real_arch_dir} ${real_excludes_dir}
+        fi
     elif [[ /usr/share/justboot != ${livedir} && \
-        -d /usr/share/justboot/${arch} ]]; then 
-        
+        -d /usr/share/justboot/${arch} ]]; then
+
         einfo "Moving data directory from ${red}/usr/share/\
             justboot/${arch}${nocolor} to ${red}${livedir}/${arch}\
             .${nocolor} please wait..."
@@ -575,39 +575,45 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
             /usr/share/justboot/excludes/${arch}
         exec_chklink /usr/share/justboot/data ${data_dir}
     fi
-fi  
- 
-  # Convert x86_64 arch for proper usage in Gentoo.
-  case ${arch} in
+fi
+
+# Convert x86_64 arch for proper usage in Gentoo.
+case ${arch} in
     x86_64) local gentoo_arch=amd64 stage_arch=amd64;;
     i[4,5,6]86) local gentoo_arch=x86 stage_arch=i686
-  esac
+esac
 
-  if [ ! -d ${arch_dir} ]; then
-    einfo "Building initial stage1 for ${blue}${arch}${nocolor}. please wait..."
+if [ ! -d ${arch_dir} ]; then
+    einfo "Building initial stage1 for ${blue}${arch}${nocolor}. \
+    please wait..."
 
-    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}/autobuilds/latest-stage3.txt
-    local gentoo_stage=$(egrep -o [[:digit:]]{8}/stage3-${stage_arch}-[[:digit:]]{8}.tar.bz2 latest-stage3.txt)
+    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}\
+        /autobuilds/latest-stage3.txt
+
+    local gentoo_stage=$(egrep -o \
+        [[:digit:]]{8}/stage3-${stage_arch}-[[:digit:]]{8}.tar.bz2 \
+        latest-stage3.txt)
     do_exec rm latest-stage3.txt
 
-    exec_chkdir ${arch_dir}
+    exec_chkdir ${arch_dir} 
     do_exec cd ${arch_dir} || error "Failed to switch to ${arch_dir}"
 
     einfo "Fetching gentoo ${gentoo_stage#*/} autobuild stage"
-    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}/autobuilds/${gentoo_stage}
+    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}\
+        /autobuilds/${gentoo_stage}
 
     einfo "Extracting ${gentoo_stage#*/}"
-    do_exec tar xjpf ${gentoo_stage#*/} 
+    do_exec tar xjpf ${gentoo_stage#*/}
     do_exec rm ${gentoo_stage#*/}
 
     einfo "Fetching portage tree snapshot"
     do_exec wget -q ${gentoo_mirror}/snapshots/portage-latest.tar.bz2
 
     einfo "Extracting portage-latest.tar.bz2"
-    do_exec tar xjpf portage-latest.tar.bz2 -C usr/ 
+    do_exec tar xjpf portage-latest.tar.bz2 -C usr/
     do_exec rm portage-latest.tar.bz2
 
-    exec_chkdir ${excludes_dir} 
+    exec_chkdir ${excludes_dir}
     exec_chkdir /usr/share/justboot/excludes
 
     for i in "${livecd_excludes[@]}"; do
@@ -619,204 +625,273 @@ fi
 
     if [[ ${livedir} != /usr/share/justboot ]]; then
       exec_chklink ${arch_dir} /usr/share/justboot/${arch}
-      exec_chklink ${livedir}/excludes/${arch} /usr/share/justboot/excludes/${arch}
+      exec_chklink ${livedir}/excludes/${arch} \
+        /usr/share/justboot/excludes/${arch}
       exec_chklink /usr/share/justboot/data ${data_dir}
     fi
-  fi
+fi
   prepare_env
 }
 
-# After we have prepared the stage1 build, we need to detect/setup all the livecd exclude directories and or ramfs mounts first
-# before we start the chroot process and compile packages
+# After we have prepared the stage1 build, we need to detect/setup all
+# the livecd exclude directories and or ramfs mounts first before we
+# start the chroot process and compile packages
 prepare_env() {
-  cd ${livedir}
-  exec_chkdir ${arch_dir}${data_dir}
-  exec_chkdir ${arch_dir}/mnt/gentoo
+cd ${livedir}
+exec_chkdir ${arch_dir}${data_dir}
+exec_chkdir ${arch_dir}/mnt/gentoo
 
-  do_exec mount -o bind /proc ${arch}/proc
-  do_exec mount -o bind /dev ${arch}/dev 
-  do_exec mount -o bind ${data_dir} ${arch}${data_dir} 
+do_exec mount -o bind /proc ${arch}/proc
+do_exec mount -o bind /dev ${arch}/dev
+do_exec mount -o bind ${data_dir} ${arch}${data_dir}
 
-  for x in "${livecd_excludes[@]}"; do
-    if [[ $(ls ${arch}/${x//://} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
-      einfo "Detected newly added ${blue}${x}${nocolor} for livecd excludes, moving data to ${red}${excludes_dir}/${x//\//:}.${nocolor} please wait..."
-      exec_chkdir ${excludes_dir}/${x//\//:}
-      do_exec mv ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
-      do_exec rm -rf ${arch}/${x}/* 
+for x in "${livecd_excludes[@]}"; do
+    if [[ $(ls ${arch}/${x//://} 2>/dev/null | grep -v .keep | wc -l)\
+        != 0 ]]; then
+        einfo "Detected newly added ${blue}${x}${nocolor} for livecd \
+            excludes, moving data to ${red}${excludes_dir}/${x//\//:}\
+            .${nocolor} please wait..."
+        exec_chkdir ${excludes_dir}/${x//\//:}
+        do_exec mv ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
+        do_exec rm -rf ${arch}/${x}/*
     fi
-  done
+done
 
-  if ${ramfs}; then
+if ${ramfs}; then
     for x in "${livecd_excludes[@]}"; do
-      for y in "${ramfs_dir[@]}"; do
-        if [[ ${x} = ${y} ]]; then
-          einfo "Mounting ${blue}${x}${nocolor} in memory. please wait..."
-          do_exec mount -t ramfs ${x} ${arch}/${x} 1>/dev/null 
+        for y in "${ramfs_dir[@]}"; do
+            if [[ ${x} = ${y} ]]; then
+                einfo "Mounting ${blue}${x}${nocolor} in memory. \
+                    please wait..."
+                do_exec mount -t ramfs ${x} ${arch}/${x} 1>/dev/null
 
-          [[ ! -d ${excludes_dir}/${x//\//:} ]] && exec_chkdir ${excludes_dir}/${x//\//:}
-          do_exec rsync -caq ${excludes_dir}/${x//\//:}/* ${arch}/${x} &>/dev/null
+                [[ ! -d ${excludes_dir}/${x//\//:} ]] && \
+                    exec_chkdir ${excludes_dir}/${x//\//:}
+                do_exec rsync -caq ${excludes_dir}/${x//\//:}/* \
+                    ${arch}/${x} &>/dev/null
 
-          einfo "${red}${x}${nocolor} copied to ramfs" 
-          continue 2
-        fi
-      done
-      do_exec mount -o bind ${excludes_dir}/${x//\//:} ${arch}/${x} 1>/dev/null 
+                einfo "${red}${x}${nocolor} copied to ramfs"
+                continue 2
+            fi
+        done
+        do_exec mount -o bind ${excludes_dir}/${x//\//:} \
+            ${arch}/${x} 1>/dev/null
     done
 
     for x in "${ramfs_dir[@]}"; do
-      for y in "${livecd_excludes[@]}"; do [[ ${x} = ${y} ]] && continue 2; done
-      einfo "Mounting ${blue}${x}${nocolor} in memory.. please wait."
+        for y in "${livecd_excludes[@]}"; do
+            [[ ${x} = ${y} ]] && continue 2
+        done
+        einfo "Mounting ${blue}${x}${nocolor} in memory.. please wait."
 
-      if [[ $(ls ${arch}/${x} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
+    if [[ $(ls ${arch}/${x} 2>/dev/null | grep -v .keep | wc -l)\
+        != 0 ]]; then
         exec_chkdir ${excludes_dir}/${x//\//:}
-        einfo "${blue}${arch}/${x}${nocolor} is not empty, moving data to ${red}${excludes_dir}/${x//\//:}.${nocolor} please wait..."
-        do_exec mv ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
-      else
-        for i in ${arch}/${x} ${excludes_dir}/${x//\//:}; do exec_chkdir ${i}; done
-      fi
-      do_exec mount -t ramfs ${x} ${arch}/${x} 1>/dev/null
+        einfo "${blue}${arch}/${x}${nocolor} is not empty, moving \
+            data to ${red}${excludes_dir}/${x//\//:}.${nocolor} \
+            please wait..."
+        do_exec mv ${arch}/${x}/* ${excludes_dir}/${x//\//:}\
+            &>/dev/null
+    else
 
-      if [[ -d ${excludes_dir}/${x//\//:} ]]; then
-        do_exec rsync -caq ${excludes_dir}/${x//\//:}/* ${arch}/${x} &>/dev/null
+        for i in ${arch}/${x} ${excludes_dir}/${x//\//:}; do
+            exec_chkdir ${i}
+        done
+    fi
+
+    do_exec mount -t ramfs ${x} ${arch}/${x} 1>/dev/null
+
+    if [[ -d ${excludes_dir}/${x//\//:} ]]; then
+        do_exec rsync -caq ${excludes_dir}/${x//\//:}/* \
+            ${arch}/${x} &>/dev/null
         einfo "${red}${x}${nocolor} copied to ramfs"
-      fi
+    fi
     done
 
-    ( 
+    (
     cd ${excludes_dir}
     declare -a dirs=( * )
     for x in "${dirs[@]}"; do
-      for y in "${livecd_excludes[@]}" "${ramfs_dir[@]}"; do
-        [[ ${x} = ${y//\//:} ]] && continue 2
-      done
-      einfo "${blue}${x}${nocolor} is an orphan directory."
-      einfo "Moving data to ${red}${arch}/${x//://}.${nocolor} please wait..."
-      do_exec mv ${excludes_dir}/${x}/* ${arch}/${x//://} &>/dev/null
-      do_exec rm -rf ${excludes_dir}/${x}
+        for y in "${livecd_excludes[@]}" "${ramfs_dir[@]}"; do
+            [[ ${x} = ${y//\//:} ]] && continue 2
+        done
+
+    einfo "${blue}${x}${nocolor} is an orphan directory."
+    einfo "Moving data to ${red}${arch}/${x//://}.${nocolor} \
+        please wait..."
+    do_exec mv ${excludes_dir}/${x}/* ${arch}/${x//://} \
+        &>/dev/null
+    do_exec rm -rf ${excludes_dir}/${x}
     done
     )
-  else
-    ( 
+else
+    (
     cd ${excludes_dir}
     declare -a dirs=( * )
+
     for x in "${dirs[@]}"; do
-      for y in "${livecd_excludes[@]}"; do
+        for y in "${livecd_excludes[@]}"; do
         [[ ${x} = ${y//\//:} ]] && continue 2
-      done
-      einfo "${blue}${x}${nocolor} is either an orphan directory or part of an old ${blue}ramfs (--ramfs)${nocolor} run."
-      einfo "Moving data to ${red}${arch}/${x//://}.${nocolor} please wait..."
-      do_exec mv ${excludes_dir}/${x}/* ${arch}/${x//://} &>/dev/null
-      do_exec rm -rf ${excludes_dir}/${x}
+        done
+
+        einfo "${blue}${x}${nocolor} is either an orphan directory \
+            or part of an old ${blue}ramfs (--ramfs)${nocolor} run."
+        einfo "Moving data to ${red}${arch}/${x//://}.${nocolor} \
+            please wait..."
+        do_exec mv ${excludes_dir}/${x}/* ${arch}/${x//://} &>/dev/null
+        do_exec rm -rf ${excludes_dir}/${x}
     done
     )
+
     einfo "Mounting livecd data files"
-    for i in "${livecd_excludes[@]}"; do do_exec mount -o bind ${excludes_dir}/${i//\//:} ${arch}/${i} 1>/dev/null; done
-  fi
+    for i in "${livecd_excludes[@]}"; do
+        do_exec mount -o bind ${excludes_dir}/${i//\//:} ${arch}/${i} \
+            1>/dev/null
+    done
+fi
 
-  [[ ! -d ${arch_dir}/mnt/livecd ]] && do_exec mkdir -p ${arch_dir}/mnt/livecd/{static,image,dynamic}
+[[ ! -d ${arch_dir}/mnt/livecd ]] && do_exec mkdir -p ${arch_dir}/mnt/\
+    livecd/{static,image,dynamic}
 
-  einfo "Entering the livecd chroot environment"
-  do_exec chmod +x ${chroot_script} && do_exec mv ${chroot_script} ${arch_dir}/tmp
-  do_exec cp /etc/resolv.conf ${arch_dir}/etc
-  
-  if [[ ${arch} =~ ^i[4-6]86$ ]]; then
-    do_exec linux32 chroot ${arch_dir} ${chroot_script} && do_exec rm ${arch_dir}${chroot_script}
-  else
-    do_exec linux64 chroot ${arch_dir} ${chroot_script} && do_exec rm ${arch_dir}${chroot_script}
-  fi
+einfo "Entering the livecd chroot environment"
 
-  [ $? = 13 ] && do_exec release_env now
+do_exec chmod +x ${chroot_script} && do_exec mv ${chroot_script} \
+    ${arch_dir}/tmp
+do_exec cp /etc/resolv.conf ${arch_dir}/etc
 
-  einfo "Exiting the livecd chroot environment"
-  do_exec env-update 1>/dev/null && do_exec source /etc/profile
-  do_exec release_env 
+if [[ ${arch} =~ ^i[4-6]86$ ]]; then
+    do_exec linux32 chroot ${arch_dir} ${chroot_script} && \
+        do_exec rm ${arch_dir}${chroot_script}
+else
+    do_exec linux64 chroot ${arch_dir} ${chroot_script} && \
+        do_exec rm ${arch_dir}${chroot_script}
+fi
+
+[ $? = 13 ] && do_exec release_env now
+
+einfo "Exiting the livecd chroot environment"
+do_exec env-update 1>/dev/null && do_exec source /etc/profile
+do_exec release_env 
 }
 
-# Before we create our iso image we will clean up the environment of any excluded packages and common directories or files that
-# we don't require for livecd operations ( see @confdir@{excluded-directories,remove-packages,remove-files}.lst for options.
+# Before we create our iso image we will clean up the environment of any
+# excluded packages and common directories or files that we don't
+# require for livecd operations ( see
+# @confdir@{excluded-directories,remove-packages,remove-files}.lst for
+# options.
 clean_env() {
-  local target=${livedir}/targets/${arch}/targets/files/${arch} cleanup_script=$(mktemp /tmp/XXX)
 
-  [[ -d ${target} ]] && do_exec rm -rf ${target}/* ${livedir}/targets/${arch}/boot/* ${livedir}/targets/${arch}/targets/boot/*
-  for i in "${target}" "${livedir}/targets/${arch}/targets/boot" "${livedir}/targets/${arch}"; do exec_chkdir ${i}; done
+local target=${livedir}/targets/${arch}/targets/files/${arch} 
+local cleanup_script=$(mktemp /tmp/XXX)
 
-  einfo "Performing livecd cleanup. please wait..."
-  do_exec cp -a ${arch_dir}/* ${target} &>/dev/null
+[[ -d ${target} ]] && do_exec rm -rf ${target}/* \
+    ${livedir}/targets/${arch}/boot/* ${livedir}/targets/${arch}/\
+        targets/boot/*
 
-  if [[ -d ${excludes_dir}/boot ]]; then
-    do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/${arch}/targets 
+for i in "${target}" "${livedir}/targets/${arch}/targets/boot" \
+    "${livedir}/targets/${arch}"; do
+    exec_chkdir ${i}
+done
+
+einfo "Performing livecd cleanup. please wait..."
+do_exec cp -a ${arch_dir}/* ${target} &>/dev/null
+
+if [[ -d ${excludes_dir}/boot ]]; then
+    do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/\
+        ${arch}/targets 
     do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/${arch}
-  else
+else
     do_exec cp -a ${arch_dir}/boot ${livedir}/targets/${arch}/targets
     do_exec cp -a ${arch_dir}/boot ${livedir}/targets/${arch}
-  fi
+fi
 
-  for i in "${livecd_excludes[@]}"; do
-    if [[ $(ls ${excludes_dir}/${i//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
-      einfo "Moving ${blue}${i}${nocolor} to ${red}${target}/${i}.${nocolor} please wait..."
-      do_exec cp -a ${excludes_dir}/${i//\//:}/* ${target}/${i} &>/dev/null  
+for i in "${livecd_excludes[@]}"; do
+    if [[ $(ls ${excludes_dir}/${i//\//:} 2>/dev/null | grep -v .keep \
+        | wc -l) != 0 ]]; then
+        einfo "Moving ${blue}${i}${nocolor} to ${red}${target}/\
+            ${i}.${nocolor} please wait..."
+        do_exec cp -a ${excludes_dir}/${i//\//:}/* ${target}/${i} \
+            &>/dev/null  
     fi
-  done
+done
 
-  if ${ramfs}; then
+if ${ramfs}; then
     for x in "${ramfs_dir[@]}"; do
-      for y in "${livecd_excludes[@]}"; do
-        [[ ${x} = ${y} ]] && continue 2
-      done
-        if [[ $(ls ${excludes_dir}/${x//\//:} 2>/dev/null | grep -v .keep | wc -l) != 0 ]]; then
-          einfo "Moving ${blue}${x}${nocolor} to ${red}${target}/${x}.${nocolor} please wait..."
-          do_exec cp -a ${excludes_dir}/${x//\//:}/* ${target}/${x} &>/dev/null
+        for y in "${livecd_excludes[@]}"; do
+            [[ ${x} = ${y} ]] && continue 2
+        done
+
+        if [[ $(ls ${excludes_dir}/${x//\//:} 2>/dev/null | grep -v \
+            .keep | wc -l) != 0 ]]; then
+            einfo "Moving ${blue}${x}${nocolor} to ${red}${target}/\
+                ${x}.${nocolor} please wait..."
+            do_exec cp -a ${excludes_dir}/${x//\//:}/* ${target}/\
+                ${x} &>/dev/null
         fi
     done
-  fi
+fi
 
 cat >> ${cleanup_script} << CLEANUP
 #!/bin/bash
-  trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
-  #  Cleans up the environment if script interrupted by control-c.
+trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
+# Cleans up the environment if script interrupted by control-c.
 
-  echo "Entering livecd environment"
-  env-update 1>/dev/null && source /etc/profile
+echo "Entering livecd environment"
+env-update 1>/dev/null && source /etc/profile
 
-  for i in ${remove_packages[@]}; do echo "Removing \${i} from livecd"; ${pms} -C \${i} &>/dev/null; done
+for i in ${remove_packages[@]}; do
+    echo "Removing \${i} from livecd"
+    ${pms} -C \${i} &>/dev/null
+done
 
-  echo -e "${red}${#remove_packages[@]}${nocolor} Packages removed"
-  exit
+echo -e "${red}${#remove_packages[@]}${nocolor} Packages removed"
+exit
 CLEANUP
-  do_exec chmod +x ${cleanup_script} && do_exec mv ${cleanup_script} ${target}/tmp
 
-  if [[ ${arch} =~ ^i[4-6]86$ ]]; then
-    do_exec linux32 chroot ${target} ${cleanup_script} 
-  else
+do_exec chmod +x ${cleanup_script} && \
+    do_exec mv ${cleanup_script} ${target}/tmp
+
+if [[ ${arch} =~ ^i[4-6]86$ ]]; then
+    do_exec linux32 chroot ${target} ${cleanup_script}
+else
     do_exec linux64 chroot ${target} ${cleanup_script}
-  fi
+fi
 
-  [ $? = 13 ] && do_exec release_env now
+[ $? = 13 ] && do_exec release_env now
 
-  do_exec cd ${target}
-  do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
+do_exec cd ${target}
+do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
 
-  for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb var/cache/hald var/log root var/log; do do_exec exec_chkdir ${i}; done
+for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb \
+    var/cache/hald var/log root var/log; do
+    do_exec exec_chkdir ${i}
+done
 
-  >etc/mtab
+>etc/mtab
 
-  do_exec create_livecd
+do_exec create_livecd
 }
 
-# Livecd creation 
+# Livecd creation
 create_livecd() {
-  local date=$(date +%m%d%Y-%H%M)
-  do_exec touch ${livedir}/targets/${arch}/targets/livecd
+local date=$(date +%m%d%Y-%H%M)
+do_exec touch ${livedir}/targets/${arch}/targets/livecd
 
-  einfo "Building squashfs image"
-  do_exec mksquashfs ${livedir}/targets/${arch}/targets/files/${arch}/ ${livedir}/targets/${arch}/targets/livecd.squashfs
+einfo "Building squashfs image"
+do_exec mksquashfs ${livedir}/targets/${arch}/targets/files/${arch}/ \
+    ${livedir}/targets/${arch}/targets/livecd.squashfs
 
-  einfo "Generating bootable JustBOOT(tm) livecd image"
-  do_exec genisoimage -volid \"${volid}\" -R -b boot/grub/stage2_eltorito -no-emul-boot -boot-load-size 4 -boot-info-table \
--iso-level 4 -hide-rr-moved -c boot.catalog -o ${livedir}/${arch}-${kernel_sources}-${date}.iso -x files ${livedir}/targets/${arch}/targets/
+einfo "Generating bootable JustBOOT(tm) livecd image"
+do_exec mkisofs -volid \"${volid}\" -R -b boot/grub/stage2_eltorito \
+    -no-emul-boot -boot-load-size 4 -boot-info-table -iso-level 4 \
+    -hide-rr-moved -c boot.catalog -o \
+    ${livedir}/${arch}-${kernel_sources}-${date}.iso -x files \
+    ${livedir}/targets/${arch}/targets/
   
-  do_exec rm -rf ${livedir}/targets/${arch}/{targets,boot}
-  einfo "All Done. ${arch} livecd located at ${livedir}/${arch}-${kernel_sources}-${date}.iso"
+do_exec rm -rf ${livedir}/targets/${arch}/{targets,boot}
+
+einfo "All Done. ${arch} livecd located at \
+    ${livedir}/${arch}-${kernel_sources}-${date}.iso"
 }
 
 cat >> ${chroot_script} << CHROOT
@@ -824,9 +899,11 @@ cat >> ${chroot_script} << CHROOT
 arch=${arch}
 uclibc="${data_dir}/uclibc"
 uclibc_script=\$(mktemp /tmp/XXX)
-uclibc_src_uri="http://gentoo.mirrors.tds.net/gentoo/experimental/x86/embedded/stages/stage3-x86-uclibc-2008.0.tar.bz2"
+uclibc_src_uri="http://gentoo.mirrors.tds.net/gentoo/experimental/\
+x86/embedded/stages/stage3-x86-uclibc-2008.0.tar.bz2"
 busybox_src_uri="http://busybox.net/downloads/busybox-1.17.2.tar.bz2"
-busybox_archive=\$(echo \${busybox_src_uri} | egrep -o 'busybox-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.tar\.bz2')
+busybox_archive=\$(echo \${busybox_src_uri} | egrep -o \
+    'busybox-[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.tar\.bz2')
 busybox_conf=${data_dir}/busybox/.config
 busybox=\${busybox_archive/.tar.bz2/}
 blue="\$(tput setaf 4)"
@@ -834,40 +911,53 @@ red="\$(tput setaf 1)"
 nocolor="\$(tput setaf 9)"
 
 trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
-#  Cleans up the environment if script interrupted by control-c.
+# Cleans up the environment if script interrupted by control-c.
 
 env-update 1>/dev/null && source /etc/profile
 
-einfo() { echo -e ".: \${1} :."; sleep 1; }
-ewarn() { echo -e "\a\${red}.: \${1} :.\${nocolor}"; }
-error() { echo -e "\a\${red}.: \${1} :.\${nocolor}"; exit 1; }
+einfo() {
+    echo -e ".: "\${@}" :."
+    sleep 1
+}
+ewarn() {
+    echo -e "\a\${red}.: "\${@}" :.\${nocolor}"
+}
+error() { 
+    echo -e "\a\${red}.: "\${@}" :.\${nocolor}"
+    exit 1
+}
+exec_chklink() {
+    local src="\${1}" dest="\${2}"
+    [[ -h \${dest} ]] && { unlink \${dest}; ln -s \${src} \${dest}; }
+}
 
-exec_chklink() { local src="\${1}" dest="\${2}"; [[ -h \${dest} ]] && unlink \${dest}; ln -s \${src} \${dest}; }
- 
 do_exec() {
-  if ${debug}; then
+if ${debug}; then
     echo -e "\a\${red}debug:\${nocolor}\${blue} (\${@})"\${nocolor}
     "\${@}"
-  elif ${verbose}; then
+elif ${verbose}; then
     "\${@}"
-  else
+else
     "\${@}" 2>/dev/null
-  fi
+fi
 }
 
 check_deps() {
-  # Check for pkgcore if --package-manager=pkgcore is used"
-  if [[ "${pms}" = pmerge ]]; then   
-    if ! hash pmerge &>/dev/null; then einfo "Compiling \${blue}sys-apps/pkgcore\${nocolor}"; do_exec emerge pkgcore 1>/dev/null; fi
-  fi
-} 
+# Check for pkgcore if --package-manager=pkgcore is used"
+if [[ "${pms}" = pmerge ]]; then
+    if ! hash pmerge &>/dev/null; then
+        einfo "Compiling \${blue}sys-apps/pkgcore\${nocolor}"
+        do_exec emerge pkgcore 1>/dev/null
+    fi
+fi
+}
 
 prepare_configs() {
-  do_exec cp -a ${data_dir}/etc/fstab /etc
-  do_exec cp -a ${data_dir}/etc/portage /etc
-  do_exec cp -a ${data_dir}/etc/conf.d/{hostname,net,clock} /etc/conf.d
+do_exec cp -a ${data_dir}/etc/fstab /etc
+do_exec cp -a ${data_dir}/etc/portage /etc
+do_exec cp -a ${data_dir}/etc/conf.d/{hostname,net,clock} /etc/conf.d
 
-  if [[ ! \$(grep JustBOOT /etc/make.conf 2>/dev/null) ]]; then
+if [[ ! \$(grep JustBOOT /etc/make.conf 2>/dev/null) ]]; then
     >/etc/make.conf
 # Generate our make.conf if this is a new livecd build.
 cat >> /etc/make.conf << MAKECONF
@@ -892,33 +982,46 @@ EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS}"
 MAKECONF
   fi
 }
-  
+
 # Prepare the livecd required and user packages.
 prepare_packages() {
-  local -a global_packages=( 'grub:sys-boot/grub' 'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/reiser4progs' \
-'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm' 'screen:app-misc/screen' \
-'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
+local -a global_packages=( 'grub:sys-boot/grub' 'net-setup:app-misc/
+    livecd-tools' 'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/
+    reiser4progs' 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/
+    xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/
+    mdadm' 'screen:app-misc/screen' 'rsync:net-misc/rsync' 'dhcpcd:
+    net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
 
-  einfo "Preparing livecd and user packages. please wait..."
-  for i in \${global_packages[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${blue}\${i/*:/}\${nocolor}"; do_exec ${pms} \${i/*:/} 1>/dev/null; fi
-  done
+einfo "Preparing livecd and user packages. please wait..."
+for i in \${global_packages[@]}; do
+    if ! hash \${i/:*/} &>/dev/null; then 
+        einfo "Compiling \${blue}\${i/*:/}\${nocolor}"
+        do_exec ${pms} \${i/*:/} 1>/dev/null
+    fi
+done
 
-  for i in ${extra_packages=[@]}; do
-    if ! hash \${i/:*/} &>/dev/null; then einfo "Compiling \${blue}\${i}\${nocolor}"; do_exec ${pms} \${i/*:/} 1>/dev/null; fi 
-  done
+for i in ${extra_packages=[@]}; do
+    if ! hash \${i/:*/} &>/dev/null; then
+        einfo "Compiling \${blue}\${i}\${nocolor}"
+        do_exec ${pms} \${i/*:/} 1>/dev/null
+    fi
+done
 
-  if ! hash memtest86+ &>/dev/null; then do_exec ${pms} memtest86+ 1>/dev/null; fi
+if ! hash memtest86+ &>/dev/null; then
+    do_exec ${pms} memtest86+ 1>/dev/null
+fi
 
-  # Setup sudoers
-  [ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
+# Setup sudoers
+[ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
 }
 
 prepare_bootloader() {
-  [ -h /boot/grub/menu.lst ] && do_exec unlink /boot/grub/menu.lst
+[ -h /boot/grub/menu.lst ] && do_exec unlink /boot/grub/menu.lst
 
-  # Always a fresh grub.conf, eventually it will parse for changes then update.
-  >/boot/grub/menu.lst
+# Always a fresh grub.conf, eventually it will parse for changes then
+# update.
+>/boot/grub/menu.lst
+
 cat >> /boot/grub/menu.lst << GRUB
 default 0
 timeout 3
@@ -933,32 +1036,32 @@ title=JustBOOT NO-FB
 title=Memtest86+
         kernel /boot/memtest86plus/memtest.bin
 GRUB
-  do_exec cp /boot/grub/menu.lst /boot/grub/grub.conf
+do_exec cp /boot/grub/menu.lst /boot/grub/grub.conf
 }
 
 fetch_busybox() { # TODO: make this work for other archives.
-    einfo "Fetching Busybox sources"
-    do_exec wget -q \${busybox_src_uri}
-    
-    einfo "Extracting Busybox sources"
-    do_exec tar xvjpf \${busybox_archive}
+einfo "Fetching Busybox sources"
+do_exec wget -q \${busybox_src_uri}
+
+einfo "Extracting Busybox sources"
+do_exec tar xvjpf \${busybox_archive}
 }
 
 prepare_busybox() {
-  if [[ ! -d \${uclibc} ]]; then
+if [[ ! -d \${uclibc} ]]; then
     do_exec mkdir -p \${uclibc}
     do_exec cd \${uclibc}
 
     einfo "Fetching Gentoo UCLIBC stage3 tarball"
     do_exec wget -q \${uclibc_src_uri}
-    
+
     einfo "Extracting Gentoo uclibc stage3 tarball"
     do_exec tar xjpf stage*
     do_exec fetch_busybox
-  elif  [[ ! -d \${uclibc}/\${busybox} ]]; then
+elif  [[ ! -d \${uclibc}/\${busybox} ]]; then
     do_exec cd \${uclibc} && do_exec fetch_busybox
-  fi
-    
+fi
+
   do_exec cp -a ${data_dir}/busybox/.config \${uclibc}/\${busybox}
 
   einfo "Entering uclibc environment"
@@ -997,18 +1100,9 @@ prepare_initramfs() {
 
 # This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
 do_coprocessor() {
-  [[ \$1 = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ ]] && { ewarn "${procs[${cpu}]} invalid for x86_64 arch"; return 1; }
-  case ${procs[${cpu}]} in
-    MPENTIUMM) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MPENTIUMII) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MPENTIUMIII) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MPENTIUM4) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MCORE2) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MK6) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MK7) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MK8) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
-    MATOM) patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
-  esac
+[[ \$1 = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ ]] && { ewarn "${procs[${cpu}]} invalid for x86_64 arch"; return 1; }
+
+patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch;;
 }
 
 prepare_kernel_opts() {
