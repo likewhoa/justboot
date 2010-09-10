@@ -897,7 +897,7 @@ prepare_busybox() {
 prepare_initramfs() {
   local initramfs_dir=/tmp/initramfs
   kernel_src=\$(readlink /usr/src/linux)
-  kernel_module_src=\$(echo \${kernel_src} | cut -d- -f2-)
+  kernel_module_src=\${kernel_src%*-}  #  kernel_module_src=\$(echo \${kernel_src} | cut -d- -f2-)
 
   [[ -d \${initramfs_dir} ]] && do_exec rm -rf \${initramfs_dir}
   do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
