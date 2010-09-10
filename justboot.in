@@ -60,7 +60,7 @@ declare -a remove_files=( $(grep -v '^#'  @confdir@/files/remove-files.lst ) )
 declare -a ramfs_dir=( $(grep -v '^#'  @confdir@/files/ramfs-directories.lst ) )
 declare -a extra_packages=( $(grep -v '^#'  @confdir@/files/extra-packages.lst ) )
 declare -a arches=( x86_64 i486 i586 i686 )
-declare -a locales=( $(cat @confdir@/locale.gen) )
+declare -a locales=( $(<@confdir@/locale.gen) )
 
 blue="$(tput setaf 4)"
 red="$(tput setaf 1)"
