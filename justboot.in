@@ -48,7 +48,7 @@ if ! declare -A &>/dev/null; then
 else
 	bash4=true
 	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586
-		[i686]=M686	[pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII
+		[i686]=M686 [pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII
 		[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6
 		[k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2
 		[generic]=GENERIC_CPU [x86_64]=GENERIC_CPU [atom]=MATOM )
