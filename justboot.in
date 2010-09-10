@@ -397,12 +397,12 @@ fi
 # Remove old data directories (--purge/--delete-arch)
 if ${purge} || ${delete_arch}; then
     [[ ! -h /usr/share/justboot/${arch} && \
-! -d /usr/share/justboot/${arch} ]] && { einfo "No arch to purge \
-or remove! Exiting"; exit 1; } 
+        ! -d /usr/share/justboot/${arch} ]] && { einfo "No arch to \
+            purge or remove! Exiting"; exit 1; } 
     
     src=$(readlink /usr/share/justboot/${arch})
     einfo "${red}--purge or --delete-arch flag used.${nocolor} \
-Removing ${red}${arch}${nocolor} sources."
+        Removing ${red}${arch}${nocolor} sources."
 
     if [[ -h /usr/share/justboot/${arch} ]]; then
         do_exec rm -rf $(readlink /usr/share/justboot/excludes/${arch})
@@ -415,25 +415,25 @@ Removing ${red}${arch}${nocolor} sources."
   
     elif [ -d /usr/share/justboot/${arch} ]; then
         do_exec rm -rf /usr/share/justboot/${arch} \
-/usr/share/justboot/excludes/${arch}
+            /usr/share/justboot/excludes/${arch}
     fi
 
     for i in i{4,5,6}86 x86_64; do
         [[ ${i} = ${arch} ]] && continue 2
         [[ -d ${src/${arch}/${i}} ]] && { removal=false; einfo \
-"${red}${src/${arch}/${i}}${nocolor} arch found, deleting ${src} only";\
-break; }
+            "${red}${src/${arch}/${i}}${nocolor} arch found, deleting \
+            ${src} only"; break; }
     done
 
     if ${removal}; then
         ewarn "Removing orphan data directory ${red}${src/\/${arch}}\
-${nocolor}"
+            ${nocolor}"
         do_exec unlink ${src/\/${arch}//data} 
         do_exec rm -rf ${src/\/${arch}}
     fi
 
     ${delete_arch} && { einfo "All done ${arch} sources removed, \
-exiting"; exit 0; }
+        exiting"; exit 0; }
 fi
 
 # The stage in which we umount all livecd data and copy any --ramfs
@@ -453,101 +453,129 @@ if ${ramfs}; then
         for y in "${ramfs_dir[@]}"; do
             if [[ ${x} = ${y} ]]; then
                 einfo "Removing ${red}${x}${nocolor} from memory. \
-please wait..." do_exec rsync -caq --delete-before
-                ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
-                do_exec umount ${arch}/${x} &>/dev/null einfo "Copied
-                ${blue}${x}${nocolor} changes to
+                    please wait..."
+                do_exec rsync -caq --delete-before \
+                    ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
+                do_exec umount ${arch}/${x} &>/dev/null 
+                einfo "Copied ${blue}${x}${nocolor} changes to \
                 ${red}${excludes_dir}/${x//\//:}${nocolor}"
-          continue 2
-        fi
-      done                 
-      do_exec umount ${arch}/${x} &>/dev/null
+            continue 2
+            fi
+        done                 
+        do_exec umount ${arch}/${x} &>/dev/null
     done
                            
     for x in "${ramfs_dir[@]}"; do
-      for y in "${livecd_excludes[@]}"; do
-        [[ ${x} = ${y} ]] && continue 2
-      done                 
-      einfo "Removing ${red}${x}${nocolor} from memory. please wait..."
-      do_exec rsync -caq --delete-before ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
-      do_exec umount ${arch}/${x} &>/dev/null
-      einfo "Copied ${blue}${x}${nocolor} changes to ${red}${excludes_dir}/${x//\//:}${nocolor}"
+        for y in "${livecd_excludes[@]}"; do
+            [[ ${x} = ${y} ]] && continue 2
+        done                 
+
+    einfo "Removing ${red}${x}${nocolor} from memory. please wait..."
+    do_exec rsync -caq --delete-before ${arch}/${x}/* \
+        ${excludes_dir}/${x//\//:} &>/dev/null 
+    do_exec umount ${arch}/${x} \
+        &>/dev/null 
+    einfo "Copied ${blue}${x}${nocolor} changes to \
+        ${red}${excludes_dir}/${x//\//:}${nocolor}" 
+    done 
+else
+    for x in "${livecd_excludes[@]}"; do 
+        do_exec umount ${arch}/${x} &>/dev/null
     done
-  else  
-    for x in "${livecd_excludes[@]}"; do do_exec umount ${arch}/${x} &>/dev/null; done
-  fi
-  [ ! $1 ] && do_exec clean_env
+fi
+
+[ ! $1 ] && do_exec clean_env
 }
 
 trap 'release_env now; exit 13' TERM INT
-#  Cleans up the livecd environment if script is interrupted by Control-C.
+#  Cleans up the livecd environment if script is interrupted by
+#  Control-C.
 
 # Check local system for required packages
 check_deps() {
-  local -a deps=( 'mksquashfs:sys-fs/squashfs-tools' 'mkisofs:virtual/cdrtools' )
+local -a deps=( 'mksquashfs:sys-fs/squashfs-tools'
+    'mkisofs:virtual/cdrtools' )
 
-  if [[ "${pms}" = pmerge ]]; then
+if [[ "${pms}" = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then 
-      einfo "Compiling ${blue}sys-apps/pkgcore${nocolor}"
-      do_exec emerge pkgcore 1>/dev/null
-      einfo "${blue}sys-apps/pkgcore${nocolor} compiled"
+        einfo "Compiling ${blue}sys-apps/pkgcore${nocolor}"
+        do_exec emerge pkgcore 1>/dev/null
+        einfo "${blue}sys-apps/pkgcore${nocolor} compiled"
     fi
-  fi
+fi
 
-  for i in ${deps[@]}; do
+for i in ${deps[@]}; do
     if ! hash ${i/:*/} &>/dev/null; then
-      einfo "Compiling ${blue}${i/*:/}${nocolor}"
-      do_exec ${pms} ${i/*:/} 1>/dev/null
-      einfo "${blue}${i/*:/}${nocolor} compiled"
+        einfo "Compiling ${blue}${i/*:/}${nocolor}"
+        do_exec ${pms} ${i/*:/} 1>/dev/null
+        einfo "${blue}${i/*:/}${nocolor} compiled"
     fi
-  done
+done
 }
 
-# Preparation of the stage1 build - we skip most of this and only run through half of it once
-# unless we are starting fresh or ran justboot with --purge argument.
+# Preparation of the stage1 build - we skip most of this and only run
+# through half of it once unless we are starting fresh or ran justboot
+# with --purge argument.
 prepare_stage() {
-  if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
+if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
     if [ -h /usr/share/justboot/${arch} ]; then
-      local real_arch_dir=$(readlink /usr/share/justboot/${arch})
-      local real_excludes_dir=$(readlink /usr/share/justboot/excludes/${arch})
+        local real_arch_dir=$(readlink /usr/share/justboot/${arch})
+        local real_excludes_dir=$(readlink \
+            /usr/share/justboot/excludes/${arch})
 
-      einfo "Moving data directory from ${red}${real_arch_dir}${nocolor} to ${red}${livedir}/${arch}${nocolor}. please wait..."
-      for i in /usr/share/justboot/${arch} /usr/share/justboot/excludes/${arch}; do do_exec unlink ${i}; done
+        einfo "Moving data directory from ${red}${real_arch_dir}\
+            ${nocolor} to ${red}${livedir}/${arch}${nocolor}. \
+            please wait..." 
+        
+        for i in /usr/share/justboot/${arch} \
+            /usr/share/justboot/excludes/${arch}; do 
+            do_exec unlink ${i}
+        done
 
-      exec_chkdir ${livedir}/excludes
-      do_exec mv ${real_arch_dir} ${arch_dir}
-      do_exec mv ${real_excludes_dir} ${excludes_dir}
+        exec_chkdir ${livedir}/excludes 
+        do_exec mv ${real_arch_dir} ${arch_dir} 
+        do_exec mv ${real_excludes_dir} ${excludes_dir}
       
-      if [[ ${livedir} != /usr/share/justboot ]]; then
+        if [[ ${livedir} != /usr/share/justboot ]]; then 
+            exec_chklink ${arch_dir} /usr/share/justboot/${arch} 
+            exec_chklink ${livedir}/excludes/${arch} \
+                /usr/share/justboot/excludes/${arch}
+            exec_chklink /usr/share/justboot/data ${data_dir} 
+        fi
+
+        for i in i{4,5,6}86 x86_64; do
+            [[ ${i} = ${arch} ]] && continue 2
+            [[ -d ${real_arch_dir/${arch}/${i}} ]] && \
+                { removal=false; break; }
+        done
+      
+        if ! ${removal}; then
+            ewarn "Removing old data directory \
+                ${red}${real_arch_dir/\/${arch}}${nocolor}"
+            do_exec unlink ${real_arch_dir/\/${arch}//data}
+            do_exec rm -rf ${real_arch_dir/\/${arch}/}
+        else
+            ewarn "Removing old data directory ${red}\
+                ${real_arch_dir}${nocolor}"
+            do_exec rm -rf ${real_arch_dir} ${real_excludes_dir} 
+        fi        
+    elif [[ /usr/share/justboot != ${livedir} && \
+        -d /usr/share/justboot/${arch} ]]; then 
+        
+        einfo "Moving data directory from ${red}/usr/share/\
+            justboot/${arch}${nocolor} to ${red}${livedir}/${arch}\
+            .${nocolor} please wait..."
+
+        exec_chkdir ${livedir}/excludes
+        do_exec mv /usr/share/justboot/${arch} ${arch_dir}
+        do_exec mv /usr/share/justboot/excludes/${arch} ${excludes_dir}
+
         exec_chklink ${arch_dir} /usr/share/justboot/${arch}
-        exec_chklink ${livedir}/excludes/${arch} /usr/share/justboot/excludes/${arch}
+        exec_chklink ${livedir}/excludes/${arch} \
+            /usr/share/justboot/excludes/${arch}
         exec_chklink /usr/share/justboot/data ${data_dir}
-      fi
-
-      for i in i{4,5,6}86 x86_64; do
-        [[ ${i} = ${arch} ]] && continue 2
-        [[ -d ${real_arch_dir/${arch}/${i}} ]] && { removal=false; break; }
-      done
-      if ! ${removal}; then
-        ewarn "Removing old data directory ${red}${real_arch_dir/\/${arch}}${nocolor}"
-        do_exec unlink ${real_arch_dir/\/${arch}//data}
-        do_exec rm -rf ${real_arch_dir/\/${arch}/}
-      else
-        ewarn "Removing old data directory ${red}${real_arch_dir}${nocolor}"
-        do_exec rm -rf ${real_arch_dir} ${real_excludes_dir} 
-      fi        
-  elif [[ /usr/share/justboot != ${livedir} && -d /usr/share/justboot/${arch} ]]; then 
-      einfo "Moving data directory from ${red}/usr/share/justboot/${arch}${nocolor} to ${red}${livedir}/${arch}.${nocolor} please wait..."
-
-      exec_chkdir ${livedir}/excludes
-      do_exec mv /usr/share/justboot/${arch} ${arch_dir}
-      do_exec mv /usr/share/justboot/excludes/${arch} ${excludes_dir}
-
-      exec_chklink ${arch_dir} /usr/share/justboot/${arch}
-      exec_chklink ${livedir}/excludes/${arch} /usr/share/justboot/excludes/${arch}
-      exec_chklink /usr/share/justboot/data ${data_dir}
     fi
-  fi  
+fi  
  
   # Convert x86_64 arch for proper usage in Gentoo.
   case ${arch} in
