@@ -47,10 +47,10 @@ if ! declare -A &>/dev/null; then
 	echo "This script uses bash4 only features, consider upgrading"
 else
 	bash4=true
-	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586 \
-		[i686]=M686	[pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII \
-		[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 \
-		[k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 \
+	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586 
+		[i686]=M686	[pentiumII]=MPENTIUMII [pentiumIII]=MPENTIUMIII 
+		[pentium-mmx]=MPENTIUMM [pentium4]=MPENTIUM4 [k6]=MK6 
+		[k7]=MK7 [k8]=MK8 [opteron]=MK8 [core2]=MCORE2 [core2dou]=MCORE2 
 		[generic]=GENERIC_CPU [x86_64]=GENERIC_CPU [atom]=MATOM )
 fi
 
@@ -73,14 +73,14 @@ nocolor="$(tput setaf 9)"
 
 # Main script functions
 einfo() {
-	echo -e ".: ${1} :."
+	echo -e ".: "${@}" :."
 	sleep 1
 }
 ewarn() { 
-	echo -e "\a${red}.: ${1} :.${nocolor}"
+	echo -e "\a${red}.: "${@}" :.${nocolor}"
 }
 error() {
-	echo -e "\a${red}.: ${1} :.${nocolor}"
+	echo -e "\a${red}.: "${@}" :.${nocolor}"
 	exit 1
 }
 exec_chkdir() {
@@ -229,12 +229,12 @@ while [ $# -gt 0 ]; do
         --root-passwd=*)
             root_passwd="${1#*=}"
             einfo "Setting ${red}\"${root_passwd}\"${nocolor} as \
-livecd root password"
+                livecd root password"
             ;;
         --keywords=*)
             ACCEPT_KEYWORDS="${1#*=}"
             einfo "Setting ${blue}${ACCEPT_KEYWORDS}${nocolor} for \
-make.conf"
+                make.conf"
             ;;
         --ramfs)
             ram_limit=4194304
@@ -245,45 +245,47 @@ make.conf"
                 einfo "${red}ramfs${nocolor} compiles enabled!!!"
             else
                 ewarn "You have ${ram_size} of free memory and you \
-need >=${ram_limit}, --ramfs not enabled."
+                    need >=${ram_limit}, --ramfs not enabled."
             fi
             ;;
         --init-compression)
             init_compression="${2}"
             einfo "Using ${blue}${init_compression}${nocolor} for \
-initramfs compression"
+                initramfs compression"
             shift
             ;;
         --volid=*|-L)
             if [ ${1%%=*} = -L ]; then
                 volid="${2// /_}"
                 [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
-label ${red}\"${volid//_/ }\"${nocolor} is greater than the 32 \
-allowed characters"
+                    label ${red}\"${volid//_/ }\"${nocolor} is \
+                    greater than the 32 allowed characters"
                 shift
             else
                 arg=${1##*=}
                 volid="${arg// /_}"
                 [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
-label ${red}\"${volid//_/ }\"${nocolor} is greater than the 32 \
-allowed characters"
+                    label ${red}\"${volid//_/ }\"${nocolor} is \
+                    greater than the 32 allowed characters"
             fi
+ 
             einfo "Using ${red}\"${volid//_/ }\"${nocolor} for \
-livecd label"
+                livecd label"
             ;;
         --data-directory=*)                 
             dir="${1#*=}"                        
             livedir="${dir/%\//}/justboot" # Remove leading slash
             einfo "Livecd data directory set to \
-${blue}\"${livedir}\"${nocolor}"
+                ${blue}\"${livedir}\"${nocolor}"
             ;;
         --package-manager=*)
             [[ -f @confdir@/${arch}-pms ]] && error "Previously \
-enabled package manager, delete @confdir@/${arch}-pms then try \
-again to override"
+                enabled package manager, delete \
+                @confdir@/${arch}-pms then try again to override"
+
             [[ ${1#*=} =~ ^(pkgcore|portage)$ ]] || { einfo \
-"--package-manager=${red}${1##*=}${nocolor} is invalid, try \
-pkgcore or portage"; error "Exiting!"; }
+                "--package-manager=${red}${1##*=}${nocolor} is \
+                invalid, try pkgcore or portage"; error "Exiting!"; }
 
             if [[ ${1#*=} = portage ]]; then
                 pms="emerge -q"
@@ -292,7 +294,8 @@ pkgcore or portage"; error "Exiting!"; }
             fi
             
             einfo "${red}${pms}${nocolor} permanently enabled, \
-to override delete @confdir@/${arch}-pms"
+                to override delete @confdir@/${arch}-pms"
+            
             touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
             ;; 
         --gentoo-mirrors=*)
@@ -319,97 +322,142 @@ to override delete @confdir@/${arch}-pms"
             cpu="${1#*=}"
             if [[ ${bash4} && -z ${procs[${cpu}]} ]]; then
                 ewarn "${cpu} is an invalid --coprocessor option."
-                einfo "Available procs are: \
-${blue}i386,i486,i586,i686,pentium-mmx,pentium4,k6,k7,x86_64,k8,\
-opteron,core2,atom & generic"
+                einfo "Available procs are: ${blue}${procs[@]}"
                 ewarn "Exiting now."
                 exit 1
             fi
             ;;
-        --coprocessor-list) 
-            einfo "Available procs are: \
-${blue}i386,i486,i586,i686,k6,k7,k8,opteron,core2,atom & generic"
-            exit 0
+        --coprocessor-list)
+            if ${bash4}; then
+                einfo "Available procs are: ${blue}${procs[@]}"
+                exit 0
+            else
+                einfo "Available procs are: ${blue}i386,i486,i586,i686\
+                    ,k6,k7,k8,opteron,core2,atom & generic"
+                exit 0
+            fi
             ;;
         --verbose) verbose=true;;
         --debug|-db) debug=true; einfo "Running in debug mode";;
         --help|-h) print_help;;
         *) error "${blue}Invalid argument ${red}${1}!${nocolor}, \
-run \"$0 --help\" for help."
+            run \"$0 --help\" for help."
     esac
     shift
 done
 
 # Check that we are using a valid $arch
-for i in ${arches[@]}; do if [[ ${arch} != ${i} ]]; then invalid_arch=true; else invalid_arch=false; break; fi; done
-${invalid_arch} && { einfo "${red}${arch}${nocolor} arch is invalid, valid options are ${arches[*]}"; error "Exiting!!!"; }
+for i in ${arches[@]}; do 
+    if [[ ${arch} != ${i} ]]; then
+        invalid_arch=true
+    else 
+        invalid_arch=false
+        break
+    fi
+done
+
+${invalid_arch} && { einfo "${red}${arch}${nocolor} arch is \
+invalid, valid options are ${arches[*]}"; error "Exiting!!!"; }
 
 # Convert arch value for /etc/make.conf 
-case ${arch} in
-  x86_64) make_arch=x86-64; [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86 ~amd64";;
-  i[4,5,6]86) [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86"
+case ${arch} in 
+    x86_64) 
+        make_arch=x86-64
+        [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86 ~amd64"
+        ;;
+    i[4,5,6]86)
+        [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86" 
 esac
 
 # Allow for user default $arch options i.e ~/.justboot/x86_64.conf
 [ -f ~/.justboot/${arch}.conf ] && . ~/.justboot/${arch}.conf
 
-# When no --data-directory is set we default to /usr/share/justboot, but first we check for an existing $arch
-# symbolic link, so our $livedir always points to the correct arch path
+# When no --data-directory is set we default to /usr/share/justboot, but
+# first we check for an existing $arch symbolic link, so our $livedir
+# always points to the correct arch path
+
 if [[ -h /usr/share/justboot/${arch} && ! ${livedir} ]]; then
-  link=$(readlink /usr/share/justboot/${arch})
-  livedir=${link/\/${arch}/}
-  data_dir=${livedir}/data
-  arch_dir=${livedir}/${arch}
-  excludes_dir=${livedir}/excludes/${arch}
+    link=$(readlink /usr/share/justboot/${arch})
+    livedir=${link/\/${arch}/}
+    data_dir=${livedir}/data 
+    arch_dir=${livedir}/${arch}
+    excludes_dir=${livedir}/excludes/${arch}
 fi
 
 # Source JustBOOT(tm) global configuration options
 . @confdir@/config.globals
 
 # Check if we previously set a package manager for compiles on $arch
-if [ ! -f @confdir@/${arch}-pms ]; then pms="emerge -q"; else pms=$(<@confdir@/${arch}-pms); fi
+if [ ! -f @confdir@/${arch}-pms ]; then 
+    pms="emerge -q"
+else
+    pms=$(<@confdir@/${arch}-pms)
+fi
 
 # Remove old data directories (--purge/--delete-arch)
 if ${purge} || ${delete_arch}; then
-  [[ ! -h /usr/share/justboot/${arch} && ! -d /usr/share/justboot/${arch} ]] && { einfo "No arch to purge or remove! Exiting"; exit 1; }
-  src=$(readlink /usr/share/justboot/${arch}); einfo "${red}--purge or --delete-arch flag used.${nocolor} Removing ${red}${arch}${nocolor} sources."
+    [[ ! -h /usr/share/justboot/${arch} && \
+! -d /usr/share/justboot/${arch} ]] && { einfo "No arch to purge \
+or remove! Exiting"; exit 1; } 
+    
+    src=$(readlink /usr/share/justboot/${arch})
+    einfo "${red}--purge or --delete-arch flag used.${nocolor} \
+Removing ${red}${arch}${nocolor} sources."
 
-  if [[ -h /usr/share/justboot/${arch} ]]; then
-    do_exec rm -rf $(readlink /usr/share/justboot/excludes/${arch})
-    do_exec rm -rf $(readlink /usr/share/justboot/${arch})
-    for i in /usr/share/justboot/excludes/${arch} /usr/share/justboot/${arch}; do do_exec unlink ${i}; done
-  elif [ -d /usr/share/justboot/${arch} ]; then
-    do_exec rm -rf /usr/share/justboot/${arch} /usr/share/justboot/excludes/${arch}
-  fi
+    if [[ -h /usr/share/justboot/${arch} ]]; then
+        do_exec rm -rf $(readlink /usr/share/justboot/excludes/${arch})
+        do_exec rm -rf $(readlink /usr/share/justboot/${arch})
+        
+        for i in /usr/share/justboot/excludes/${arch} \
+            /usr/share/justboot/${arch}; do
+                do_exec unlink ${i}
+        done
+  
+    elif [ -d /usr/share/justboot/${arch} ]; then
+        do_exec rm -rf /usr/share/justboot/${arch} \
+/usr/share/justboot/excludes/${arch}
+    fi
 
-  for i in i{4,5,6}86 x86_64; do
-    [[ ${i} = ${arch} ]] && continue 2
-    [[ -d ${src/${arch}/${i}} ]] && { removal=false; einfo "${red}${src/${arch}/${i}}${nocolor} arch found, deleting ${src} only"; break; }
-  done
-  if ${removal}; then
-    ewarn "Removing orphan data directory ${red}${src/\/${arch}}${nocolor}"
-    do_exec unlink ${src/\/${arch}//data} 
-    do_exec rm -rf ${src/\/${arch}}
-  fi
-  ${delete_arch} && { einfo "All done ${arch} sources removed, exiting"; exit 0; }
+    for i in i{4,5,6}86 x86_64; do
+        [[ ${i} = ${arch} ]] && continue 2
+        [[ -d ${src/${arch}/${i}} ]] && { removal=false; einfo \
+"${red}${src/${arch}/${i}}${nocolor} arch found, deleting ${src} only";\
+break; }
+    done
+
+    if ${removal}; then
+        ewarn "Removing orphan data directory ${red}${src/\/${arch}}\
+${nocolor}"
+        do_exec unlink ${src/\/${arch}//data} 
+        do_exec rm -rf ${src/\/${arch}}
+    fi
+
+    ${delete_arch} && { einfo "All done ${arch} sources removed, \
+exiting"; exit 0; }
 fi
 
-# The stage in which we umount all livecd data and copy any --ramfs changes to the excluded directories.
-# First we remove local livecd folders i.e proc,dev and the data directory, then we copy any ramfs changes to
-# the livecd exclude folders. See the @confdir@/files/{ramfs-directories,excluded-directories}.lst file to customize
+# The stage in which we umount all livecd data and copy any --ramfs
+# changes to the excluded directories.  First we remove local livecd
+# folders i.e proc,dev and the data directory, then we copy any ramfs
+# changes to the livecd exclude folders. See the
+# @confdir@/files/{ramfs-directories,excluded-directories}.lst file to
+# customize
+
 release_env() {
-  einfo "Releasing livecd environment, please wait..."
-  do_exec rm -rf ${arch}/tmp/* 
-  do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} 
+einfo "Releasing livecd environment, please wait..."
+do_exec rm -rf ${arch}/tmp/* 
+do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} 
                            
-  if ${ramfs}; then    
+if ${ramfs}; then    
     for x in "${livecd_excludes[@]}"; do
-      for y in "${ramfs_dir[@]}"; do
-        if [[ ${x} = ${y} ]]; then
-          einfo "Removing ${red}${x}${nocolor} from memory. please wait..."
-          do_exec rsync -caq --delete-before ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
-          do_exec umount ${arch}/${x} &>/dev/null 
-          einfo "Copied ${blue}${x}${nocolor} changes to ${red}${excludes_dir}/${x//\//:}${nocolor}"
+        for y in "${ramfs_dir[@]}"; do
+            if [[ ${x} = ${y} ]]; then
+                einfo "Removing ${red}${x}${nocolor} from memory. \
+please wait..." do_exec rsync -caq --delete-before
+                ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
+                do_exec umount ${arch}/${x} &>/dev/null einfo "Copied
+                ${blue}${x}${nocolor} changes to
+                ${red}${excludes_dir}/${x//\//:}${nocolor}"
           continue 2
         fi
       done                 
