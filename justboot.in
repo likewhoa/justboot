@@ -241,7 +241,6 @@ while [ $# -gt 0 ]; do
             ram_size=$(sed -n 2p /proc/meminfo | awk '{print$2}')
             
             if [[ $ram_size > $ram_limit ]]; then
-                echo ramfs=true
                 einfo "${red}ramfs${nocolor} compiles enabled!!!"
             else
                 ewarn "You have ${ram_size} of free memory and you \
@@ -1063,113 +1062,144 @@ elif  [[ ! -d \${uclibc}/\${busybox} ]]; then
     do_exec cd \${uclibc} && do_exec fetch_busybox
 fi
 
-  do_exec cp -a ${data_dir}/busybox/.config \${uclibc}/\${busybox}
+do_exec cp -a ${data_dir}/busybox/.config \${uclibc}/\${busybox}
 
-  einfo "Entering uclibc environment"
-  do_exec chmod +x \${uclibc_script} && do_exec mv \${uclibc_script} \${uclibc}/tmp
+einfo "Entering uclibc environment"
+do_exec chmod +x \${uclibc_script} && do_exec mv \${uclibc_script} \${uclibc}/tmp
+do_exec linux32 chroot \${uclibc} \${uclibc_script}
 
-  do_exec linux32 chroot \${uclibc} \${uclibc_script}
-
-  einfo "Done with busybox build"
+einfo "Done with busybox build"
 }
 
 # The setup of our initramfs image
 prepare_initramfs() {
-  local initramfs_dir=/tmp/initramfs
-  kernel_src=\$(readlink /usr/src/linux)
-  kernel_module_src=\${kernel_src%*-}  
+local initramfs_dir=/tmp/initramfs
+local kernel_src=\$(readlink /usr/src/linux)
+local kernel_module_src=\${kernel_src%*-}
 
-  [[ -d \${initramfs_dir} ]] && do_exec rm -rf \${initramfs_dir}
-  do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
-  ./applets/install.sh \${initramfs_dir} --symlinks 1>/dev/null
+[[ -d \${initramfs_dir} ]] && do_exec rm -rf \${initramfs_dir}
+do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
+./applets/install.sh \${initramfs_dir} --symlinks 1>/dev/null
 
-  do_exec cd \${initramfs_dir}
-  do_exec mkdir -p proc sys dev mnt new-root lib mnt/livecd mnt/livecd/{static,dynamic,image} lib/modules
-  do_exec cp -a ${data_dir}/initramfs/etc .
+do_exec cd \${initramfs_dir}
+do_exec mkdir -p proc sys dev mnt new-root lib mnt/livecd \
+    mnt/livecd/{static,dynamic,image} lib/modules
+do_exec cp -a ${data_dir}/initramfs/etc .
 
-  do_exec cp ${data_dir}/initramfs/init .
-  do_exec chmod 755 init
-  do_exec mknod dev/console c 5 1
-  do_exec mknod dev/null c 1 3
-  do_exec mknod dev/tty1 c 4 1
+do_exec cp ${data_dir}/initramfs/init .
+do_exec chmod 755 init
+do_exec mknod dev/console c 5 1
+do_exec mknod dev/null c 1 3
+do_exec mknod dev/tty1 c 4 1
 
-  do_exec cp -a /lib/modules/\${kernel_module_src} lib/modules/
+do_exec cp -a /lib/modules/\${kernel_module_src} lib/modules/
 
-  [ -f /boot/${arch}-initramfs_data.cpio.${init_compression} ] && do_exec rm /boot/${arch}-initramfs_data.cpio.${init_compression}
-  find | cpio --quiet -o -H newc | ${init_compression} -9 >/boot/${arch}-initramfs_data.cpio.${init_compression}
+[ -f /boot/${arch}-initramfs_data.cpio.${init_compression} ] \
+    && do_exec rm /boot/${arch}-initramfs_data.cpio.${init_compression}
+find | cpio --quiet -o -H newc | ${init_compression} -9 \
+    >/boot/${arch}-initramfs_data.cpio.${init_compression}
 }
 
-# This function handles the custom kernel options with --coprocessor argument (>=bash-4.0 Only)
+# This function handles the custom kernel options with --coprocessor
+# argument (>=bash-4.0 Only)
 do_coprocessor() {
 # Detect non x86_64 processors with --co-processor=x86_64
-[[ \$1 = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ ]] && { ewarn "${procs[${cpu}]} invalid for x86_64 arch"; return 1; }
+[[ \$1 = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ \
+    ]] && { ewarn "${procs[${cpu}]} invalid for x86_64 arch"; return 1; }
 
 # We only patch what is needed here and we skip i{5,6}86 arches
-[[ ${procs[${cpu}]} =~ ^M(PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ ]] && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
+[[ ${procs[${cpu}]} =~ ^M(PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ ]] \
+    && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
 }
 
 prepare_kernel_opts() {
-  ( cd ${data_dir}/kernel/\${1} || error "Could not switch to kernel source directory"
-  case ${arch} in
-    i[4,5,6]86)
-      if [[ ${procs[${cpu}]} != M486 || ${procs[${cpu}]} =~ ^([3,5-6]86)$ ]]; then 
-        sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' -e "s/# CONFIG_${procs[${cpu}]} is not set/CONFIG_${procs[${cpu}]}=y/" ${kernel_sources} >.config-custom
-      fi
-      [[ ${arch} = i586 || ${procs[${cpu}]} = M586 ]] && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
-      [[ ${arch} = i686 || ${procs[${cpu}]} = M686 ]] && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
-      do_coprocessor ${arch}
-      ;;
-    x86_64)
-      if [[ ${procs[${cpu}]} != GENERIC_CPU ]]; then                                                                
-      sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU is not set/' -e "s/# CONFIG_${procs[${cpu}]} is not set/CONFIG_${procs[${cpu}]}=y/" ${kernel_sources} >.config-custom
-      fi
-      do_coprocessor ${arch}
-  esac                                                                   
-  if [[ ${procs[${cpu}]} =~ ^(M486|GENERIC_CPU)$ ]]; then do_exec cp ${kernel_sources} /usr/src/linux/.config; else do_exec cp .config-custom /usr/src/linux/.config; fi 
-  )
+( cd ${data_dir}/kernel/\${1} || error "Could not switch to kernel \
+    source directory"
+
+    case ${arch} in
+        i[4,5,6]86)
+            if [[ ${procs[${cpu}]} != M486 || ${procs[${cpu}]} =~ \
+                ^([3,5-6]86)$ ]]; then
+                sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' \
+                    -e "s/# CONFIG_${procs[${cpu}]} is not set/\
+                    CONFIG_${procs[${cpu}]}=y/" ${kernel_sources} \
+                    >.config-custom
+            fi
+
+            [[ ${arch} = i586 || ${procs[${cpu}]} = M586 ]] && \
+                patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
+            [[ ${arch} = i686 || ${procs[${cpu}]} = M686 ]] && \
+                patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
+            do_coprocessor ${arch}
+            ;;
+        x86_64)
+            if [[ ${procs[${cpu}]} != GENERIC_CPU ]]; then                                                                
+                sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU \
+                    is not set/' -e "s/# CONFIG_${procs[${cpu}]} is \
+                    not set/CONFIG_${procs[${cpu}]}=y/" \
+                    ${kernel_sources} >.config-custom
+            fi
+            do_coprocessor ${arch}
+    esac                                                                   
+ 
+    if [[ ${procs[${cpu}]} =~ ^(M486|GENERIC_CPU)$ ]]; then
+        do_exec cp ${kernel_sources} /usr/src/linux/.config
+    else
+        do_exec cp .config-custom /usr/src/linux/.config
+    fi
+)
 }
 
 do_kernel_compile() {
-  if ! grep "sys-kernel/${kernel_sources} symlink" /etc/portage/package.use 1>/dev/null; then
-    echo "sys-kernel/${kernel_sources} symlink">>/etc/portage/package.use
-  fi
+if ! grep "sys-kernel/${kernel_sources} symlink" \
+    /etc/portage/package.use 1>/dev/null; then
+    echo "sys-kernel/${kernel_sources} symlink">>/etc/portage/\
+        package.use
+fi
 
-  # Removed due to zen-overlay no longer in layman and zen-sources in tree
-  if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) && ${kernel_sources} = zen-sources ]]; then
-    einfo "Compiling \${blue}layman\${nocolor}"; do_exec emerge layman 1>/dev/null
-    do_exec layman -Sa zen-overlay 1>/dev/null && echo "source /usr/local/portage/layman/make.conf">>/etc/make.conf
-  elif [[ ${kernel_sources} = zen-sources ]]; then
+# Removed due to zen-overlay no longer in layman and zen-sources in tree
+if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) \
+    && ${kernel_sources} = zen-sources ]]; then
+    einfo "Compiling \${blue}layman\${nocolor}"
+
+    do_exec emerge layman 1>/dev/null
+    do_exec layman -Sa zen-overlay 1>/dev/null && echo "source \
+        /usr/local/portage/layman/make.conf">>/etc/make.conf
+elif [[ ${kernel_sources} = zen-sources ]]; then
     do_exec emerge ${kernel_sources} 1>/dev/null
-  else
+else
     do_exec ${pms} ${kernel_sources} 1>/dev/null
-  fi
+fi
 }
 
 # JustBOOT kernel compilation and customization options
 prepare_kernel() {
-  local date=$(date +%Y%m%d-%H%m)
+local date=$(date +%Y%m%d-%H%m)
 
-  if ${purge_kernel}; then
+if ${purge_kernel}; then
     ewarn "--purge-kernel used, removing sources..."
     do_exec unlink /usr/src/linux
     do_exec rm -rf /usr/src/* /lib/modules/*
-  fi
+fi
 
-  # Convert x86 arch for proper usage in kernel
-  case ${arch} in i[4,5,6]86) local arch=x86;; esac
+# Convert x86 arch for proper usage in kernel
+case ${arch} in i[4,5,6]86) local arch=x86;; esac
 
-  if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
+if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/\
+    ${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
     einfo "Compiling \${blue}${kernel_sources}\${nocolor}."
     do_kernel_compile
 
     einfo "Compiling \${blue}\${arch}\${nocolor} kernel image"
-    if declare -A &>/dev/null; then 
+    if declare -A &>/dev/null; then
       do_exec prepare_kernel_opts \${arch}
     else 
-      do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} /usr/src/linux/.config
+      do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
+        /usr/src/linux/.config
     fi
-      
-    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+
+    do_exec cd /usr/src/linux || error "Failed to switch to \
+        kernel source directory"
 
     if ${menuconfig}; then
       do_exec make menuconfig
@@ -1179,12 +1209,15 @@ prepare_kernel() {
     fi
 
     do_exec make modules_install 1>/dev/null
-    einfo "\${red}\${arch}\${nocolor} kernel compiled, preparing initramfs image."
+    einfo "\${red}\${arch}\${nocolor} kernel compiled, preparing \
+        initramfs image."
     do_exec prepare_initramfs
   else
     if [ -f /usr/src/linux/.config ]; then
-      einfo "Backing up old kernel config to \${red}/usr/src/linux/.config.\${date}\${nocolor}"
-      do_exec cp /usr/src/linux/.config /usr/src/linux/.config.${kernel_sources}-\${date}
+      einfo "Backing up old kernel config to \${red}/usr/src/linux/\
+        .config.\${date}\${nocolor}"
+      do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\
+        ${kernel_sources}-\${date}
     fi
 
     einfo "Compiling \${red}\${arch}\${nocolor} kernel image"
@@ -1193,9 +1226,11 @@ prepare_kernel() {
     if declare -A &>/dev/null; then
       do_exec prepare_kernel_opts \${arch}
     else
-      do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} /usr/src/linux/.config
+      do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
+        /usr/src/linux/.config
     fi
-    do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+    do_exec cd /usr/src/linux || error "Failed to switch to \
+        kernel source directory"
 
     if ${menuconfig}; then
       do_exec make menuconfig
@@ -1205,157 +1240,183 @@ prepare_kernel() {
     fi
 
     do_exec make modules_install 1>/dev/null
-    einfo "\${red}\${arch}\${nocolor} kernel compiled, preparing initramfs image"
+    einfo "\${red}\${arch}\${nocolor} kernel compiled, preparing \
+        initramfs image"
     do_exec prepare_initramfs
   fi
 
-  do_exec cd /usr/src/linux || error "Failed to switch to kernel source directory"
+  do_exec cd /usr/src/linux || error "Failed to switch to \
+    kernel source directory"
   do_exec cp arch/\${arch}/boot/bzImage /boot/vmlinuz
-  do_exec update-modules 
+  do_exec update-modules
 
   einfo "Compiling \${blue}lvm2\${nocolor}"
   do_exec ${pms} lvm2 1>/dev/null
-  
+
   einfo "Done with \${red}\${arch}\${nocolor} kernel"
   if ${letmein}; then
-    einfo "letmein flag used. Type \${red}exit\${nocolor} when finished to continue with build."
+    einfo "letmein flag used. Type \${red}exit\${nocolor} when \
+        finished to continue with build."
     exec /bin/bash -i
   fi
 }
 
 prepare_useropts() {
-  einfo "Setting root password to \"\${red}${root_passwd}\"\${nocolor}"
+einfo "Setting root password to \"\${red}${root_passwd}\"\${nocolor}"
 
-  # Set the livecd root password according to --root-passwd otherwise use "gentoo" for root
-  echo "root:${root_passwd}" | chpasswd 1>/dev/null # BUG #275555
-  einfo "Root passwd set to \${red}\"${root_passwd}\"\${nocolor}"
+# Set the livecd root password according to --root-passwd otherwise use
+# "gentoo" for root
+
+echo "root:${root_passwd}" | chpasswd 1>/dev/null # BUG #275555
+einfo "Root passwd set to \${red}\"${root_passwd}\"\${nocolor}"
 }
 
-diff () { printf '%s' \$(( \$(date -u -d"\$target" +%s) - 
-\$(date -u -d"\$current" +%s))) 
+diff () {
+    printf '%s' \$(( \$(date -u -d"\$target" +%s) - \
+        \$(date -u -d"\$current" +%s)))
 }
 
 check_toolchain_days() {
-  if [[ ${arch} = i586 && ! -f /etc/toolchain_age ]]; then
+if [[ ${arch} = i586 && ! -f /etc/toolchain_age ]]; then
     ewarn "i586 needs a toolchain build, setting --force-toolchain flag"
     yes_tool=true
-  fi
-  if ${no_tool}; then
+fi
+
+if ${no_tool}; then
     ewarn "Skipping toolchain build"
     return 1
-  elif ${yes_tool}; then
-    ewarn "Forcing a toolchain build"
-    date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
-    return 0
-  else
-    [ ! -f /etc/toolchain_age ] && date -u -d 'now' '+%F %T.%N %Z'>/etc/toolchain_age
+    elif ${yes_tool}; then
+        ewarn "Forcing a toolchain build"
+        date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
+        return 0
+    else
 
-    local current=\$(date -u -d 'now' '+%F %T.%N %Z') target=\$(</etc/toolchain_age)
+    [ ! -f /etc/toolchain_age ] && date -u -d 'now' '+%F %T.%N %Z'>\
+        /etc/toolchain_age
+
+    local current=\$(date -u -d 'now' '+%F %T.%N %Z')
+    local target=\$(</etc/toolchain_age)
     local mphr=60 hpd=24 limit=60
-    # current = now, target = Last time the toolchain was rebuild.
-    # %F = full date, %T = %H:%M:%S, %N = nanoseconds, %Z = time zone.
-    # mphr = Minutes per hour, hpd = Hours per day, limit = Days before a toolchain rebuild.
-  
+
+    # current = now, target = Last time the toolchain was rebuild.  %F =
+    # full date, %T = %H:%M:%S, %N = nanoseconds, %Z = time zone.  mphr
+    # = Minutes per hour, hpd = Hours per day, limit = Days before a
+    # toolchain rebuild.
+
     days=\$(( \$(diff) / \$mphr / \$mphr / \$hpd ))
     current=\$(date -d"\$current +\$days days" '+%F %T.%N %Z')
     toolchain_days=\$(printf '%s' "\$days")
     days_left=\$((limit-toolchain_days))
-      
+
     if ((toolchain_days>limit)); then
-      ewarn "Your toolchain is \${toolchain_days} days old passed the \${limit} days limit."
-      date -u -d '1 day' '+%F %T.%N %Z'>/etc/toolchain_age
-      einfo "Preparing to rebuild the toolchain."
-      return 0
-    elif ((toolchain_days==0)); then # First day of toolchain build, increment by 1 day
-      date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
-      ewarn "You have \${days_left:-60} days left until your next schedule bootstrap."
-      einfo "Preparing to build the toolchain."
-      return 0
+        ewarn "Your toolchain is \${toolchain_days} days old passed the \
+            \${limit} days limit."
+        date -u -d '1 day' '+%F %T.%N %Z'>/etc/toolchain_age
+        einfo "Preparing to rebuild the toolchain."
+        return 0
+    elif ((toolchain_days==0)); then
+        # First day of toolchain build, increment by 1 day
+        date -u -d '2 days' '+%F %T.%N %Z'>/etc/toolchain_age
+        ewarn "You have \${days_left:-60} days left until your next \
+            schedule bootstrap."
+        einfo "Preparing to build the toolchain."
+        return 0
     else
-      ewarn "You have \${days_left:-60} days left until your next schedule bootstrap"
-      return 1
+        ewarn "You have \${days_left:-60} days left until your next \
+            schedule bootstrap"
+        return 1
     fi
-  fi
+fi
 }
 
 bootstrap() {
-  # Enable livecd and user locales (see @confdir@/locale.gen)
-  if grep '#en_US ISO-8859-1' /etc/locale.gen &>/dev/null; then
+# Enable livecd and user locales (see @confdir@/locale.gen)
+if grep '#en_US ISO-8859-1' /etc/locale.gen &>/dev/null; then
     einfo "Setting locales"
     for i in "${locales[@]}" "#en_US ISO-8859-1"; do
-      sed -i "s/#\${i}/\${i}/" /etc/locale.gen
+        sed -i "s/#\${i}/\${i}/" /etc/locale.gen
     done
-  fi
-  do_exec locale-gen 1>/dev/null
+fi
 
-  einfo "Setting localtime"
-  [ -e /etc/localtime ] && do_exec rm /etc/localtime
-  do_exec cp -a /usr/share/zoneinfo/UTC /etc/localtime
+do_exec locale-gen 1>/dev/null
 
-  einfo "Updating portage tree"
-  do_exec emerge --sync -q 1>/dev/null
+einfo "Setting localtime"
+[ -e /etc/localtime ] && do_exec rm /etc/localtime
+do_exec cp -a /usr/share/zoneinfo/UTC /etc/localtime
 
-  if ! ${no_tool}; then
-    einfo "Compiling the toolchain, this maybe take a while depending on hardware."
+einfo "Updating portage tree"
+do_exec emerge --sync -q 1>/dev/null
+
+if ! ${no_tool}; then
+    einfo "Compiling the toolchain, this maybe take a while depending \
+        on hardware."
     for i in portage gcc-config binutils linux-headers glibc gcc; do
-      einfo "Compiling \${blue}\${i}.\${nocolor}"
-      do_exec ${pms} -1 \${i} 1>/dev/null && einfo "\${blue}\${i}\${nocolor} compiled."
+        einfo "Compiling \${blue}\${i}.\${nocolor}"
+        do_exec ${pms} -1 \${i} 1>/dev/null && einfo "\${blue}\${i}\
+            \${nocolor} compiled."
     done
-    do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null && do_exec source /etc/profile
-  
-    ! grep "\-\-hash\-style" /etc/make.conf &>/dev/null && sed -i 's/-Wl,/-Wl,--hash-style=gnu,/' /etc/make.conf 
+    do_exec gcc-config 1 1>/dev/null && do_exec env-update 1>/dev/null \
+        && do_exec source /etc/profile
+
+    ! grep "\-\-hash\-style" /etc/make.conf &>/dev/null && sed -i \
+        's/-Wl,/-Wl,--hash-style=gnu,/' /etc/make.conf
 
     for i in binutils linux-headers glibc gcc; do
-      einfo "Compiling \${blue}\${i}.\${nocolor}"
-      do_exec ${pms} -1 \${i} 1>/dev/null && einfo "\${blue}\${i}\${nocolor} compiled."
+        einfo "Compiling \${blue}\${i}.\${nocolor}"
+        do_exec ${pms} -1 \${i} 1>/dev/null && einfo "\${blue}\${i}\
+            \${nocolor} compiled."
     done
     einfo "Toolchain build finished, compiling system packages"
 
     while read ebuild; do
-      einfo "Compiling \${blue}\"\${ebuild}\"\${nocolor}"
-      do_exec ${pms} -1 "\${ebuild}" 1>/dev/null || echo "\${ebuild}" >>failed
-      einfo "\${blue}\"\${ebuild}\"\${nocolor} compiled"
-      [[ \${ebuild} = dev-lang/python && "${pms}" = pmerge ]] && python-updater &>/dev/null 
-    done < <(emerge -ep --columns --color=n system | grep ebuild | awk '{print\$4}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)") 
+        einfo "Compiling \${blue}\"\${ebuild}\"\${nocolor}"
+        do_exec ${pms} -1 "\${ebuild}" 1>/dev/null || \
+            echo "\${ebuild}" >>failed
+        einfo "\${blue}\"\${ebuild}\"\${nocolor} compiled"
+        [[ \${ebuild} = dev-lang/python && "${pms}" = pmerge ]] && \
+            python-updater &>/dev/null
+    done < <(emerge -ep --columns --color=n system | grep ebuild | \
+        awk '{print\$4}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)")
 
     while read ebuild; do
-      einfo "Compiling \${blue}\"\${ebuild}\"\${nocolor}"
-      do_exec ${pms} -1 "\${ebuild}" 1>/dev/null
-      einfo "\${blue}\"\${ebuild}\"\${nocolor} compiled"
+        einfo "Compiling \${blue}\"\${ebuild}\"\${nocolor}"
+        do_exec ${pms} -1 "\${ebuild}" 1>/dev/null
+        einfo "\${blue}\"\${ebuild}\"\${nocolor} compiled"
     done <failed
     do_exec rm failed
 
     einfo "Toolchain build completed"
-  else
+else
     einfo "Toolchain built skipped"
-  fi
+fi
 }
 
 # Script to build busybox binary inside uclibc environment
 cat >> \${uclibc_script} << BUSYBOX
 #!/bin/bash
-  env-update 1>/dev/null && source /etc/profile
+env-update 1>/dev/null && source /etc/profile
 
-  echo "Compiling Busybox"
-  cd \${busybox} && make -s
-  [ ! -f busybox.links ] && make busybox.links
+echo "Compiling Busybox"
+cd \${busybox} && make -s
+[ ! -f busybox.links ] && make busybox.links
 
-  echo "Busybox has been compiled"
-  exit
+echo "Busybox has been compiled"
+exit
 BUSYBOX
-  do_exec prepare_configs
-  do_exec check_deps
-  do_exec check_toolchain_days && do_exec bootstrap
-  do_exec prepare_packages
-  do_exec prepare_bootloader
-  do_exec prepare_busybox
-  do_exec prepare_kernel
-  do_exec prepare_useropts
+do_exec prepare_configs
+do_exec check_deps
+do_exec check_toolchain_days && do_exec bootstrap
+do_exec prepare_packages
+do_exec prepare_bootloader
+do_exec prepare_busybox
+do_exec prepare_kernel
+do_exec prepare_useropts
 CHROOT
 
 # Lets go already!
-[[ ! -d ${livedir} ]] && exec_chkdir ${livedir} 
-do_exec cd ${livedir} || error "Failed to switch to livecd data directory! Exiting."
+[[ ! -d ${livedir} ]] && exec_chkdir ${livedir}
+do_exec cd ${livedir} || error "Failed to switch to livecd data \
+    directory! Exiting."
 do_exec check_deps && do_exec prepare_stage
 
 # vim: set et sts=4 sw=4 ts=4 tw=80:
