@@ -119,14 +119,14 @@ Arguments:
 	RAM"
 --force-toolchain       - Force a rebuilt of the toolchain
 --skip-toolchain        - Skips toolchain built for those in a hurry
---data-directory=       - Set the data directory for compiles
+--build-directory=       - Set the build directory for compiles
 --package-manager=      - Enable the package manager for all builds
 	.: Currently only pkgcore is supported, by default justboot uses
 	portage :.
 --letmein               - Will run interactive bash at end of chroot
 	stage so you can tweak the livecd environment
 --verbose               - Run in verbose mode - lots of output
---purge                 - Purge old data and start fresh
+--purge                 - Purge old build and start fresh
 --delete-arch           - Like --purge but exits script after
 --debug                 - Turn on debugging
 
@@ -179,8 +179,8 @@ Generate a livecd for x86_64 using -j8 for makeopts and -19 for portage
     niceness
 # justboot --arch=x86_64 --make-opts="-j8" --niceness="-19"
 
-Change the livecd data directory
-# justboot --arch=x86_64 --data-directory=/home/username
+Change the livecd build directory
+# justboot --arch=x86_64 --build-directory=/home/username
 
 Change the rsync and gentoo mirrors setting
 # justboot --arch=i486 --gentoo-mirrors="http://mirror.datapipe.net/gentoo
@@ -202,7 +202,7 @@ Generate a x86_64 livecd with interactive kernel menu and custom rsync mirror
 Use sys-apps/pkgcore for all livecd builds instead of portage
 # justboot --arch=i486 --package-manager=pkgcore --root-passwd=letmein
 
-Remove old sources (This deletes all livecd data for that arch)
+Remove old sources (This deletes all livecd build for that arch)
 # justboot --arch=i586 --delete-arch
  
 HELP
@@ -272,10 +272,10 @@ while [ $# -gt 0 ]; do
             einfo "Using ${red}\"${volid//_/ }\"${nocolor} for \
                 livecd label"
             ;;
-        --data-directory=*)
+        --build-directory=*)
             dir="${1#*=}"
             livedir="${dir/%\//}/justboot" # Remove leading slash
-            einfo "Livecd data directory set to \
+            einfo "Livecd build directory set to \
                 ${blue}\"${livedir}\"${nocolor}"
             ;;
         --package-manager=*)
@@ -373,7 +373,7 @@ esac
 # Allow for user default $arch options i.e ~/.justboot/x86_64.conf
 [ -f ~/.justboot/${arch}.conf ] && . ~/.justboot/${arch}.conf
 
-# When no --data-directory is set we default to /usr/share/justboot, but
+# When no --build-directory is set we default to /usr/share/justboot, but
 # first we check for an existing $arch symbolic link, so our $livedir
 # always points to the correct arch path
 
@@ -395,7 +395,7 @@ else
     pms=$(<@confdir@/${arch}-pms)
 fi
 
-# Remove old data directories (--purge/--delete-arch)
+# Remove old build directories (--purge/--delete-arch)
 if ${purge} || ${delete_arch}; then
     [[ ! -h /usr/share/justboot/${arch} && \
         ! -d /usr/share/justboot/${arch} ]] && { einfo "No arch to \
@@ -427,7 +427,7 @@ if ${purge} || ${delete_arch}; then
     done
 
     if ${removal}; then
-        ewarn "Removing orphan data directory ${red}${src/\/${arch}}\
+        ewarn "Removing orphan build directory ${red}${src/\/${arch}}\
             ${nocolor}"
         do_exec unlink ${src/\/${arch}//data} 
         do_exec rm -rf ${src/\/${arch}}
@@ -437,9 +437,9 @@ if ${purge} || ${delete_arch}; then
         exiting"; exit 0; }
 fi
 
-# The stage in which we umount all livecd data and copy any --ramfs
+# The stage in which we umount all livecd build and copy any --ramfs
 # changes to the excluded directories.  First we remove local livecd
-# folders i.e proc,dev and the data directory, then we copy any ramfs
+# folders i.e proc,dev and the build directory, then we copy any ramfs
 # changes to the livecd exclude folders. See the
 # @confdir@/files/{ramfs-directories,excluded-directories}.lst file to
 # customize
@@ -524,7 +524,7 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
         local real_excludes_dir=$(readlink \
             /usr/share/justboot/excludes/${arch})
 
-        einfo "Moving data directory from ${red}${real_arch_dir}\
+        einfo "Moving build directory from ${red}${real_arch_dir}\
             ${nocolor} to ${red}${livedir}/${arch}${nocolor}. \
             please wait..."
 
@@ -551,19 +551,19 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
         done
 
         if ! ${removal}; then
-            ewarn "Removing old data directory \
+            ewarn "Removing old build directory \
                 ${red}${real_arch_dir/\/${arch}}${nocolor}"
             do_exec unlink ${real_arch_dir/\/${arch}//data}
             do_exec rm -rf ${real_arch_dir/\/${arch}/}
         else
-            ewarn "Removing old data directory ${red}\
+            ewarn "Removing old build directory ${red}\
                 ${real_arch_dir}${nocolor}"
             do_exec rm -rf ${real_arch_dir} ${real_excludes_dir}
         fi
     elif [[ /usr/share/justboot != ${livedir} && \
         -d /usr/share/justboot/${arch} ]]; then
 
-        einfo "Moving data directory from ${red}/usr/share/\
+        einfo "Moving build directory from ${red}/usr/share/\
             justboot/${arch}${nocolor} to ${red}${livedir}/${arch}\
             .${nocolor} please wait..."
 
@@ -654,7 +654,7 @@ for x in "${livecd_excludes[@]}"; do
     if [[ $(ls ${arch}/${x//://} 2>/dev/null | grep -v .keep | wc -l)\
         != 0 ]]; then
         einfo "Detected newly added ${blue}${x}${nocolor} for livecd \
-            excludes, moving data to ${red}${excludes_dir}/${x//\//:}\
+            excludes, moving build to ${red}${excludes_dir}/${x//\//:}\
             .${nocolor} please wait..."
         exec_chkdir ${excludes_dir}/${x//\//:}
         do_exec mv ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
@@ -693,7 +693,7 @@ if ${ramfs}; then
         != 0 ]]; then
         exec_chkdir ${excludes_dir}/${x//\//:}
         einfo "${blue}${arch}/${x}${nocolor} is not empty, moving \
-            data to ${red}${excludes_dir}/${x//\//:}.${nocolor} \
+            build to ${red}${excludes_dir}/${x//\//:}.${nocolor} \
             please wait..."
         do_exec mv ${arch}/${x}/* ${excludes_dir}/${x//\//:}\
             &>/dev/null
@@ -722,7 +722,7 @@ if ${ramfs}; then
         done
 
     einfo "${blue}${x}${nocolor} is an orphan directory."
-    einfo "Moving data to ${red}${arch}/${x//://}.${nocolor} \
+    einfo "Moving build to ${red}${arch}/${x//://}.${nocolor} \
         please wait..."
     do_exec mv ${excludes_dir}/${x}/* ${arch}/${x//://} \
         &>/dev/null
@@ -741,14 +741,14 @@ else
 
         einfo "${blue}${x}${nocolor} is either an orphan directory \
             or part of an old ${blue}ramfs (--ramfs)${nocolor} run."
-        einfo "Moving data to ${red}${arch}/${x//://}.${nocolor} \
+        einfo "Moving build to ${red}${arch}/${x//://}.${nocolor} \
             please wait..."
         do_exec mv ${excludes_dir}/${x}/* ${arch}/${x//://} &>/dev/null
         do_exec rm -rf ${excludes_dir}/${x}
     done
     )
 
-    einfo "Mounting livecd data files"
+    einfo "Mounting livecd build files"
     for i in "${livecd_excludes[@]}"; do
         do_exec mount -o bind ${excludes_dir}/${i//\//:} ${arch}/${i} \
             1>/dev/null
@@ -756,7 +756,7 @@ else
 fi
 
 [[ ! -d ${arch_dir}/mnt/livecd ]] && do_exec mkdir -p ${arch_dir}/mnt/\
-    livecd/{static,image,dynamic}
+livecd/{static,image,dynamic}
 
 einfo "Entering the livecd chroot environment"
 
@@ -1088,10 +1088,11 @@ do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
 
 do_exec cd \${initramfs_dir}
 do_exec mkdir -p proc sys dev mnt new-root lib mnt/livecd \
-    mnt/livecd/{static,dynamic,image} lib/modules
-do_exec cp -a ${data_dir}/initramfs/etc .
+mnt/livecd/{static,dynamic,image} lib/modules
 
+do_exec cp -a ${data_dir}/initramfs/etc .
 do_exec cp ${data_dir}/initramfs/init .
+
 do_exec chmod 755 init
 do_exec mknod dev/console c 5 1
 do_exec mknod dev/null c 1 3
@@ -1420,7 +1421,7 @@ CHROOT
 
 # Lets go already!
 [[ ! -d ${livedir} ]] && exec_chkdir ${livedir}
-do_exec cd ${livedir} || error "Failed to switch to livecd data \
+do_exec cd ${livedir} || error "Failed to switch to livecd build \
     directory! Exiting."
 do_exec check_deps && do_exec prepare_stage
 
