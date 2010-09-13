@@ -34,6 +34,7 @@ yes_tool=false
 letmein=false
 purge=false
 purge_kernel=false
+coprocessor=false
 ramfs=false
 removal=true
 menuconfig=false
@@ -321,6 +322,8 @@ while [ $# -gt 0 ]; do
                 einfo "Available procs are: ${blue}${!procs[@]}"
                 ewarn "Exiting now."
                 exit 1
+			else
+				coprocessor=true;
             fi
             ;;
         --coprocessor-list)
@@ -1175,9 +1178,9 @@ if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/\
 
     einfo "Compiling \${blue}\${arch}\${nocolor} kernel image"
     if declare -A &>/dev/null; then
-        if [ ! -z ${procs[${cpu}]} ]; then
+        if ${coprocessor}; then
             do_exec prepare_kernel_opts \${arch}
-        else
+        else7
             do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
                 /usr/src/linux/.config
         fi
@@ -1208,7 +1211,7 @@ ${kernel_sources}-\${date}
     do_kernel_compile
 
     if declare -A &>/dev/null; then
-        if [ ! -z ${procs[${cpu}]} ]; then
+        if ${coprocessor}; then
             do_exec prepare_kernel_opts \${arch}
         else
             do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
