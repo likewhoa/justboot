@@ -1148,7 +1148,7 @@ prepare_kernel_opts() {
 do_kernel_compile() {
 if ! grep "sys-kernel/${kernel_sources} symlink" \
     /etc/portage/package.use 1>/dev/null; then
-    do_exec echo "sys-kernel/${kernel_sources} symlink">>/etc/portage/\
+    echo "sys-kernel/${kernel_sources} symlink">>/etc/portage/\
 package.use
 fi
 
@@ -1175,13 +1175,13 @@ if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/\
 
     einfo "Compiling \${blue}\${arch}\${nocolor} kernel image"
     if declare -A &>/dev/null; then
-        elif [ ! -z ${procs[${cpu}]} ]; then
+        if [ ! -z ${procs[${cpu}]} ]; then
             do_exec prepare_kernel_opts \${arch}
-    else
-      do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
-        /usr/src/linux/.config
+        else
+            do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
+                /usr/src/linux/.config
+        fi
     fi
-
     do_exec cd /usr/src/linux || error "Failed to switch to \
         kernel source directory"
 
@@ -1199,20 +1199,21 @@ if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/\
   else
     if [ -f /usr/src/linux/.config ]; then
       einfo "Backing up old kernel config to \${red}/usr/src/linux/\
-        .config.\${date}\${nocolor}"
+.config.\${date}\${nocolor}"
       do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\
-        ${kernel_sources}-\${date}
+${kernel_sources}-\${date}
     fi
 
     einfo "Compiling \${red}\${arch}\${nocolor} kernel image"
     do_kernel_compile
 
     if declare -A &>/dev/null; then
-        elif [ ! -z ${procs[${cpu}]} ]; then
+        if [ ! -z ${procs[${cpu}]} ]; then
             do_exec prepare_kernel_opts \${arch}
-    else
-      do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
-        /usr/src/linux/.config
+        else
+            do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
+                /usr/src/linux/.config
+        fi
     fi
     do_exec cd /usr/src/linux || error "Failed to switch to \
         kernel source directory"
@@ -1384,7 +1385,7 @@ cat >> \${uclibc_script} << BUSYBOX
 env-update 1>/dev/null && source /etc/profile
 
 echo "Compiling Busybox"
-cd \${busybox} && do_exec make -s
+cd \${busybox} && make -s
 [ ! -f busybox.links ] && do_exec make busybox.links
 
 echo "Busybox has been compiled"
