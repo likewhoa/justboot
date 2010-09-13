@@ -1152,19 +1152,7 @@ if ! grep "sys-kernel/${kernel_sources} symlink" \
 package.use
 fi
 
-# Removed due to zen-overlay no longer in layman and zen-sources in tree
-if [[ ! \$(ls -d /var/db/pkg/app-portage/layman-[0-9]* &>/dev/null) \
-    && ${kernel_sources} = zen-sources ]]; then
-    einfo "Compiling \${blue}layman\${nocolor}"
-
-    do_exec emerge layman 1>/dev/null
-    do_exec layman -Sa zen-overlay 1>/dev/null && echo "source \
-        /usr/local/portage/layman/make.conf">>/etc/make.conf
-elif [[ ${kernel_sources} = zen-sources ]]; then
-    do_exec emerge ${kernel_sources} 1>/dev/null
-else
-    do_exec ${pms} ${kernel_sources} 1>/dev/null
-fi
+do_exec emerge ${kernel_sources} 1>/dev/null
 }
 
 # JustBOOT kernel compilation and customization options
@@ -1187,8 +1175,9 @@ if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/\
 
     einfo "Compiling \${blue}\${arch}\${nocolor} kernel image"
     if declare -A &>/dev/null; then
-      do_exec prepare_kernel_opts \${arch}
-    else 
+        elif [ ! -z ${procs[${cpu}]} ]; then
+            do_exec prepare_kernel_opts \${arch}
+    else
       do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
         /usr/src/linux/.config
     fi
@@ -1219,7 +1208,8 @@ if [[ ! -h /usr/src/linux || ! \$(ls -d /var/db/pkg/sys-kernel/\
     do_kernel_compile
 
     if declare -A &>/dev/null; then
-      do_exec prepare_kernel_opts \${arch}
+        elif [ ! -z ${procs[${cpu}]} ]; then
+            do_exec prepare_kernel_opts \${arch}
     else
       do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
         /usr/src/linux/.config
