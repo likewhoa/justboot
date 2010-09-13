@@ -89,7 +89,7 @@ exec_chkdir() {
 }
 exec_chklink() {
 	local src="${1}" dest="${2}"
-	[[ -h ${dest} ]] && { unlink ${dest}; ln -s ${src} ${dest}; }
+    ln -fs ${src} ${dest}
 }
 do_exec() {
   if ${debug}; then
@@ -289,18 +289,18 @@ while [ $# -gt 0 ]; do
 
             if [[ ${1#*=} = portage ]]; then
                 pms="emerge -q"
-            else 
+            else
                 pms="pmerge"
             fi
-            
+
             einfo "${red}${pms}${nocolor} permanently enabled, \
                 to override delete @confdir@/${arch}-pms"
-            
+
             touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
-            ;; 
+            ;;
         --gentoo-mirrors=*)
             opt="$(echo ${1#*=} | awk '{print$1}')"
-            gentoo_mirror="${opt/%\/}"
+            download_mirror="${opt/%\/}"
             GENTOO_MIRRORS="${1#*=}"
             ;;
         --rsync-mirror=*) SYNC="${1#*=}";;
@@ -351,7 +351,7 @@ done
 for i in ${arches[@]}; do
     if [[ ${arch} != ${i} ]]; then
         invalid_arch=true
-    else 
+    else
         invalid_arch=false
         break
     fi
@@ -429,7 +429,6 @@ if ${purge} || ${delete_arch}; then
     if ${removal}; then
         ewarn "Removing orphan build directory ${red}${src/\/${arch}}\
             ${nocolor}"
-        do_exec unlink ${src/\/${arch}//data} 
         do_exec rm -rf ${src/\/${arch}}
     fi
 
@@ -446,7 +445,7 @@ fi
 
 release_env() {
 einfo "Releasing livecd environment, please wait..."
-do_exec rm -rf ${arch}/tmp/* 
+do_exec rm -rf ${arch}/tmp/*
 do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir}
 
 if ${ramfs}; then
@@ -553,7 +552,6 @@ if [[ ! -d ${arch_dir} || ${livedir} = /var/tmp/justboot ]]; then
         if ! ${removal}; then
             ewarn "Removing old build directory \
                 ${red}${real_arch_dir/\/${arch}}${nocolor}"
-            do_exec unlink ${real_arch_dir/\/${arch}//data}
             do_exec rm -rf ${real_arch_dir/\/${arch}/}
         else
             ewarn "Removing old build directory ${red}\
@@ -591,7 +589,7 @@ if [ ! -d ${arch_dir} ]; then
     einfo "Building initial stage1 for ${blue}${arch}${nocolor}. \
         please wait..."
 
-    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}/autobuilds/\
+    do_exec wget -q ${download_mirror}/releases/${gentoo_arch}/autobuilds/\
 latest-stage3.txt
 
     local gentoo_stage=$(egrep -o \
@@ -603,7 +601,7 @@ latest-stage3.txt
     do_exec cd ${arch_dir} || error "Failed to switch to ${arch_dir}"
 
     einfo "Fetching gentoo ${gentoo_stage#*/} autobuild stage"
-    do_exec wget -q ${gentoo_mirror}/releases/${gentoo_arch}\
+    do_exec wget -q ${download_mirror}/releases/${gentoo_arch}\
 /autobuilds/${gentoo_stage}
 
     einfo "Extracting ${gentoo_stage#*/}"
@@ -611,7 +609,7 @@ latest-stage3.txt
     do_exec rm ${gentoo_stage#*/}
 
     einfo "Fetching portage tree snapshot"
-    do_exec wget -q ${gentoo_mirror}/snapshots/portage-latest.tar.bz2
+    do_exec wget -q ${download_mirror}/snapshots/portage-latest.tar.bz2
 
     einfo "Extracting portage-latest.tar.bz2"
     do_exec tar xjpf portage-latest.tar.bz2 -C usr/
@@ -892,7 +890,7 @@ do_exec mkisofs -volid \"${volid}\" -R -b boot/grub/stage2_eltorito \
     -hide-rr-moved -c boot.catalog -o \
     ${livedir}/${arch}-${kernel_sources}-${date}.iso -x files \
     ${livedir}/targets/${arch}/targets/
-  
+
 do_exec rm -rf ${livedir}/targets/${arch}/{targets,boot}
 
 einfo "All Done. ${arch} livecd located at \
@@ -933,7 +931,7 @@ error() {
 }
 exec_chklink() {
     local src="\${1}" dest="\${2}"
-    [[ -h \${dest} ]] && { unlink \${dest}; ln -s \${src} \${dest}; }
+    ln -fs \${src} \${dest}
 }
 
 do_exec() {
@@ -1138,15 +1136,15 @@ prepare_kernel_opts() {
             do_coprocessor ${arch}
             ;;
         x86_64)
-            if [[ ${procs[${cpu}]} != GENERIC_CPU ]]; then                                                                
+            if [[ ${procs[${cpu}]} != GENERIC_CPU ]]; then
                 sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU \
                     is not set/' -e "s/# CONFIG_${procs[${cpu}]} is \
                     not set/CONFIG_${procs[${cpu}]}=y/" \
                     ${kernel_sources} >.config-custom
             fi
             do_coprocessor ${arch}
-    esac                                                                   
- 
+    esac
+
     if [[ ${procs[${cpu}]} =~ ^(M486|GENERIC_CPU)$ ]]; then
         do_exec cp ${kernel_sources} /usr/src/linux/.config
     else

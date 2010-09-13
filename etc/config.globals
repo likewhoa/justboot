@@ -36,6 +36,6 @@ data_dir="${data_dir:-/usr/local/share/justboot}"
 arch_dir="${livedir}/${arch}"
 excludes_dir="${livedir}/excludes/${arch}"
 chroot_script=$(mktemp /tmp/XXX)
-gentoo_mirror="http://gentoo.mirrors.tds.net/gentoo"
+download_mirror="http://gentoo.mirrors.tds.net/gentoo"
 
 # vim: set et sts=4 sw=4 ts=4 tw=80:
