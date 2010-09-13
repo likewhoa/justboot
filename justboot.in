@@ -958,8 +958,7 @@ fi
 }
 
 prepare_configs() {
-do_exec cp -a ${data_dir}/etc/fstab /etc
-do_exec cp -a ${data_dir}/etc/portage /etc
+do_exec cp -a ${data_dir}/etc/{fstab,portage} /etc
 do_exec cp -a ${data_dir}/etc/conf.d/{hostname,net,clock} /etc/conf.d
 
 if [[ ! \$(grep JustBOOT /etc/make.conf 2>/dev/null) ]]; then
@@ -1339,7 +1338,7 @@ bootstrap() {
 # Enable livecd and user locales (see @confdir@/locale.gen)
 if grep '#en_US ISO-8859-1' /etc/locale.gen &>/dev/null; then
     einfo "Setting locales"
-    for i in "${locales[@]}" "#en_US ISO-8859-1"; do
+    for i in ${locales[@]} "#en_US ISO-8859-1"; do
         sed -i "s/#\${i}/\${i}/" /etc/locale.gen
     done
 fi
