@@ -322,8 +322,8 @@ while [ $# -gt 0 ]; do
                 einfo "Available procs are: ${blue}${!procs[@]}"
                 ewarn "Exiting now."
                 exit 1
-			else
-				coprocessor=true;
+            else
+                coprocessor=true
             fi
             ;;
         --coprocessor-list)
