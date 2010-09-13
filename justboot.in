@@ -584,7 +584,7 @@ case ${arch} in
     i[4,5,6]86) local gentoo_arch=x86 stage_arch=i686
 esac
 
-[[ ! -d ${arch_dir}/build ]] && { ewarn "Stage extraction was incomplete \
+[[ ! -f ${arch_dir}/build ]] && { ewarn "Stage extraction was incomplete \
     or interrupted by user"; rm -rf ${arch_dir}; }
 
 if [ ! -d ${arch_dir} ]; then
