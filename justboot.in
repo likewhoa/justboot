@@ -978,12 +978,13 @@ fi
 
 # Prepare the livecd required and user packages.
 prepare_packages() {
-local -a global_packages=( 'grub:sys-boot/grub' 'net-setup:app-misc/
-    livecd-tools' 'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/
-    reiser4progs' 'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/
-    xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/
-    mdadm' 'screen:app-misc/screen' 'rsync:net-misc/rsync' 'dhcpcd:
-    net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
+local -a global_packages=( 'grub:sys-boot/grub'
+	'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw'
+	'mkfs.reiser4:sys-fs/reiser4progs' 'mkfs.jfs:sys-fs/jfsutils'
+	'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs'
+	'mdadm:sys-fs/mdadm' 'screen:app-misc/screen'
+	'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd'
+	'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
 
 einfo "Preparing livecd and user packages. please wait..."
 for i in \${global_packages[@]}; do
@@ -1037,7 +1038,7 @@ einfo "Fetching Busybox sources"
 do_exec wget -q \${busybox_src_uri}
 
 einfo "Extracting Busybox sources"
-do_exec tar xvjpf \${busybox_archive}
+do_exec tar xjpf \${busybox_archive}
 }
 
 prepare_busybox() {
@@ -1147,8 +1148,8 @@ prepare_kernel_opts() {
 do_kernel_compile() {
 if ! grep "sys-kernel/${kernel_sources} symlink" \
     /etc/portage/package.use 1>/dev/null; then
-    echo "sys-kernel/${kernel_sources} symlink">>/etc/portage/\
-        package.use
+    do_exec echo "sys-kernel/${kernel_sources} symlink">>/etc/portage/\
+package.use
 fi
 
 # Removed due to zen-overlay no longer in layman and zen-sources in tree
@@ -1393,8 +1394,8 @@ cat >> \${uclibc_script} << BUSYBOX
 env-update 1>/dev/null && source /etc/profile
 
 echo "Compiling Busybox"
-cd \${busybox} && make -s
-[ ! -f busybox.links ] && make busybox.links
+cd \${busybox} && do_exec make -s
+[ ! -f busybox.links ] && do_exec make busybox.links
 
 echo "Busybox has been compiled"
 exit
