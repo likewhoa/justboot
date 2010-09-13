@@ -373,14 +373,14 @@ esac
 # Allow for user default $arch options i.e ~/.justboot/x86_64.conf
 [ -f ~/.justboot/${arch}.conf ] && . ~/.justboot/${arch}.conf
 
-# When no --build-directory is set we default to /usr/share/justboot, but
+# When no --build-directory is set we default to /var/tmp/justboot, but
 # first we check for an existing $arch symbolic link, so our $livedir
 # always points to the correct arch path
 
-if [[ -h /usr/share/justboot/${arch} && ! ${livedir} ]]; then
-    link=$(readlink /usr/share/justboot/${arch})
+if [[ -h /var/tmp/justboot/${arch} && ! ${livedir} ]]; then
+    link=$(readlink /var/tmp/justboot/${arch})
     livedir=${link/\/${arch}/}
-    data_dir=${livedir}/data
+    data_dir=@datdir@
     arch_dir=${livedir}/${arch}
     excludes_dir=${livedir}/excludes/${arch}
 fi
@@ -397,26 +397,26 @@ fi
 
 # Remove old build directories (--purge/--delete-arch)
 if ${purge} || ${delete_arch}; then
-    [[ ! -h /usr/share/justboot/${arch} && \
-        ! -d /usr/share/justboot/${arch} ]] && { einfo "No arch to \
+    [[ ! -h /var/tmp/justboot/${arch} && \
+        ! -d /var/tmp/justboot/${arch} ]] && { einfo "No arch to \
             purge or remove! Exiting"; exit 1; }
 
-    src=$(readlink /usr/share/justboot/${arch})
+    src=$(readlink /var/tmp/justboot/${arch})
     einfo "${red}--purge or --delete-arch flag used.${nocolor} \
         Removing ${red}${arch}${nocolor} sources."
 
-    if [[ -h /usr/share/justboot/${arch} ]]; then
-        do_exec rm -rf $(readlink /usr/share/justboot/excludes/${arch})
-        do_exec rm -rf $(readlink /usr/share/justboot/${arch})
+    if [[ -h /var/tmp/justboot/${arch} ]]; then
+        do_exec rm -rf $(readlink /var/tmp/justboot/excludes/${arch})
+        do_exec rm -rf $(readlink /var/tmp/justboot/${arch})
         
-        for i in /usr/share/justboot/excludes/${arch} \
-            /usr/share/justboot/${arch}; do
+        for i in /var/tmp/justboot/excludes/${arch} \
+            /var/tmp/justboot/${arch}; do
                 do_exec unlink ${i}
         done
 
-    elif [ -d /usr/share/justboot/${arch} ]; then
-        do_exec rm -rf /usr/share/justboot/${arch} \
-            /usr/share/justboot/excludes/${arch}
+    elif [ -d /var/tmp/justboot/${arch} ]; then
+        do_exec rm -rf /var/tmp/justboot/${arch} \
+            /var/tmp/justboot/excludes/${arch}
     fi
 
     for i in i{4,5,6}86 x86_64; do
@@ -518,18 +518,18 @@ done
 # through half of it once unless we are starting fresh or ran justboot
 # with --purge argument.
 prepare_stage() {
-if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
-    if [ -h /usr/share/justboot/${arch} ]; then
-        local real_arch_dir=$(readlink /usr/share/justboot/${arch})
+if [[ ! -d ${arch_dir} || ${livedir} = /var/tmp/justboot ]]; then
+    if [ -h /var/tmp/justboot/${arch} ]; then
+        local real_arch_dir=$(readlink /var/tmp/justboot/${arch})
         local real_excludes_dir=$(readlink \
-            /usr/share/justboot/excludes/${arch})
+            /var/tmp/justboot/excludes/${arch})
 
         einfo "Moving build directory from ${red}${real_arch_dir}\
             ${nocolor} to ${red}${livedir}/${arch}${nocolor}. \
             please wait..."
 
-        for i in /usr/share/justboot/${arch} \
-            /usr/share/justboot/excludes/${arch}; do
+        for i in /var/tmp/justboot/${arch} \
+            /var/tmp/justboot/excludes/${arch}; do
             do_exec unlink ${i}
         done
 
@@ -537,11 +537,11 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
         do_exec mv ${real_arch_dir} ${arch_dir}
         do_exec mv ${real_excludes_dir} ${excludes_dir}
 
-        if [[ ${livedir} != /usr/share/justboot ]]; then
-            exec_chklink ${arch_dir} /usr/share/justboot/${arch}
+        if [[ ${livedir} != /var/tmp/justboot ]]; then
+            exec_chklink ${arch_dir} /var/tmp/justboot/${arch}
             exec_chklink ${livedir}/excludes/${arch} \
-                /usr/share/justboot/excludes/${arch}
-            exec_chklink /usr/share/justboot/data ${data_dir}
+                /var/tmp/justboot/excludes/${arch}
+            exec_chklink @datdir@ ${data_dir}
         fi
 
         for i in i{4,5,6}86 x86_64; do
@@ -560,21 +560,21 @@ if [[ ! -d ${arch_dir} || ${livedir} = /usr/share/justboot ]]; then
                 ${real_arch_dir}${nocolor}"
             do_exec rm -rf ${real_arch_dir} ${real_excludes_dir}
         fi
-    elif [[ /usr/share/justboot != ${livedir} && \
-        -d /usr/share/justboot/${arch} ]]; then
+    elif [[ /var/tmp/justboot != ${livedir} && \
+        -d /var/tmp/justboot/${arch} ]]; then
 
         einfo "Moving build directory from ${red}/usr/share/\
             justboot/${arch}${nocolor} to ${red}${livedir}/${arch}\
             .${nocolor} please wait..."
 
         exec_chkdir ${livedir}/excludes
-        do_exec mv /usr/share/justboot/${arch} ${arch_dir}
-        do_exec mv /usr/share/justboot/excludes/${arch} ${excludes_dir}
+        do_exec mv /var/tmp/justboot/${arch} ${arch_dir}
+        do_exec mv /var/tmp/justboot/excludes/${arch} ${excludes_dir}
 
-        exec_chklink ${arch_dir} /usr/share/justboot/${arch}
+        exec_chklink ${arch_dir} /var/tmp/justboot/${arch}
         exec_chklink ${livedir}/excludes/${arch} \
-            /usr/share/justboot/excludes/${arch}
-        exec_chklink /usr/share/justboot/data ${data_dir}
+            /var/tmp/justboot/excludes/${arch}
+        exec_chklink @datdir@ ${data_dir}
     fi
 fi
 
@@ -618,7 +618,7 @@ latest-stage3.txt
     do_exec rm portage-latest.tar.bz2
 
     exec_chkdir ${excludes_dir}
-    exec_chkdir /usr/share/justboot/excludes
+    exec_chkdir /var/tmp/justboot/excludes
 
     for i in "${livecd_excludes[@]}"; do
       exec_chkdir ${excludes_dir}/${i//\//:}
@@ -628,11 +628,11 @@ latest-stage3.txt
     einfo "Done with stage1 for ${blue}${gentoo_arch}.${nocolor}"
     touch ${arch_dir}/build
 
-    if [[ ${livedir} != /usr/share/justboot ]]; then
-      exec_chklink ${arch_dir} /usr/share/justboot/${arch}
+    if [[ ${livedir} != /var/tmp/justboot ]]; then
+      exec_chklink ${arch_dir} /var/tmp/justboot/${arch}
       exec_chklink ${livedir}/excludes/${arch} \
-        /usr/share/justboot/excludes/${arch}
-      exec_chklink /usr/share/justboot/data ${data_dir}
+        /var/tmp/justboot/excludes/${arch}
+      exec_chklink @datdir@ ${data_dir}
     fi
 fi
   do_exec prepare_env
@@ -902,7 +902,7 @@ einfo "All Done. ${arch} livecd located at \
 cat >> ${chroot_script} << CHROOT
 #!/bin/bash
 arch=${arch}
-uclibc="${data_dir}/uclibc"
+uclibc="/var/tmp/justboot/uclibc"
 uclibc_script=\$(mktemp /tmp/XXX)
 uclibc_src_uri="http://gentoo.mirrors.tds.net/gentoo/experimental/\
 x86/embedded/stages/stage3-x86-uclibc-2008.0.tar.bz2"
@@ -985,7 +985,7 @@ CLEAN_DELAY="1"
 EMERGE_WARNING_DELAY="1"
 EMERGE_DEFAULT_OPTS="${EMERGE_DEFAULT_OPTS}"
 MAKECONF
-  fi
+fi
 }
 
 # Prepare the livecd required and user packages.
