@@ -650,8 +650,8 @@ do_exec mount -o bind /dev ${arch}/dev
 do_exec mount -o bind ${data_dir} ${arch}${data_dir}
 
 for x in "${livecd_excludes[@]}"; do
-    if [[ $(ls ${arch}/${x//://} 2>/dev/null | grep -v .keep | wc -l)\
-        != 0 ]]; then
+    if (shopt -s nullglob dotglob extglob; f=($x/!(.keep)); \
+    ((! ${#f[@]}))); then
         einfo "Detected newly added ${blue}${x}${nocolor} for livecd \
             excludes, moving build to ${red}${excludes_dir}/${x//\//:}\
             .${nocolor} please wait..."
