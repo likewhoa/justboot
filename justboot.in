@@ -1339,7 +1339,9 @@ bootstrap() {
 if grep '#en_US ISO-8859-1' /etc/locale.gen &>/dev/null; then
     einfo "Setting locales"
     for i in ${locales[@]} "#en_US ISO-8859-1"; do
-        sed -i "s/#\${i}/\${i}/" /etc/locale.gen
+        if ! egrep "^${i}" /etc/locale.gen &/dev/null; then
+            sed -i "s/#\${i}/\${i}/" /etc/locale.gen
+        fi
     done
 fi
 
