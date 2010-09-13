@@ -87,10 +87,6 @@ exec_chkdir() {
 	local dir="${1}"
 	[[ ! -d ${dir} ]] && mkdir -p ${dir}
 }
-exec_chklink() {
-	local src="${1}" dest="${2}"
-    ln -fs ${src} ${dest}
-}
 do_exec() {
   if ${debug}; then
     echo -e "\a${red}debug:${nocolor}${blue} (${@})"${nocolor}
@@ -537,10 +533,10 @@ if [[ ! -d ${arch_dir} || ${livedir} = /var/tmp/justboot ]]; then
         do_exec mv ${real_excludes_dir} ${excludes_dir}
 
         if [[ ${livedir} != /var/tmp/justboot ]]; then
-            exec_chklink ${arch_dir} /var/tmp/justboot/${arch}
-            exec_chklink ${livedir}/excludes/${arch} \
+            do_exec ln -sf ${arch_dir} /var/tmp/justboot/${arch}
+            do_exec ln -sf ${livedir}/excludes/${arch} \
                 /var/tmp/justboot/excludes/${arch}
-            exec_chklink @datdir@ ${data_dir}
+            do_exec ln -sf @datdir@ ${data_dir}
         fi
 
         for i in i{4,5,6}86 x86_64; do
@@ -569,10 +565,10 @@ if [[ ! -d ${arch_dir} || ${livedir} = /var/tmp/justboot ]]; then
         do_exec mv /var/tmp/justboot/${arch} ${arch_dir}
         do_exec mv /var/tmp/justboot/excludes/${arch} ${excludes_dir}
 
-        exec_chklink ${arch_dir} /var/tmp/justboot/${arch}
-        exec_chklink ${livedir}/excludes/${arch} \
+        do_exec ln -sf ${arch_dir} /var/tmp/justboot/${arch}
+        do_exec ln -sf ${livedir}/excludes/${arch} \
             /var/tmp/justboot/excludes/${arch}
-        exec_chklink @datdir@ ${data_dir}
+        do_exec ln -sf @datdir@ ${data_dir}
     fi
 fi
 
@@ -627,10 +623,10 @@ latest-stage3.txt
     touch ${arch_dir}/build
 
     if [[ ${livedir} != /var/tmp/justboot ]]; then
-      exec_chklink ${arch_dir} /var/tmp/justboot/${arch}
-      exec_chklink ${livedir}/excludes/${arch} \
+      do_exec ln -sf ${arch_dir} /var/tmp/justboot/${arch}
+      do_exec ln -sf ${livedir}/excludes/${arch} \
         /var/tmp/justboot/excludes/${arch}
-      exec_chklink @datdir@ ${data_dir}
+      do_exec ln -sf @datdir@ ${data_dir}
     fi
 fi
   do_exec prepare_env
@@ -929,11 +925,6 @@ error() {
     echo -e "\a\${red}.: "\${@}" :.\${nocolor}"
     exit 1
 }
-exec_chklink() {
-    local src="\${1}" dest="\${2}"
-    ln -fs \${src} \${dest}
-}
-
 do_exec() {
 if ${debug}; then
     echo -e "\a\${red}debug:\${nocolor}\${blue} (\${@})"\${nocolor}
