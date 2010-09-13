@@ -2,7 +2,7 @@
 # options or create a ~/.justboot/$arch.conf file.  See justboot --help
 # for command line options 
 ###
-CFLAGS="${CFLAGS:--Os -march=${make_arch:-${arch}} -pipe}"
+CFLAGS="${CFLAGS:--O2 -march=${make_arch:-${arch}} -pipe}"
 CHOST="${CHOST:-${arch}-pc-linux-gnu}" 
 MAKEOPTS="${MAKEOPTS:--j1}"
 LDFLAGS="${LDFLAGS:--Wl,-O1 -Wl,--sort-common -Wl,--warn-once}"
