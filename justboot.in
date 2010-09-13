@@ -563,7 +563,7 @@ if [[ ! -d ${arch_dir} || ${livedir} = /var/tmp/justboot ]]; then
     elif [[ /var/tmp/justboot != ${livedir} && \
         -d /var/tmp/justboot/${arch} ]]; then
 
-        einfo "Moving build directory from ${red}/usr/share/\
+        einfo "Moving build directory from ${red}/var/tmp/\
             justboot/${arch}${nocolor} to ${red}${livedir}/${arch}\
             .${nocolor} please wait..."
 
