@@ -16,7 +16,7 @@ candy distlocks sandbox}"
 PORTAGE_NICENESS="${PORTAGE_NICENESS:-7}"
 ACCEPT_KEYWORDS="${make_keywords:-${ACCEPT_KEYWORDS}}"
 GENTOO_MIRRORS="${GENTOO_MIRRORS:-http://distfiles.gentoo.org}"
-SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}" 
+SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}"
 [[ ${jobs} ]] && EMERGE_DEFAULT_OPTS="--jobs=${jobs}"
 
 ###
@@ -28,8 +28,8 @@ root_passwd="${root_passwd:-gentoo}"
 volid="${volid:-JustBOOT_livecd}"
 arch=${arch:-i486}
 cpu=${cpu:-${arch}}
+data_dir="${data_dir:-@datdir@}"
 livedir="${livedir:-/var/tmp/justboot}"
-data_dir="${data_dir:-/usr/local/share/justboot}"
 arch_dir="${livedir}/${arch}"
 excludes_dir="${livedir}/excludes/${arch}"
 chroot_script=$(mktemp /tmp/XXX)

@@ -6,7 +6,7 @@ AC_INIT([justboot], [0.5.0], [bugs@justboot.org])
 AM_INIT_AUTOMAKE([foreign])
 AC_CONFIG_SRCDIR([configure.ac])
 
-datdir=${datadir}/justboot
+datdir=${datarootdir}/justboot
 AC_SUBST([datdir])
 busyboxdir=${datdir}/busybox
 AC_SUBST([busyboxdir])
