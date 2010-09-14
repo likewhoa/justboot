@@ -23,7 +23,7 @@ SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}"
 # GLOBAL JUSTBOOT VARIABLES - DO NOT EDIT
 ###
 kernel_sources=${kernel_sources:-gentoo-sources}
-init_compression=${init_compression:-lzma}
+init_compression=${init_compression:-lzop}
 root_passwd="${root_passwd:-gentoo}"
 volid="${volid:-JustBOOT_livecd}"
 arch=${arch:-i486}
