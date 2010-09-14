@@ -387,7 +387,7 @@ if [[ -h /var/tmp/justboot/${arch} && ! ${livedir} ]]; then
 fi
 
 # Source JustBOOT(tm) global configuration options
-. @confdir@/config.globals
+. @datdir@/config.globals
 
 # Check if we previously set a package manager for compiles on $arch
 if [ ! -f @confdir@/${arch}-pms ]; then
