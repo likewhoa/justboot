@@ -8,4 +8,8 @@
 8. PPC,ARM support
 9. Gentoo ebuild
 10. Extra /init features
-11. testing editor
+11. Extend fetch_archive() to work with stage3 and portage snapshots
+12. Merge differences between user's old and new kernel configs when 
+user customizing default .configs
+13. Allow custom .config for kernels and busybox build
+

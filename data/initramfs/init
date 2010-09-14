@@ -14,7 +14,7 @@ do_modprobe_group() {
   if [ -f "${var_group}" ]; then
     for module in $(cat ${var_group}); do
       echo -e "Autoloading ${module}\n"
-      modprobe "${module}" > /dev/null 2>&1
+      modprobe "${module}" &>/dev/null
     done
   fi
 }

@@ -447,7 +447,8 @@ fi
 release_env() {
 einfo "Releasing livecd environment, please wait..."
 do_exec rm -rf ${arch}/tmp/*
-do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir}
+do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} ${arch_dir}\
+    /var/tmp/justboot/uclibc
 
 if ${ramfs}; then
     for x in "${livecd_excludes[@]}"; do
@@ -481,7 +482,7 @@ if ${ramfs}; then
     done
 else
     for x in "${livecd_excludes[@]}"; do
-        do_exec umount -l ${arch}/${x} &>/dev/null
+        do_exec umount ${arch}/${x} &>/dev/null
     done
 fi
 
@@ -583,6 +584,7 @@ case ${arch} in
     i[4,5,6]86) local gentoo_arch=x86 stage_arch=i686
 esac
 
+# Missing stage (possible ctrl+c) during extraction.
 [[ ! -f ${arch_dir}/build ]] && do_exec rm -rf ${arch_dir}
 
 if [ ! -d ${arch_dir} ]; then
@@ -633,7 +635,8 @@ latest-stage3.txt
       do_exec ln -sf @datdir@ ${data_dir}
     fi
 fi
-  do_exec prepare_env
+
+do_exec prepare_env
 }
 
 # After we have prepared the stage1 build, we need to detect/setup all
@@ -647,6 +650,14 @@ exec_chkdir ${arch_dir}/mnt/gentoo
 do_exec mount -o bind /proc ${arch}/proc
 do_exec mount -o bind /dev ${arch}/dev
 do_exec mount -o bind ${data_dir} ${arch}${data_dir}
+
+if [ -d /var/tmp/justboot/uclibc ]; then
+    einfo "Previous uclibc build directory found, binding to
+        ${arch_dir}/var/tmp/justboot/uclibc"
+    exec_chkdir ${arch_dir}/var/tmp/justboot/uclibc
+    do_exec mount -o bind /var/tmp/justboot/uclibc \
+        ${arch_dir}/var/tmp/justboot/uclibc
+fi
 
 for x in "${livecd_excludes[@]}"; do
     if (shopt -s nullglob dotglob; f=({arch}/${x//://}/!(.keep)); \
@@ -1049,12 +1060,22 @@ GRUB
 do_exec cp /boot/grub/menu.lst /boot/grub/grub.conf
 }
 
-fetch_busybox() { # TODO: make this work for other archives.
-einfo "Fetching Busybox sources"
-do_exec wget -q \${busybox_src_uri}
+fetch_archive() { 
+case $1 in
+    busybox)
+        einfo "Fetching Busybox sources"
+        do_exec wget -q \${busybox_src_uri}
 
-einfo "Extracting Busybox sources"
-do_exec tar xjpf \${busybox_archive}
+        einfo "Extracting Busybox sources"
+        do_exec tar xjpf \${busybox_archive}
+    ;;
+    uclibc)
+        einfo "Fetching Gentoo UCLIBC stage3 tarball"
+        do_exec wget -q \${uclibc_src_uri}
+
+        einfo "Extracting Gentoo uclibc stage3 tarball"
+        do_exec tar xjpf stage*
+esac
 }
 
 prepare_busybox() {
@@ -1062,14 +1083,10 @@ if [[ ! -d \${uclibc} ]]; then
     do_exec mkdir -p \${uclibc}
     do_exec cd \${uclibc}
 
-    einfo "Fetching Gentoo UCLIBC stage3 tarball"
-    do_exec wget -q \${uclibc_src_uri}
-
-    einfo "Extracting Gentoo uclibc stage3 tarball"
-    do_exec tar xjpf stage*
-    do_exec fetch_busybox
+    do_exec fetch_archive uclibc
+    do_exec fetch_archive busybox
 elif  [[ ! -d \${uclibc}/\${busybox} ]]; then
-    do_exec cd \${uclibc} && do_exec fetch_busybox
+    do_exec cd \${uclibc} && do_exec fetch_archive busybox
 fi
 
 do_exec cp -a ${data_dir}/busybox/.config \${uclibc}/\${busybox}
