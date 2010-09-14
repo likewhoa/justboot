@@ -800,8 +800,7 @@ einfo "Performing livecd cleanup. please wait..."
 do_exec cp -a ${arch_dir}/* ${target} &>/dev/null
 
 if [[ -d ${excludes_dir}/boot ]]; then
-    do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/\
-        ${arch}/targets 
+    do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/${arch}/targets 
     do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/${arch}
 else
     do_exec cp -a ${arch_dir}/boot ${livedir}/targets/${arch}/targets
