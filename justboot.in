@@ -949,6 +949,19 @@ if [[ "${pms}" = pmerge ]]; then
         do_exec emerge pkgcore 1>/dev/null
     fi
 fi
+
+# Check for initramfs compression tools
+local -a compression_tools=( 'lzma:app-arch/xz-utils'
+    'lzop:app-arch/lzop' ) 
+
+for i in \${compression_tools[@]}; do
+    if [ ${init_compression} = \${i/:*/} ]; then
+        if ! hash \${i/:*/} &>/dev/null; then
+            do_exec ${pms} \${i/*:/} 1>/dev/null
+            break
+        fi
+    fi
+done
 }
 
 prepare_configs() {
