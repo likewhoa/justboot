@@ -15,10 +15,7 @@ FEATURES="${FEATURES:-parallel-fetch userfetch userpriv usersandbox \
 candy distlocks sandbox}"
 PORTAGE_NICENESS="${PORTAGE_NICENESS:-7}"
 ACCEPT_KEYWORDS="${make_keywords:-${ACCEPT_KEYWORDS}}"
-GENTOO_MIRRORS="${GENTOO_MIRRORS:-http://gentoo.mirrors.tds.net/gentoo
-http://gentoo.arcticnetwork.ca \
-http://gd.tuwien.ac.at/opsys/linux/gentoo \
-http://ftp-stud.fht-esslingen.de/pub/Mirrors/gentoo}"
+GENTOO_MIRRORS="${GENTOO_MIRRORS:-http://distfiles.gentoo.org"
 SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}" 
 [[ ${jobs} ]] && EMERGE_DEFAULT_OPTS="--jobs=${jobs}"
 
@@ -36,6 +33,6 @@ data_dir="${data_dir:-/usr/local/share/justboot}"
 arch_dir="${livedir}/${arch}"
 excludes_dir="${livedir}/excludes/${arch}"
 chroot_script=$(mktemp /tmp/XXX)
-download_mirror="http://gentoo.mirrors.tds.net/gentoo"
+download_mirror="http://distfiles.gentoo.org"
 
 # vim: set et sts=4 sw=4 ts=4 tw=80:
