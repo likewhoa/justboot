@@ -1222,7 +1222,6 @@ ${kernel_sources}-\${date}
     fi
 
     einfo "Compiling \${red}\${arch}\${nocolor} kernel image"
-    do_kernel_compile
 
     if declare -A &>/dev/null; then
         if ${coprocessor}; then
