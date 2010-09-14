@@ -1,16 +1,16 @@
 ### Gentoo make.conf options - DO NOT EDIT instead use the command line
 # options or create a ~/.justboot/$arch.conf file.  See justboot --help
-# for command line options 
+# for command line options
 ###
 CFLAGS="${CFLAGS:--O2 -march=${make_arch:-${arch}} -pipe}"
-CHOST="${CHOST:-${arch}-pc-linux-gnu}" 
+CHOST="${CHOST:-${arch}-pc-linux-gnu}"
 MAKEOPTS="${MAKEOPTS:--j1}"
 LDFLAGS="${LDFLAGS:--Wl,-O1 -Wl,--sort-common -Wl,--warn-once}"
-CXXFLAGS="${CFLAGS}" 
+CXXFLAGS="${CFLAGS}"
 USE="${USE:--doc bash-completion subversion cvs userlocales ipv6 \
 -berkdb -tcpd bash-completion \ openntpd nptl nptlonly mmx sse sse2 \
 unicode} livecd cdroot git minimal threads -X"
-LINGUAS="${LINGUAS:-en}" 
+LINGUAS="${LINGUAS:-en}"
 FEATURES="${FEATURES:-parallel-fetch userfetch userpriv usersandbox \
 candy distlocks sandbox}"
 PORTAGE_NICENESS="${PORTAGE_NICENESS:-7}"
