@@ -438,7 +438,7 @@ if ${purge} || ${delete_arch}; then
 fi
 
 # The stage in which we umount all livecd build and copy any --ramfs
-# changes to the excluded directories.First we remove local livecd
+# changes to the excluded directories. First we remove local livecd
 # folders i.e proc,dev and the build directory, then we copy any ramfs
 # changes to the livecd exclude folders. See the
 # @confdir@/files/{ramfs-directories,excluded-directories}.lst file to
@@ -1086,7 +1086,7 @@ einfo "Done with busybox build"
 prepare_initramfs() {
 local initramfs_dir=/tmp/initramfs
 local kernel_src=\$(readlink /usr/src/linux)
-local kernel_module_src=\${kernel_src%*-}
+local kernel_module_src=\${kernel_src#*-}
 
 [[ -d \${initramfs_dir} ]] && do_exec rm -rf \${initramfs_dir}
 do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
