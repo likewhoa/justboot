@@ -15,7 +15,7 @@ FEATURES="${FEATURES:-parallel-fetch userfetch userpriv usersandbox \
 candy distlocks sandbox}"
 PORTAGE_NICENESS="${PORTAGE_NICENESS:-7}"
 ACCEPT_KEYWORDS="${make_keywords:-${ACCEPT_KEYWORDS}}"
-GENTOO_MIRRORS="${GENTOO_MIRRORS:-http://distfiles.gentoo.org"
+GENTOO_MIRRORS="${GENTOO_MIRRORS:-http://distfiles.gentoo.org}"
 SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}" 
 [[ ${jobs} ]] && EMERGE_DEFAULT_OPTS="--jobs=${jobs}"
 
