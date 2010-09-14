@@ -583,8 +583,7 @@ case ${arch} in
     i[4,5,6]86) local gentoo_arch=x86 stage_arch=i686
 esac
 
-[[ ! -f ${arch_dir}/build ]] && { ewarn "Stage extraction was incomplete \
-    or interrupted by user"; rm -rf ${arch_dir}; }
+[[ ! -f ${arch_dir}/build ]] && do_exec rm -rf ${arch_dir}
 
 if [ ! -d ${arch_dir} ]; then
     einfo "Building initial stage1 for ${blue}${arch}${nocolor}. \
@@ -1404,7 +1403,7 @@ env-update 1>/dev/null && source /etc/profile
 
 echo "Compiling Busybox"
 cd \${busybox} && make -s
-[ ! -f busybox.links ] && do_exec make busybox.links
+[ ! -f busybox.links ] && make busybox.links
 
 echo "Busybox has been compiled"
 exit
