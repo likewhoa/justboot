@@ -447,8 +447,15 @@ fi
 release_env() {
 einfo "Releasing livecd environment, please wait..."
 do_exec rm -rf ${arch}/tmp/*
-do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} ${arch_dir}\
-    /var/tmp/justboot/uclibc
+do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} 
+
+# Was the /var/tmp/justboot/uclibc directory binded to 
+# ${arch_dir}?
+if ${uclibc_bind}; then 
+    do_exec umount ${arch_dir}/var/tmp/justboot/uclibc
+else
+    
+fi
 
 if ${ramfs}; then
     for x in "${livecd_excludes[@]}"; do
