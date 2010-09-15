@@ -1,21 +1,21 @@
 ## Process this file with automake to produce Makefile.in
 
-dat_DATA = config.globals
+dat_DATA = justboot.globals
 
 edit = sed \
 	-e "s:[@]datdir[@]:$(datdir):g"
 
-config.globals: Makefile
+justboot.globals: Makefile
 	rm -f $@
 	srcdir=; \
 	test -f ./$@.in || srcdir=$(srcdir)/; \
 	$(edit) $${srcdir}$@.in > $@
 
-config.globals: $(srcdir)/config.globals.in
+justboot.globals: $(srcdir)/justboot.globals.in
 
-CLEANFILES = config.globals
+CLEANFILES = justboot.globals
 
-EXTRA_DIST = config.globals.in
+EXTRA_DIST = justboot.globals.in
 
 SUBDIRS = busybox etc initramfs kernel
 
