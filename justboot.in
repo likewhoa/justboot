@@ -41,6 +41,7 @@ ramfs=false
 removal=true
 menuconfig=false
 delete_arch=false
+uclibc_bin=false
 verbose=false
 debug=false
 bash4=false
@@ -454,7 +455,8 @@ do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir}
 if ${uclibc_bind}; then 
     do_exec umount ${arch_dir}/var/tmp/justboot/uclibc
 else
-    
+    do_exec mv ${arch_dir}/var/tmp/justboot/uclibc \
+        /var/tmp/justboot/
 fi
 
 if ${ramfs}; then
@@ -664,6 +666,7 @@ if [ -d /var/tmp/justboot/uclibc ]; then
     exec_chkdir ${arch_dir}/var/tmp/justboot/uclibc
     do_exec mount -o bind /var/tmp/justboot/uclibc \
         ${arch_dir}/var/tmp/justboot/uclibc
+    uclibc_bind=true
 fi
 
 for x in "${livecd_excludes[@]}"; do
