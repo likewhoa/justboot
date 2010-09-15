@@ -82,9 +82,15 @@ einfo() {
 ewarn() {
 	echo -e "\a${red}.: "${@}" :.${nocolor}"
 }
+justboot_exit() {
+    local exit_status=$?
+    echo "Exiting with ${1:-${exit_status:-0}}"
+    exit ${1:-${exit_status:-0}}
+}
 error() {
-	echo -e "\a${red}.: "${@}" :.${nocolor}"
-	exit 1
+    local exit_status=$?
+    echo -e "\a${red}.: "${@}" :.${nocolor}"
+    justboot_exit 1
 }
 exec_chkdir() {
 	local dir="${1}"
@@ -256,16 +262,16 @@ while [ $# -gt 0 ]; do
         --volid=*|-L)
             if [ ${1%%=*} = -L ]; then
                 volid="${2// /_}"
-                [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
+                [ ${#volid} -gt 32 ] && { error "${nocolor}Volume \
                     label ${red}\"${volid//_/ }\"${nocolor} is \
-                    greater than the 32 allowed characters"
+                    greater than the 32 allowed characters"; false; }
                 shift
             else
                 arg=${1##*=}
                 volid="${arg// /_}"
-                [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
+                [ ${#volid} -gt 32 ] && { error "${nocolor}Volume \
                     label ${red}\"${volid//_/ }\"${nocolor} is \
-                    greater than the 32 allowed characters"
+                    greater than the 32 allowed characters"; false; }
             fi
  
             einfo "Using ${red}\"${volid//_/ }\"${nocolor} for \
@@ -278,13 +284,15 @@ while [ $# -gt 0 ]; do
                 ${blue}\"${livedir}\"${nocolor}"
             ;;
         --package-manager=*)
-            [[ -f @confdir@/${arch}-pms ]] && error "Previously \
+            [[ -f @confdir@/${arch}-pms ]] && { error "Previously \
                 enabled package manager, delete \
-                @confdir@/${arch}-pms then try again to override"
+                @confdir@/${arch}-pms then try again to override";\
+                false; }
 
             [[ ${1#*=} =~ ^(pkgcore|portage)$ ]] || { einfo \
                 "--package-manager=${red}${1##*=}${nocolor} is \
-                invalid, try pkgcore or portage"; error "Exiting!"; }
+                invalid, try pkgcore or portage"; error "Exiting!";\
+                false; }
 
             if [[ ${1#*=} = portage ]]; then
                 pms="emerge -q"
@@ -343,7 +351,7 @@ while [ $# -gt 0 ]; do
         --debug|-db) debug=true; einfo "Running in debug mode";;
         --help|-h) print_help;;
         *) error "${blue}Invalid argument ${red}${1}!${nocolor}, \
-            run \"$0 --help\" for help."
+            run \"$0 --help\" for help."; false
     esac
     shift
 done
@@ -359,7 +367,7 @@ for i in ${arches[@]}; do
 done
 
 ${invalid_arch} && { einfo "${red}${arch}${nocolor} arch is \
-invalid, valid options are ${arches[*]}"; error "Exiting!!!"; }
+invalid, valid options are ${arches[*]}"; error "Exiting!!!"; false; }
 
 # Convert arch value for /etc/make.conf
 case ${arch} in
@@ -447,8 +455,15 @@ fi
 release_env() {
 einfo "Releasing livecd environment, please wait..."
 do_exec rm -rf ${arch}/tmp/*
-do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} ${arch_dir}\
-    /var/tmp/justboot/uclibc
+do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} 
+
+# Was the /var/tmp/justboot/uclibc directory binded to 
+# ${arch_dir}?
+if ${uclibc_bind}; then 
+    do_exec umount ${arch_dir}/var/tmp/justboot/uclibc
+else
+    
+fi
 
 if ${ramfs}; then
     for x in "${livecd_excludes[@]}"; do
@@ -489,9 +504,12 @@ fi
 [ ! $1 ] && do_exec clean_env
 }
 
-trap 'release_env now; exit 13' TERM INT
+trap 'release_env now' 1 2 3 15
 #  Cleans up the livecd environment if script is interrupted by
-#  Control-C.
+#  1/HUP, 2/INT, 3/QUIT, 15/TERM
+
+trap 'error "Script failed with error"' ERR
+# Trap errors
 
 # Check local system for required packages
 check_deps() {
@@ -600,7 +618,8 @@ latest-stage3.txt
     do_exec rm latest-stage3.txt
 
     exec_chkdir ${arch_dir} 
-    do_exec cd ${arch_dir} || error "Failed to switch to ${arch_dir}"
+    do_exec cd ${arch_dir} || { error "Failed to switch to \
+    ${arch_dir}"; false; }
 
     einfo "Fetching gentoo ${gentoo_stage#*/} autobuild stage"
     do_exec wget -q ${download_mirror}/releases/${gentoo_arch}\
@@ -781,11 +800,11 @@ else
         do_exec rm ${arch_dir}${chroot_script}
 fi
 
-[ $? = 13 ] && do_exec release_env now
+[ $? = 130 ] && do_exec release_env now
 
 einfo "Exiting the livecd chroot environment"
 do_exec env-update 1>/dev/null && do_exec source /etc/profile
-do_exec release_env 
+do_exec release_env
 }
 
 # Before we create our iso image we will clean up the environment of any
@@ -846,8 +865,8 @@ fi
 
 cat >> ${cleanup_script} << CLEANUP
 #!/bin/bash
-trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
-# Cleans up the environment if script interrupted by control-c.
+trap 'echo "User interrupted, Exiting"; exit 130' 2
+# Trap 2/INT (CTRL+C) signal
 
 echo "Entering livecd environment"
 env-update 1>/dev/null && source /etc/profile
@@ -870,7 +889,7 @@ else
     do_exec linux64 chroot ${target} ${cleanup_script}
 fi
 
-[ $? = 13 ] && do_exec release_env now
+[ $? = 130 ] && do_exec release_env now
 
 do_exec cd ${target}
 do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
@@ -905,6 +924,8 @@ do_exec rm -rf ${livedir}/targets/${arch}/{targets,boot}
 
 einfo "All Done. ${arch} livecd located at \
     ${livedir}/${arch}-${kernel_sources}-${date}.iso"
+
+justboot_exit 0
 }
 
 cat >> ${chroot_script} << CHROOT
@@ -923,8 +944,8 @@ blue="\$(tput setaf 4)"
 red="\$(tput setaf 1)"
 nocolor="\$(tput setaf 9)"
 
-trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
-# Cleans up the environment if script interrupted by control-c.
+trap 'echo "User interrupted, Exiting"; exit 130' 2
+# Trap 2/INT (CTRL+C) signal
 
 env-update 1>/dev/null && source /etc/profile
 
@@ -1435,8 +1456,8 @@ CHROOT
 
 # Lets go already!
 [[ ! -d ${livedir} ]] && exec_chkdir ${livedir}
-do_exec cd ${livedir} || error "Failed to switch to livecd build \
-    directory! Exiting."
+do_exec cd ${livedir} || { error "Failed to switch to livecd build \
+    directory! Exiting."; false; }
 do_exec check_deps && do_exec prepare_stage
 
 # vim: set et sts=4 sw=4 ts=4 tw=80:
