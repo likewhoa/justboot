@@ -1451,4 +1451,4 @@ do_exec cd ${livedir} || error "Failed to switch to livecd build \
     directory! Exiting."
 do_exec check_deps && do_exec prepare_stage
 
-# vim: set et sts=4 sw=4 ts=4 tw=80:
+# vim: set tabstop=4 softtabstop=4 shiftwidth=4 noexpandtab textwidth=80:
