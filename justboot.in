@@ -41,7 +41,7 @@ ramfs=false
 removal=true
 menuconfig=false
 delete_arch=false
-uclibc_bin=false
+uclibc_bind=false
 verbose=false
 debug=false
 bash4=false
@@ -1071,30 +1071,32 @@ do_exec cp /boot/grub/menu.lst /boot/grub/grub.conf
 }
 
 fetch_archive() { 
-case $1 in
-    busybox)
-        einfo "Fetching Busybox sources"
-        do_exec wget -q \${busybox_src_uri}
+while [ \$# -gt 0 ]; do
+    case "\$1" in
+        busybox)
+            einfo "Fetching Busybox sources"
+            do_exec wget -q \${busybox_src_uri}
 
-        einfo "Extracting Busybox sources"
-        do_exec tar xjpf \${busybox_archive}
-    ;;
-    uclibc)
-        einfo "Fetching Gentoo UCLIBC stage3 tarball"
-        do_exec wget -q \${uclibc_src_uri}
+            einfo "Extracting Busybox sources"
+            do_exec tar xjpf \${busybox_archive}
+        ;;
+        uclibc)
+            einfo "Fetching Gentoo UCLIBC stage3 tarball"
+            do_exec wget -q \${uclibc_src_uri}
 
-        einfo "Extracting Gentoo uclibc stage3 tarball"
-        do_exec tar xjpf stage*
-esac
+            einfo "Extracting Gentoo uclibc stage3 tarball"
+            do_exec tar xjpf stage*
+    esac
+    shift
+done
 }
 
 prepare_busybox() {
-if [[ ! -d \${uclibc} ]]; then
+if [ ! -d \${uclibc} ]; then
     do_exec mkdir -p \${uclibc}
     do_exec cd \${uclibc}
 
-    do_exec fetch_archive uclibc
-    do_exec fetch_archive busybox
+    do_exec fetch_archive uclibc busybox
 elif  [[ ! -d \${uclibc}/\${busybox} ]]; then
     do_exec cd \${uclibc} && do_exec fetch_archive busybox
 fi

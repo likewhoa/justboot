@@ -24,7 +24,7 @@ SYNC="${SYNC:-rsync://rsync.gentoo.org/gentoo-portage}"
 ###
 kernel_sources=${kernel_sources:-gentoo-sources}
 init_compression=${init_compression:-lzop}
-root_passwd="${root_passwd:-gentoo}"
+root_passwd="${root_passwd:-justboot}"
 volid="${volid:-JustBOOT_livecd}"
 arch=${arch:-i486}
 cpu=${cpu:-${arch}}
