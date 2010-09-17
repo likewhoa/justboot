@@ -156,11 +156,11 @@ Linux Kernel options: >=bash-4.0 Only
 
 Usage examples:
 
-Generate a x86_64 livecd using gentoo-sources and set 'gentoo'
+Generate a x86_64 livecd using gentoo-sources and set 'justboot'
     for root password
-# justboot --arch=x86_64 --root-passwd="gentoo"
+# justboot --arch=x86_64 --root-passwd="justboot"
 
-Generate a i686 livecd with 'let me in!' as password and 'gentoo' for
+Generate a i686 livecd with 'let me in!' as password and 'justboot' for
     livecd label
 # justboot --arch=i686 --volid="gentoo rocks" --root-passwd="let me in!"
 
@@ -1295,7 +1295,7 @@ prepare_useropts() {
 einfo "Setting root password to \"\${red}${root_passwd}\"\${nocolor}"
 
 # Set the livecd root password according to --root-passwd otherwise use
-# "gentoo" for root
+# "justboot" for root
 
 echo "root:${root_passwd}" | chpasswd 1>/dev/null # BUG #275555
 einfo "Root passwd set to \${red}\"${root_passwd}\"\${nocolor}"
