@@ -12,4 +12,4 @@
 12. Merge differences between user's old and new kernel configs when 
 user customizing default .configs
 13. Allow custom .config for kernels and busybox build
-
+14. Fix and merge changes in commit a5604dafed3d2a3953c6fcb7b0a6665be01fc555
