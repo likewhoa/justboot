@@ -671,7 +671,7 @@ fi
 
 for x in "${livecd_excludes[@]}"; do
     if (shopt -s nullglob dotglob; f=({arch}/${x//://}/!(.keep)); \
-    ((! ${#f[@]}))); then
+    (( ${#f[@]} ))); then
         einfo "Detected newly added ${blue}${x}${nocolor} for livecd \
             excludes, moving build to ${red}${excludes_dir}/${x//\//:}\
             .${nocolor} please wait..."
@@ -709,7 +709,7 @@ if ${ramfs}; then
         einfo "Mounting ${blue}${x}${nocolor} in memory.. please wait."
 
     if (shopt -s nullglob dotglob; f=(${arch}/${x}/!(.keep));\
-    ((! ${#f[@]}))); then
+    (( ${#f[@]} ))); then
         exec_chkdir ${excludes_dir}/${x//\//:}
         einfo "${blue}${arch}/${x}${nocolor} is not empty, moving \
             build to ${red}${excludes_dir}/${x//\//:}.${nocolor} \
@@ -830,7 +830,7 @@ fi
 
 for i in "${livecd_excludes[@]}"; do
     if (shopt -s nullglob dotglob; f=(${excludes_dir}/${i//\//:}/!(.keep));\
-    ((! ${#f[@]}))); then
+    (( ${#f[@]} ))); then
         einfo "Moving ${blue}${i}${nocolor} to ${red}${target}/\
             ${i}.${nocolor} please wait..."
         do_exec cp -a ${excludes_dir}/${i//\//:}/* ${target}/${i} \
@@ -845,7 +845,7 @@ if ${ramfs}; then
         done
 
 	if (shopt -s nullglob dotglob; f=(${excludes_dir}/${x//\//:}/!(.keep));\
-        ((! ${#f[@]}))); then
+        (( ${#f[@]} ))); then
             einfo "Moving ${blue}${x}${nocolor} to ${red}${target}/\
                 ${x}.${nocolor} please wait..."
             do_exec cp -a ${excludes_dir}/${x//\//:}/* ${target}/\
