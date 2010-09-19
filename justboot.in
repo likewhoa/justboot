@@ -784,18 +784,21 @@ do_exec chmod +x ${chroot_script} && do_exec mv ${chroot_script} \
 do_exec cp /etc/resolv.conf ${arch_dir}/etc
 
 if [[ ${arch} =~ ^i[4-6]86$ ]]; then
-    do_exec linux32 chroot ${arch_dir} ${chroot_script} && \
-        do_exec rm ${arch_dir}${chroot_script}
+    do_exec linux32 chroot ${arch_dir} ${chroot_script} 
 else
-    do_exec linux64 chroot ${arch_dir} ${chroot_script} && \
-        do_exec rm ${arch_dir}${chroot_script}
+    do_exec linux64 chroot ${arch_dir} ${chroot_script}
 fi
 
-[ $? = 13 ] && do_exec release_env now
-
-einfo "Exiting the livecd chroot environment"
-do_exec env-update 1>/dev/null && do_exec source /etc/profile
-do_exec release_env 
+if [[ $? =~ ^(1|13)$ ]]; then
+	einfo "Exiting the livecd chroot environment"
+	do_exec env-update 1>/dev/null && do_exec source /etc/profile
+	do_exec release_env now
+else
+	einfo "Exiting the livecd chroot environment"
+	do_exec env-update 1>/dev/null && do_exec source /etc/profile
+	do_exec rm ${arch_dir}${chroot_script}
+	do_exec release_env
+fi
 }
 
 # Before we create our iso image we will clean up the environment of any
@@ -880,7 +883,7 @@ else
     do_exec linux64 chroot ${target} ${cleanup_script}
 fi
 
-[ $? = 13 ] && do_exec release_env now
+[[ $? =~ ^(1|13)$ ]] && do_exec release_env now
 
 do_exec cd ${target}
 do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
@@ -1155,15 +1158,14 @@ do_coprocessor() {
 prepare_kernel_opts() {
 ( cd ${data_dir}/kernel/\${1} || error "Could not switch to kernel \
     source directory"
-
     case ${arch} in
         i[4,5,6]86)
             if [[ ${procs[${cpu}]} != M486 || ${procs[${cpu}]} =~ \
                 ^([3,5-6]86)$ ]]; then
                 sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' \
-                    -e "s/# CONFIG_${procs[${cpu}]} is not set/\
-                    CONFIG_${procs[${cpu}]}=y/" ${kernel_sources} \
-                    >.config-custom
+				-e "s/# CONFIG_${procs[${cpu}]} is not set/\
+				CONFIG_${procs[${cpu}]}=y/" ${kernel_sources} \
+				>.config-custom
             fi
 
             [[ ${arch} = i586 || ${procs[${cpu}]} = M586 ]] && \
@@ -1175,9 +1177,9 @@ prepare_kernel_opts() {
         x86_64)
             if [[ ${procs[${cpu}]} != GENERIC_CPU ]]; then
                 sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU \
-                    is not set/' -e "s/# CONFIG_${procs[${cpu}]} is \
-                    not set/CONFIG_${procs[${cpu}]}=y/" \
-                    ${kernel_sources} >.config-custom
+				is not set/' -e "s/# CONFIG_${procs[${cpu}]} is \
+				not set/CONFIG_${procs[${cpu}]}=y/" \
+				${kernel_sources} >.config-custom
             fi
             do_coprocessor ${arch}
     esac
@@ -1197,7 +1199,8 @@ if ! grep "sys-kernel/${kernel_sources} symlink" \
 package.use
 fi
 
-do_exec emerge ${kernel_sources} 1>/dev/null
+do_exec emerge ${kernel_sources} 1>/dev/null || error "Failed to emerge\
+	${kernel_sources}!!!"
 }
 
 # JustBOOT kernel compilation and customization options

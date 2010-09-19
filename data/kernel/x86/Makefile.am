@@ -22,4 +22,5 @@ dist_x86_DATA = \
 	zen-sources-MPENTIUM4.patch \
 	zen-sources-MPENTIUMII.patch \
 	zen-sources-MPENTIUMIII.patch \
-	zen-sources-MPENTIUMM.patch
+	zen-sources-MPENTIUMM.patch \
+	zen-sources-MATOM.patch
