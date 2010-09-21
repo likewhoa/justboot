@@ -3,7 +3,7 @@
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 new_root=/new-root
 console=/dev/console
-root_links="bin usr/portage sbin lib lib32 lib64 boot usr opt"
+root_links="bin sbin lib lib32 lib64 boot usr opt"
 root_trees="etc root home var"
 
 do_modprobe_group() {
@@ -70,6 +70,7 @@ cd ${new_root}/mnt/livecd
 echo "Copying squashfs data..." && cp -a ${root_trees} ${new_root}
 cd ${new_root}
 for dir in ${root_links}; do ln -s mnt/livecd/$dir $dir; done
+mkdir usr/portage
 )
  
 >/proc/sys/kernel/hotplug && umount /proc /sys
