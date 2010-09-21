@@ -888,9 +888,7 @@ fi
 do_exec cd ${target}
 do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
 
-if [[ ${ramfs} && ${ramfs_dir[@]} ]]; then
-	do_exec umount ${ramfs_dir[@]}
-fi
+if ${ramfs}; then do_exec umount ${ramfs_dir[@]}; fi
 
 for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb \
     var/cache/hald var/log root var/log; do
@@ -1161,7 +1159,7 @@ if [[ ${procs[${cpu}]} =~ ^M([5-6]86|PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ \
 			back to K8!"
 		cpu=K8
 	fi
-    patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
+    patch -sp0 <${kernel_sources}-${procs[${cpu}]}.patch
 fi
 }
 
