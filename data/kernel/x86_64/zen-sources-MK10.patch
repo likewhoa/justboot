@@ -1,32 +1,33 @@
---- original	2010-09-21 03:30:54.975000000 +0000
-+++ .config	2010-09-21 03:35:12.312999998 +0000
+--- original	2010-09-21 03:52:51.194000000 +0000
++++ .config	2010-09-21 03:54:52.198000000 +0000
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit
- # Linux kernel version: 2.6.35-gentoo-r7
--# Tue Sep 21 03:30:50 2010
-+# Tue Sep 21 03:35:12 2010
+ # Linux kernel version: 2.6.35-zen2 "Get the fuck out"
+-# Tue Sep 21 03:52:43 2010
++# Tue Sep 21 03:54:52 2010
  #
  CONFIG_64BIT=y
  # CONFIG_X86_32 is not set
-@@ -292,7 +292,7 @@
- # CONFIG_MPENTIUM4 is not set
+@@ -311,7 +311,7 @@
  # CONFIG_MK6 is not set
  # CONFIG_MK7 is not set
--# CONFIG_MK8 is not set
-+CONFIG_MK8=y
+ # CONFIG_MK8 is not set
+-# CONFIG_MK10 is not set
++CONFIG_MK10=y
  # CONFIG_MCRUSOE is not set
  # CONFIG_MEFFICEON is not set
  # CONFIG_MWINCHIPC6 is not set
-@@ -305,13 +305,15 @@
+@@ -324,7 +324,7 @@
  # CONFIG_MPSC is not set
  # CONFIG_MCORE2 is not set
  # CONFIG_MATOM is not set
 -CONFIG_GENERIC_CPU=y
 +# CONFIG_GENERIC_CPU is not set
+ CONFIG_X86_MARCH_NATIVE=y
  CONFIG_X86_CPU=y
  CONFIG_X86_INTERNODE_CACHE_SHIFT=6
- CONFIG_X86_CMPXCHG=y
+@@ -332,6 +332,8 @@
  CONFIG_X86_L1_CACHE_SHIFT=6
  CONFIG_X86_XADD=y
  CONFIG_X86_WP_WORKS_OK=y
@@ -35,7 +36,7 @@
  CONFIG_X86_TSC=y
  CONFIG_X86_CMPXCHG64=y
  CONFIG_X86_CMOV=y
-@@ -324,8 +326,7 @@
+@@ -345,8 +347,7 @@
  CONFIG_HPET_EMULATE_RTC=y
  CONFIG_DMI=y
  CONFIG_GART_IOMMU=y
@@ -45,7 +46,7 @@
  CONFIG_AMD_IOMMU=y
  # CONFIG_AMD_IOMMU_STATS is not set
  CONFIG_SWIOTLB=y
-@@ -333,7 +334,7 @@
+@@ -354,7 +355,7 @@
  CONFIG_IOMMU_API=y
  # CONFIG_MAXSMP is not set
  CONFIG_NR_CPUS=16
@@ -54,7 +55,7 @@
  CONFIG_SCHED_MC=y
  CONFIG_PREEMPT_NONE=y
  # CONFIG_PREEMPT_VOLUNTARY is not set
-@@ -342,14 +343,13 @@
+@@ -363,14 +364,13 @@
  CONFIG_X86_IO_APIC=y
  # CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS is not set
  CONFIG_X86_MCE=y
@@ -71,7 +72,7 @@
  CONFIG_MICROCODE_AMD=y
  CONFIG_MICROCODE_OLD_INTERFACE=y
  CONFIG_X86_MSR=m
-@@ -3630,7 +3630,7 @@
+@@ -3691,7 +3691,7 @@
  CONFIG_KVM_MMIO=y
  CONFIG_VIRTUALIZATION=y
  CONFIG_KVM=m
