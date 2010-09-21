@@ -820,7 +820,7 @@ for i in "${target}" "${livedir}/targets/${arch}/targets/boot" \
     exec_chkdir ${i}
 done
 
-einfo "Performing livecd cleanup. please wait..."
+einfo "Performing livecd cleanup. please wait as this can take a while..."
 do_exec cp -a ${arch_dir}/* ${target} &>/dev/null
 
 if [[ -d ${excludes_dir}/boot ]]; then
@@ -834,10 +834,10 @@ fi
 for i in "${livecd_excludes[@]}"; do
     if (shopt -s nullglob dotglob; f=(${excludes_dir}/${i//\//:}/!(.keep));\
     (( ${#f[@]} ))); then
-        einfo "Moving ${blue}${i}${nocolor} to ${red}${target}/\
-            ${i}.${nocolor} please wait..."
+        einfo "Copying ${blue}${i}${nocolor} to ${red}${target}/\
+${i}.${nocolor} please wait..."
         do_exec cp -a ${excludes_dir}/${i//\//:}/* ${target}/${i} \
-            &>/dev/null  
+&>/dev/null  
     fi
 done
 
@@ -849,10 +849,10 @@ if ${ramfs}; then
 
 	if (shopt -s nullglob dotglob; f=(${excludes_dir}/${x//\//:}/!(.keep));\
         (( ${#f[@]} ))); then
-            einfo "Moving ${blue}${x}${nocolor} to ${red}${target}/\
-                ${x}.${nocolor} please wait..."
+            einfo "Copying ${blue}${x}${nocolor} to ${red}${target}/\
+${x}.${nocolor} please wait..."
             do_exec cp -a ${excludes_dir}/${x//\//:}/* ${target}/\
-                ${x} &>/dev/null
+${x} &>/dev/null
         fi
     done
 fi
@@ -887,6 +887,10 @@ fi
 
 do_exec cd ${target}
 do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
+
+if [[ ${ramfs} && ${ramfs_dir[@]} ]]; then
+	do_exec umount ${ramfs_dir[@]}
+fi
 
 for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb \
     var/cache/hald var/log root var/log; do
@@ -1147,49 +1151,29 @@ find | cpio --quiet -o -H newc | ${init_compression} -9 \
 # argument (>=bash-4.0 Only)
 do_coprocessor() {
 # Detect non x86_64 processors with --co-processor=x86_64
-[[ \$1 = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ \
+[[ \${1} = x86_64 && ${procs[${cpu}]} =~ ^(M[4-6]86|MPENTIUMM|MK[6-7])$ \
     ]] && { ewarn "${procs[${cpu}]} invalid for x86_64 arch"; return 1; }
 
 # We only patch what is needed here and we skip i{5,6}86 arches
-[[ ${procs[${cpu}]} =~ ^M(PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ ]] \
+[[ ${procs[${cpu}]} =~ ^M([5-6]86|PENTIUM(4|M|II|III)|CORE2|ATOM|K[6-8])$ ]] \
     && patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
 }
 
 prepare_kernel_opts() {
-( cd ${data_dir}/kernel/\${1} || error "Could not switch to kernel \
-    source directory"
-    case ${arch} in
-        i[4,5,6]86)
-            if [[ ${procs[${cpu}]} != M486 || ${procs[${cpu}]} =~ \
-                ^([3,5-6]86)$ ]]; then
-                sed -e 's/CONFIG_M486=y/# CONFIG_M486 is not set/' \
-				-e "s/# CONFIG_${procs[${cpu}]} is not set/\
-				CONFIG_${procs[${cpu}]}=y/" ${kernel_sources} \
-				>.config-custom
-            fi
+cd ${data_dir}/kernel/\${1} || error "Could not switch to kernel \
+	source directory"
 
-            [[ ${arch} = i586 || ${procs[${cpu}]} = M586 ]] && \
-                patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
-            [[ ${arch} = i686 || ${procs[${cpu}]} = M686 ]] && \
-                patch -p0 <${kernel_sources}-${procs[${cpu}]}.patch
-            do_coprocessor ${arch}
-            ;;
-        x86_64)
-            if [[ ${procs[${cpu}]} != GENERIC_CPU ]]; then
-                sed -e 's/CONFIG_GENERIC_CPU=y/# CONFIG_GENERIC_CPU \
-				is not set/' -e "s/# CONFIG_${procs[${cpu}]} is \
-				not set/CONFIG_${procs[${cpu}]}=y/" \
-				${kernel_sources} >.config-custom
-            fi
-            do_coprocessor ${arch}
-    esac
-
-    if [[ ${procs[${cpu}]} =~ ^(M486|GENERIC_CPU)$ ]]; then
-        do_exec cp ${kernel_sources} /usr/src/linux/.config
-    else
-        do_exec cp .config-custom /usr/src/linux/.config
-    fi
-)
+# --coprocessor options are only patched in if we used anything besides
+# i486 or x86_64.
+if [[ ${procs[${cpu}]} =~ ^(M486|GENERIC_CPU)$ ]]; then
+	do_exec cp ${kernel_sources} /usr/src/linux/.config
+else
+	do_exec cp ${kernel_sources} .config
+	case ${arch} in
+		i[4,5,6]86) do_coprocessor ${arch};;
+		x86_64) do_coprocessor ${arch}
+	esac
+fi
 }
 
 do_kernel_compile() {
@@ -1211,6 +1195,14 @@ if ${purge_kernel}; then
     ewarn "--purge-kernel used, removing sources..."
     do_exec unlink /usr/src/linux
     do_exec rm -rf /usr/src/* /lib/modules/*
+elif [ -h /usr/src/linux ]; then
+	# Create a fresh link to kernel source
+	local kernel_name=${kernel_sources%-*}
+	local kernel_link=\$(ls -l /usr/src/|grep \${kernel_name}|tail -n1|awk \
+'{print\$9}')
+	do_exec cd /usr/src
+	do_exec unlink linux
+	do_exec ln -s \${kernel_link} linux
 fi
 
 # Convert x86 arch for proper usage in kernel
@@ -1225,13 +1217,16 @@ ${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
     if declare -A &>/dev/null; then
         if ${coprocessor}; then
             do_exec prepare_kernel_opts \${arch}
+			do_exec mv ${data_dir}/kernel/\${arch}/.config \
+/usr/src/linux/.config
         else
             do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
-                /usr/src/linux/.config
+/usr/src/linux/.config
         fi
     fi
-    do_exec cd /usr/src/linux || error "Failed to switch to \
-        kernel source directory"
+	
+	do_exec cd /usr/src/linux || error "Failed to switch to \
+		kernel source directory"
 
     if ${menuconfig}; then
       do_exec make menuconfig
@@ -1244,7 +1239,7 @@ ${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
     einfo "\${red}\${arch}\${nocolor} kernel compiled, preparing \
         initramfs image."
     do_exec prepare_initramfs
-  else
+else
     if [ -f /usr/src/linux/.config ]; then
       einfo "Backing up old kernel config to \${red}/usr/src/linux/\
 .config.\${date}\${nocolor}"
@@ -1257,13 +1252,16 @@ ${kernel_sources}-\${date}
     if declare -A &>/dev/null; then
         if ${coprocessor}; then
             do_exec prepare_kernel_opts \${arch}
-        else
+			do_exec mv ${data_dir}/kernel/\${arch}/.config \
+/usr/src/linux/.config
+		else
             do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
-                /usr/src/linux/.config
+/usr/src/linux/.config
         fi
     fi
-    do_exec cd /usr/src/linux || error "Failed to switch to \
-        kernel source directory"
+
+	do_exec cd /usr/src/linux || error "Failed to switch to \
+		kernel source directory"
 
     if ${menuconfig}; then
       do_exec make menuconfig
@@ -1276,22 +1274,22 @@ ${kernel_sources}-\${date}
     einfo "\${red}\${arch}\${nocolor} kernel compiled, preparing \
         initramfs image"
     do_exec prepare_initramfs
-  fi
+fi
 
-  do_exec cd /usr/src/linux || error "Failed to switch to \
-    kernel source directory"
-  do_exec cp arch/\${arch}/boot/bzImage /boot/vmlinuz
-  do_exec update-modules
+do_exec cd /usr/src/linux || error "Failed to switch to \
+	kernel source directory"
+do_exec cp arch/\${arch}/boot/bzImage /boot/vmlinuz
+do_exec update-modules
 
-  einfo "Compiling \${blue}lvm2\${nocolor}"
-  do_exec ${pms} lvm2 1>/dev/null
+einfo "Compiling \${blue}lvm2\${nocolor}"
+do_exec ${pms} lvm2 1>/dev/null
 
-  einfo "Done with \${red}\${arch}\${nocolor} kernel"
-  if ${letmein}; then
-    einfo "letmein flag used. Type \${red}exit\${nocolor} when \
-        finished to continue with build."
-    exec /bin/bash -i
-  fi
+einfo "Done with \${red}\${arch}\${nocolor} kernel"
+if ${letmein}; then
+	einfo "letmein flag used. Type \${red}exit\${nocolor} when \
+		finished to continue with build."
+	exec /bin/bash -i
+fi
 }
 
 prepare_useropts() {
@@ -1300,7 +1298,7 @@ einfo "Setting root password to \"\${red}${root_passwd}\"\${nocolor}"
 # Set the livecd root password according to --root-passwd otherwise use
 # "justboot" for root
 
-echo "root:${root_passwd}" | chpasswd 1>/dev/null # BUG #275555
+echo "root:${root_passwd}" | chpasswd 1>/dev/null  
 einfo "Root passwd set to \${red}\"${root_passwd}\"\${nocolor}"
 }
 

@@ -12,6 +12,7 @@ dist_x86_DATA = \
 	gentoo-sources-MPENTIUMII.patch \
 	gentoo-sources-MPENTIUMIII.patch \
 	gentoo-sources-MPENTIUMM.patch \
+	gentoo-sources-MATOM.patch \
 	zen-sources \
 	zen-sources-M586.patch \
 	zen-sources-M686.patch \

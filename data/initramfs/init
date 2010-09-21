@@ -2,78 +2,80 @@
 
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 new_root=/new-root
-command_line=$(cat /proc/cmdline)
 console=/dev/console
-root_links="bin sbin lib lib32 lib64 boot usr opt"
+root_links="bin usr/portage sbin lib lib32 lib64 boot usr opt"
 root_trees="etc root home var"
 
-
 do_modprobe_group() {
-  local var_group="/etc/modules/$1"
+local var_group="/etc/modules/$1"
 
-  if [ -f "${var_group}" ]; then
-    for module in $(cat ${var_group}); do
-      echo -e "Autoloading ${module}\n"
-      modprobe "${module}" &>/dev/null
-    done
-  fi
+if [ -f "${var_group}" ]; then
+	for module in $(cat ${var_group}); do
+		echo -e "Autoloading ${module}\n"
+		modprobe "${module}" &>/dev/null
+	done
+fi
 }
 
-  # Clean input/output
-  exec >${console} <${console} 2>&1
-  clear
-  echo "Welcome to the JustBOOT(tm) livecd"
+# Clean input/output
+exec >${console} <${console} 2>&1
+clear
+echo "Welcome to the JustBOOT(tm) livecd"
 
-  umask 0077
+umask 0077
 
-  for i in dev sys proc tmp; do
-    [ ! -d "/${i}" ] && mkdir -p "/${i}"
-  done
+for i in dev sys proc tmp; do
+	[ ! -d "/${i}" ] && mkdir -p "/${i}"
+done
 
-  mount -t sysfs none /sys
-  mount -t proc  none /proc
-  mount -t tmpfs tmpfs /dev
+mount -t sysfs none /sys
+mount -t proc  none /proc
+mount -t tmpfs tmpfs /dev
 
-  echo "/sbin/modprobe" > /proc/sys/kernel/modprobe
-  mdev -s && echo "/sbin/mdev" > /proc/sys/kernel/hotplug
+command_line=$(cat /proc/cmdline)
 
-  do_modprobe_group boot
+echo "/sbin/modprobe" > /proc/sys/kernel/modprobe
+mdev -s && echo "/sbin/mdev" > /proc/sys/kernel/hotplug
 
-  mount -n -t tmpfs tmpfs ${new_root}
-  for dir in dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp mnt/gentoo sys proc; do
-    mkdir ${new_root}/${dir} && chmod 755 ${new_root}/${dir}
-  done
+do_modprobe_group boot
 
-  for x in /dev/sr* /dev/sd*; do
-    mount -t iso9660 ${x} /mnt/livecd/image
-      if [ "$?" == "0" ]; then cdrom=${x}; break; fi
-  done
+mount -n -t tmpfs tmpfs ${new_root}
+for dir in dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp \
+mnt/gentoo sys proc; do
+	mkdir ${new_root}/${dir} && chmod 755 ${new_root}/${dir}
+done
 
-  if [ "${cdrom}" == "" ]; then
-      echo "FATAL --- LIVECD NOT FOUND"
-      exec /bin/sh
-      exit
-  fi
+for x in /dev/sr* /dev/sd*; do
+	mount -t iso9660 ${x} /mnt/livecd/image
+	if [ "$?" == "0" ]; then cdrom=${x}; break; fi
+done
 
-  echo "LiveCD found in ${cdrom}"
+if [ "${cdrom}" == "" ]; then
+	echo "FATAL --- LIVECD NOT FOUND"
+	exec /bin/sh
+	exit
+fi
 
-  for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
-    mknod ${new_root}/dev/$node
-  done
+echo "LiveCD found in ${cdrom}"
 
-  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs ${new_root}/mnt/livecd
+for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
+	mknod ${new_root}/dev/$node
+done
 
-  ( 
-  cd ${new_root}/mnt/livecd
-  echo "Copying squashfs data..." && cp -a ${root_trees} ${new_root}
-  cd ${new_root}
-  for dir in ${root_links}; do ln -s mnt/livecd/$dir $dir; done
-  )
+mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs \
+${new_root}/mnt/livecd
+
+( 
+cd ${new_root}/mnt/livecd
+echo "Copying squashfs data..." && cp -a ${root_trees} ${new_root}
+cd ${new_root}
+for dir in ${root_links}; do ln -s mnt/livecd/$dir $dir; done
+)
  
-  >/proc/sys/kernel/hotplug && umount /proc /sys
+>/proc/sys/kernel/hotplug && umount /proc /sys
 
-  echo "Starting init"
-  exec switch_root -c ${console} ${new_root} /sbin/init 
+echo "Starting init"
+exec switch_root -c ${console} ${new_root} /sbin/init 
 
 # AUFS method - zen-sources only    
 #  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs  /mnt/livecd/static
@@ -86,6 +88,6 @@ do_modprobe_group() {
 #  echo "Starting init"
 #  exec switch_root /new-root /sbin/init
 
-  echo "Failed to switch root!!"
-  echo "Dropping to minimal shell"
-  exec /bin/sh
+echo "Failed to switch root!!"
+echo "Dropping to minimal shell"
+exec /bin/sh

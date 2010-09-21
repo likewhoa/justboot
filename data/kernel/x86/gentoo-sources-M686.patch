@@ -1,11 +1,11 @@
---- custom	2010-09-08 17:55:12.793000006 +0000
-+++ .config	2010-09-08 17:55:47.074000006 +0000
+--- original	2010-09-20 12:41:13.390000000 +0000
++++ .config	2010-09-20 12:43:44.610999999 +0000
 @@ -1,7 +1,7 @@
  #
  # Automatically generated make config: don't edit
- # Linux kernel version: 2.6.35-gentoo-r5
--# Wed Sep  8 03:16:34 2010
-+# Wed Sep  8 17:55:47 2010
+ # Linux kernel version: 2.6.35-gentoo-r7
+-# Mon Sep 20 12:41:08 2010
++# Mon Sep 20 12:43:44 2010
  #
  # CONFIG_64BIT is not set
  CONFIG_X86_32=y
@@ -23,7 +23,21 @@
  # CONFIG_DEBUG_PERF_USE_VMALLOC is not set
  CONFIG_VM_EVENT_COUNTERS=y
  CONFIG_PCI_QUIRKS=y
-@@ -292,15 +294,17 @@
+@@ -259,11 +261,11 @@
+ # CONFIG_NO_BOOTMEM is not set
+ # CONFIG_MEMTEST is not set
+ # CONFIG_M386 is not set
+-CONFIG_M486=y
++# CONFIG_M486 is not set
+ # CONFIG_M586 is not set
+ # CONFIG_M586TSC is not set
+ # CONFIG_M586MMX is not set
+-# CONFIG_M686 is not set
++CONFIG_M686=y
+ # CONFIG_MPENTIUMII is not set
+ # CONFIG_MPENTIUMIII is not set
+ # CONFIG_MPENTIUMM is not set
+@@ -291,15 +293,17 @@
  CONFIG_X86_L1_CACHE_SHIFT=6
  CONFIG_X86_XADD=y
  CONFIG_X86_PPRO_FENCE=y
@@ -45,3 +59,12 @@
  # CONFIG_PROCESSOR_SELECT is not set
  CONFIG_CPU_SUP_INTEL=y
  CONFIG_CPU_SUP_CYRIX_32=y
+@@ -312,7 +316,7 @@
+ CONFIG_DMI=y
+ # CONFIG_IOMMU_HELPER is not set
+ CONFIG_IOMMU_API=y
+-CONFIG_NR_CPUS=2
++CONFIG_NR_CPUS=8
+ # CONFIG_SCHED_SMT is not set
+ # CONFIG_SCHED_MC is not set
+ CONFIG_PREEMPT_NONE=y
