@@ -1,8 +1,8 @@
+sys-boot/syslinux -custom-cflags
 dev-libs/klibc -n32 
 app-admin/eselect bash-completion
 net-p2p/gnunet guile ipv6 ncurses nls
 app-admin/kedpm 
-app-admin/pwgen livecd
 app-arch/sharutils nls
 app-arch/zip crypt
 app-cdr/cdrdao encode

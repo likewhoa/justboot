@@ -78,7 +78,6 @@ nocolor="$(tput setaf 9)"
 # Main script functions
 einfo() {
 	echo -e ".: "${@}" :."
-	sleep 1
 }
 ewarn() {
 	echo -e "\a${red}.: "${@}" :.${nocolor}"
@@ -505,7 +504,7 @@ trap 'release_env now; exit 13' TERM INT
 # Check local system for required packages
 check_deps() {
 local -a deps=( 'mksquashfs:sys-fs/squashfs-tools'
-    'mkisofs:virtual/cdrtools' )
+    'mkisofs:virtual/cdrtools' 'isohybrid:sys-boot/syslinux' )
 
 if [[ "${pms}" = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then
@@ -801,6 +800,39 @@ else
 fi
 }
 
+prepare_bootloader() {
+# Always a fresh isolinux.cfg, eventually justboot will parse for changes
+# then update. We will also populate the isolinux directory with the
+# required files for isolinux.
+do_exec cp /usr/share/syslinux/isolinux.bin ${livedir}/targets/boot/isolinux
+do_exec mv ${livedir}/targets/boot/vmlinuz ${livedir}/targets/boot/isolinux
+do_exec mv \
+${livedir}/targets/boot/${arch}-initramfs_data.cpio.${init_compression} \
+${livedir}/targets/boot/isolinux/${arch}-initramfs_data.${init_compression}
+
+cat >> ${livedir}/targets/boot/isolinux/boot.msg << BOOTMSG
+Welcome to the JustBOOT livecd...
+BOOTMSG
+
+cat >> ${livedir}/targets/boot/isolinux/isolinux.cfg << ISOLINUX
+default ${kernel_sources%-*} 
+timeout 10
+prompt 5
+display boot.msg
+F1 kernels.msg
+
+label ${kernel_sources%-*}
+	kernel vmlinuz
+	append root=/dev/loop0 init=/init \
+initrd=${arch}-initramfs_data.${init_compression} vga=791
+
+label ${kernel_sources%-*}-nofb
+	kernel vmlinuz
+	append root=/dev/loop0 init=/init \
+initrd=${arch}-initramfs_data.${init_compression}
+ISOLINUX
+}
+
 # Before we create our iso image we will clean up the environment of any
 # excluded packages and common directories or files that we don't
 # require for livecd operations ( see
@@ -808,27 +840,23 @@ fi
 # options.
 clean_env() {
 
-local target=${livedir}/targets/${arch}/targets/files/${arch} 
+local target=${livedir}/targets/${arch} 
 local cleanup_script=$(mktemp /tmp/XXX)
 
-[[ -d ${target} ]] && do_exec rm -rf ${target}/* \
-    ${livedir}/targets/${arch}/boot/* ${livedir}/targets/${arch}/\
-        targets/boot/*
+[ -d ${target} ] && do_exec rm -rf ${target}/*
+[ -d ${livedir}/boot ] && do_exec rm -rf ${livedir}/targets/boot
 
-for i in "${target}" "${livedir}/targets/${arch}/targets/boot" \
-    "${livedir}/targets/${arch}"; do
+for i in "${target}" "${livedir}/targets/boot/isolinux"; do
     exec_chkdir ${i}
 done
 
 einfo "Performing livecd cleanup. please wait as this can take a while..."
-do_exec cp -a ${arch_dir}/* ${target} &>/dev/null
+do_exec cp -a ${arch_dir}/* ${target}
 
-if [[ -d ${excludes_dir}/boot ]]; then
-    do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/${arch}/targets 
-    do_exec cp -a ${excludes_dir}/boot ${livedir}/targets/${arch}
+if [ -d ${excludes_dir}/boot ]; then
+	do_exec cp -a ${excludes_dir}/boot ${livedir}/targets
 else
-    do_exec cp -a ${arch_dir}/boot ${livedir}/targets/${arch}/targets
-    do_exec cp -a ${arch_dir}/boot ${livedir}/targets/${arch}
+	do_exec cp -a ${arch_dir}/boot ${livedir}/targets
 fi
 
 for i in "${livecd_excludes[@]}"; do
@@ -897,29 +925,45 @@ done
 
 >etc/mtab
 
+do_exec prepare_bootloader
 do_exec create_livecd
 }
 
 # Livecd creation
 create_livecd() {
 local date=$(date +%m%d%Y-%H%M)
-do_exec touch ${livedir}/targets/${arch}/targets/livecd
+local archive=${arch}-${kernel_sources}-${date}
+local target=${livedir}/targets/${arch}
+
+do_exec touch ${target}/livecd
 
 einfo "Building squashfs image"
-do_exec mksquashfs ${livedir}/targets/${arch}/targets/files/${arch}/ \
-    ${livedir}/targets/${arch}/targets/livecd.squashfs
+do_exec mksquashfs ${target} ${livedir}/targets/boot/livecd.squashfs
 
-einfo "Generating bootable JustBOOT(tm) livecd image"
-do_exec mkisofs -volid \"${volid}\" -R -b boot/grub/stage2_eltorito \
-    -no-emul-boot -boot-load-size 4 -boot-info-table -iso-level 4 \
-    -hide-rr-moved -c boot.catalog -o \
-    ${livedir}/${arch}-${kernel_sources}-${date}.iso -x files \
-    ${livedir}/targets/${arch}/targets/
+einfo "Generating hybrid JustBOOT(tm) livecd image"
+do_exec cd ${livedir}/targets/boot
+do_exec mkisofs -J -R -volid \"${volid}\" -b isolinux/isolinux.bin \
+	-o ${livedir}/${archive}.iso \
+	-c isolinux/boot.cat -no-emul-boot -boot-load-size 4 \
+	-l -relaxed-filenames -no-iso-translate -boot-info-table \
+	${livedir}/targets/boot
 
-do_exec rm -rf ${livedir}/targets/${arch}/{targets,boot}
+do_exec cd ${livedir}
+do_exec isohybrid ${archive}.iso
 
-einfo "All Done. ${arch} livecd located at \
-    ${livedir}/${arch}-${kernel_sources}-${date}.iso"
+do_exec isoinfo -l -i ${archive}.iso >${archive}.iso.CONTENTS.gz
+do_exec unsquashfs -ll ${livedir}/targets/boot/livecd.squashfs | \
+gzip -9v >${archive}.iso.CONTENTS-squashfs.gz
+
+echo "# MD5 HASH">${archive}.iso.DIGESTS
+md5sum ${archive}.iso>>${archive}.iso.DIGESTS
+
+echo "# SHA1 HASH">>${archive}.iso.DIGESTS
+sha1sum ${archive}.iso>>${archive}.iso.DIGESTS
+
+do_exec rm -rf targets/{${arch},boot}
+
+einfo "All Done. ${arch} livecd located at ${livedir}/${archive}.iso"
 }
 
 cat >> ${chroot_script} << CHROOT
@@ -945,7 +989,6 @@ env-update 1>/dev/null && source /etc/profile
 
 einfo() {
     echo -e ".: "\${@}" :."
-    sleep 1
 }
 ewarn() {
     echo -e "\a\${red}.: "\${@}" :.\${nocolor}"
@@ -966,7 +1009,7 @@ fi
 }
 
 check_deps() {
-# Check for pkgcore if --package-manager=pkgcore is used"
+# Check for pkgcore if --package-manager=pkgcore is used
 if [[ "${pms}" = pmerge ]]; then
     if ! hash pmerge &>/dev/null; then
         einfo "Compiling \${blue}sys-apps/pkgcore\${nocolor}"
@@ -1020,13 +1063,13 @@ fi
 
 # Prepare the livecd required and user packages.
 prepare_packages() {
-local -a global_packages=( 'grub:sys-boot/grub'
-	'net-setup:app-misc/livecd-tools' 'lshw:sys-apps/lshw'
-	'mkfs.reiser4:sys-fs/reiser4progs' 'mkfs.jfs:sys-fs/jfsutils'
-	'mkfs.xfs:sys-fs/xfsprogs' 'mkfs.reiserfs:sys-fs/reiserfsprogs'
-	'mdadm:sys-fs/mdadm' 'screen:app-misc/screen'
-	'rsync:net-misc/rsync' 'dhcpcd:net-misc/dhcpcd'
-	'ntpd:net-misc/openntpd' 'sudo:app-admin/sudo' )
+local -a global_packages=( 'net-setup:app-misc/livecd-tools' 
+	'lshw:sys-apps/lshw' 'mkfs.reiser4:sys-fs/reiser4progs' 
+	'mkfs.jfs:sys-fs/jfsutils' 'mkfs.xfs:sys-fs/xfsprogs' 
+	'mkfs.reiserfs:sys-fs/reiserfsprogs' 'mdadm:sys-fs/mdadm'
+	'screen:app-misc/screen' 'rsync:net-misc/rsync' 
+	'dhcpcd:net-misc/dhcpcd' 'ntpd:net-misc/openntpd' 
+	'sudo:app-admin/sudo' )
 
 einfo "Preparing livecd and user packages. please wait..."
 for i in \${global_packages[@]}; do
@@ -1049,30 +1092,6 @@ fi
 
 # Setup sudoers
 [ -f /etc/sudoers ] && sed -i '/NOPASSWD: ALL/ s/^# //' /etc/sudoers
-}
-
-prepare_bootloader() {
-[ -h /boot/grub/menu.lst ] && do_exec unlink /boot/grub/menu.lst
-
-# Always a fresh grub.conf, eventually it will parse for changes then
-# update.
->/boot/grub/menu.lst
-
-cat >> /boot/grub/menu.lst << GRUB
-default 0
-timeout 3
-splashimage=/boot/grub/splash.xpm.gz
-
-title=JustBOOT
-        kernel /boot/vmlinuz root=/dev/loop0 vga=ask
-        initrd /boot/${arch}-initramfs_data.cpio.${init_compression}
-title=JustBOOT NO-FB
-        kernel /boot/vmlinuz root=/dev/loop0
-        initrd /boot/${arch}-initramfs_data.cpio.${init_compression}
-title=Memtest86+
-        kernel /boot/memtest86plus/memtest.bin
-GRUB
-do_exec cp /boot/grub/menu.lst /boot/grub/grub.conf
 }
 
 fetch_archive() { 
@@ -1444,7 +1463,6 @@ do_exec prepare_configs
 do_exec check_deps
 do_exec check_toolchain_days && do_exec bootstrap
 do_exec prepare_packages
-do_exec prepare_bootloader
 do_exec prepare_busybox
 do_exec prepare_kernel
 do_exec prepare_useropts
