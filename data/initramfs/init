@@ -70,7 +70,6 @@ cd ${new_root}/mnt/livecd
 echo "Copying squashfs data..." && cp -a ${root_trees} ${new_root}
 cd ${new_root}
 for dir in ${root_links}; do ln -s mnt/livecd/$dir $dir; done
-mkdir usr/portage
 )
  
 >/proc/sys/kernel/hotplug && umount /proc /sys

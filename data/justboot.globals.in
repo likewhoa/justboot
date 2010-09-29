@@ -8,7 +8,7 @@ MAKEOPTS="${MAKEOPTS:--j1}"
 LDFLAGS="${LDFLAGS:--Wl,-O1 -Wl,--sort-common -Wl,--warn-once}"
 CXXFLAGS="${CFLAGS}"
 USE="${USE:--doc bash-completion subversion cvs userlocales ipv6 \
--berkdb -tcpd bash-completion \ openntpd nptl nptlonly mmx sse sse2 \
+-berkdb -tcpd bash-completion openntpd nptl nptlonly mmx sse sse2 \
 unicode} livecd cdroot git minimal threads -X"
 LINGUAS="${LINGUAS:-en}"
 FEATURES="${FEATURES:-parallel-fetch userfetch userpriv usersandbox \
