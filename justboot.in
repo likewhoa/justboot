@@ -293,7 +293,7 @@ invalid, try pkgcore or portage"; error "Exiting!"; }
 			einfo "${red}${pms}${nocolor} permanently enabled, \
 to override delete @confdir@/${arch}-pms"
 
-			touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
+			touch @confdir@/${arch}-pms # FIX/IMPROVE ME
 			;;
 		--gentoo-mirrors=*)
 			opt="$(echo ${1#*=} | awk '{print$1}')"
@@ -780,7 +780,7 @@ ${arch_dir}/tmp
 do_exec cp /etc/resolv.conf ${arch_dir}/etc
 
 if [[ ${arch} =~ ^i[4-6]86$ ]]; then
-	do_exec linux32 chroot ${arch_dir} ${chroot_script} 
+	do_exec linux32 chroot ${arch_dir} ${chroot_script}
 else
 	do_exec linux64 chroot ${arch_dir} ${chroot_script}
 fi
@@ -1461,8 +1461,8 @@ do_exec check_deps
 do_exec check_toolchain_days && do_exec bootstrap
 do_exec prepare_packages
 do_exec prepare_busybox
-do_exec prepare_kernel
 do_exec prepare_useropts
+do_exec prepare_kernel
 CHROOT
 
 # Lets go already!
