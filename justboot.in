@@ -217,143 +217,142 @@ while [ $# -gt 0 ]; do
 			;;
 		--cflags=*)
 			CFLAGS="${1#*=}"
-            einfo "CFLAGS set to ${blue}\"${CFLAGS}\""
-            ;;
-        --ldflags=*) LDFLAGS="${1#*=}";;
-        --kernel=*)
-            kernel_sources="${1#*=}"
-            einfo "${blue}${kernel_sources} kernel set"
-            ;;
-        --root-passwd=*)
-            root_passwd="${1#*=}"
-            einfo "Setting ${red}\"${root_passwd}\"${nocolor} as \
-                livecd root password"
-            ;;
-        --keywords=*)
-            ACCEPT_KEYWORDS="${1#*=}"
-            einfo "Setting ${blue}${ACCEPT_KEYWORDS}${nocolor} for \
-                make.conf"
-            ;;
-        --ramfs)
-            ram_limit=4194304
-            ram_size=$(sed -n 2p /proc/meminfo | awk '{print$2}')
-            
-            if [[ $ram_size > $ram_limit ]]; then
-                einfo "${red}ramfs${nocolor} compiles enabled!!!"
-            else
-                ewarn "You have ${ram_size} of free memory and you \
-                    need >=${ram_limit}, --ramfs not enabled."
-            fi
-            ;;
-        --init-compression)
-            init_compression="${2}"
-            einfo "Using ${blue}${init_compression}${nocolor} for \
-                initramfs compression"
-            shift
-            ;;
-        --volid=*|-L)
-            if [ ${1%%=*} = -L ]; then
-                volid="${2// /_}"
-                [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
-                    label ${red}\"${volid//_/ }\"${nocolor} is \
-                    greater than the 32 allowed characters"
-                shift
-            else
-                arg=${1##*=}
-                volid="${arg// /_}"
-                [ ${#volid} -gt 32 ] && error "${nocolor}Volume \
-                    label ${red}\"${volid//_/ }\"${nocolor} is \
-                    greater than the 32 allowed characters"
-            fi
- 
-            einfo "Using ${red}\"${volid//_/ }\"${nocolor} for \
-                livecd label"
-            ;;
-        --build-directory=*)
-            dir="${1#*=}"
-            livedir="${dir/%\//}/justboot" # Remove leading slash
-            einfo "Livecd build directory set to \
-                ${blue}\"${livedir}\"${nocolor}"
-            ;;
-        --package-manager=*)
-            [[ -f @confdir@/${arch}-pms ]] && error "Previously \
-                enabled package manager, delete \
-                @confdir@/${arch}-pms then try again to override"
+			einfo "CFLAGS set to ${blue}\"${CFLAGS}\""
+			;;
+		--ldflags=*) LDFLAGS="${1#*=}";;
+		--kernel=*)
+			kernel_sources="${1#*=}"
+			einfo "${blue}${kernel_sources} kernel set"
+			;;
+		--root-passwd=*)
+			root_passwd="${1#*=}"
+			einfo "Setting ${red}\"${root_passwd}\"${nocolor} as \
+livecd root password"
+			;;
+		--keywords=*)
+			ACCEPT_KEYWORDS="${1#*=}"
+			einfo "Setting ${blue}${ACCEPT_KEYWORDS}${nocolor} for \
+make.conf"
+			;;
+		--ramfs)
+			ram_limit=4194304
+			ram_size=$(sed -n 2p /proc/meminfo | awk '{print$2}')
 
-            [[ ${1#*=} =~ ^(pkgcore|portage)$ ]] || { einfo \
-                "--package-manager=${red}${1##*=}${nocolor} is \
-                invalid, try pkgcore or portage"; error "Exiting!"; }
+			if [[ $ram_size > $ram_limit ]]; then
+				einfo "${red}ramfs${nocolor} compiles enabled!!!"
+			else
+				ewarn "You have ${ram_size} of free memory and you \
+need >=${ram_limit}, --ramfs not enabled."
+			fi
+			;;
+		--init-compression)
+			init_compression="${2}"
+			einfo "Using ${blue}${init_compression}${nocolor} for \
+initramfs compression"
+			shift
+			;;
+		--volid=*|-L)
+			if [ ${1%%=*} = -L ]; then
+				volid="${2// /_}"
+				[ ${#volid} -gt 32 ] && error "${nocolor}Volume \
+label ${red}\"${volid//_/ }\"${nocolor} is \
+greater than the 32 allowed characters"
+				shift
+			else
+				arg=${1##*=}
+				volid="${arg// /_}"
+				[ ${#volid} -gt 32 ] && error "${nocolor}Volume \
+label ${red}\"${volid//_/ }\"${nocolor} is \
+greater than the 32 allowed characters"
+			fi
 
-            if [[ ${1#*=} = portage ]]; then
-                pms="emerge -q"
-            else
-                pms="pmerge"
-            fi
+			einfo "Using ${red}\"${volid//_/ }\"${nocolor} for \
+livecd label"
+			;;
+		--build-directory=*)
+			dir="${1#*=}"
+			livedir="${dir/%\//}/justboot" # Remove leading slash
+			einfo "Livecd build directory set to \
+${blue}\"${livedir}\"${nocolor}"
+			;;
+		--package-manager=*)
+			[[ -f @confdir@/${arch}-pms ]] && error "Previously \
+enabled package manager, delete \
+@confdir@/${arch}-pms then try again to override"
 
-            einfo "${red}${pms}${nocolor} permanently enabled, \
-                to override delete @confdir@/${arch}-pms"
+			[[ ${1#*=} =~ ^(pkgcore|portage)$ ]] || { einfo \
+"--package-manager=${red}${1##*=}${nocolor} is \
+invalid, try pkgcore or portage"; error "Exiting!"; }
 
-            touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
-            ;;
-        --gentoo-mirrors=*)
-            opt="$(echo ${1#*=} | awk '{print$1}')"
-            download_mirror="${opt/%\/}"
-            GENTOO_MIRRORS="${1#*=}"
-            ;;
-        --rsync-mirror=*) SYNC="${1#*=}";;
-        --menuconfig) menuconfig=true;;
-        --force-toolchain) yes_tool=true;;
-        --skip-toolchain) no_tool=true;;
-        --lang=*) LINGUAS="${1#*=}";;
-        --niceness=*) PORTAGE_NICENESS="${1#*=}";;
-        --use=*) USE="${1#*=}";;
-        --make-opts=*) MAKEOPTS="${1#*=}";;
-        --jobs=*) jobs="${1#*=}";;
-        --ldflags=*) LDFLAGS="${1#*=}";;
-        --features=*) FEATURES="${1#*=}";;
-        --letmein) letmein=true;;
-        --purge) purge=true;;
-        --purge-kernel) purge_kernel=true;;
-        --delete-arch) delete_arch=true;;
-        --coprocessor=*)
-            cpu="${1#*=}"
-            if [[ ${bash4} && -z ${procs[${cpu}]} ]]; then
-                ewarn "${cpu} is an invalid --coprocessor option."
-                einfo "Available procs are: ${blue}${!procs[@]}"
-                ewarn "Exiting now."
-                exit 1
-            else
-                coprocessor=true
-            fi
-            ;;
-        --coprocessor-list)
-            if ${bash4}; then
-                einfo "Available procs are: ${blue}${!procs[@]}"
-                exit 0
-            else
-                einfo "Available procs are: ${blue}i386,i486,i586,i686\
-                    ,k6,k7,k8,opteron,core2,atom,pentiumII,pentiumIII \
-                    pentium4 & generic"
-                exit 0
-            fi
-            ;;
-        --verbose) verbose=true;;
-        --debug|-db) debug=true; einfo "Running in debug mode";;
-        --help|-h) print_help;;
-        *) error "${blue}Invalid argument ${red}${1}!${nocolor}, \
-            run \"$0 --help\" for help."
-    esac
-    shift
+			if [[ ${1#*=} = portage ]]; then
+				pms="emerge -q"
+			else
+				pms="pmerge"
+			fi
+
+			einfo "${red}${pms}${nocolor} permanently enabled, \
+to override delete @confdir@/${arch}-pms"
+
+			touch @confdir@/${arch}-pms # FIX/IMPROVE ME 
+			;;
+		--gentoo-mirrors=*)
+			opt="$(echo ${1#*=} | awk '{print$1}')"
+			download_mirror="${opt/%\/}"
+			GENTOO_MIRRORS="${1#*=}"
+			;;
+		--rsync-mirror=*) SYNC="${1#*=}";;
+		--menuconfig) menuconfig=true;;
+		--force-toolchain) yes_tool=true;;
+		--skip-toolchain) no_tool=true;;
+		--lang=*) LINGUAS="${1#*=}";;
+		--niceness=*) PORTAGE_NICENESS="${1#*=}";;
+		--use=*) USE="${1#*=}";;
+		--make-opts=*) MAKEOPTS="${1#*=}";;
+		--jobs=*) jobs="${1#*=}";;
+		--ldflags=*) LDFLAGS="${1#*=}";;
+		--features=*) FEATURES="${1#*=}";;
+		--letmein) letmein=true;;
+		--purge) purge=true;;
+		--purge-kernel) purge_kernel=true;;
+		--delete-arch) delete_arch=true;;
+		--coprocessor=*)
+			cpu="${1#*=}"
+			if [[ ${bash4} && -z ${procs[${cpu}]} ]]; then
+				ewarn "${cpu} is an invalid --coprocessor option."
+				einfo "Available procs are: ${blue}${!procs[@]}"
+				ewarn "Exiting now."
+				exit 1
+			else
+				coprocessor=true
+			fi
+			;;
+		--coprocessor-list)
+			if ${bash4}; then
+				einfo "Available procs are: ${blue}${!procs[@]}"
+				exit 0
+			else
+				einfo "Available procs are: ${blue}i386,i486,i586,i686\
+,k6,k7,k8,opteron,core2,atom,pentiumII,pentiumIII pentium4 & generic"
+				exit 0
+			fi
+			;;
+		--verbose) verbose=true;;
+		--debug|-db) debug=true; einfo "Running in debug mode";;
+		--help|-h) print_help;;
+		*) error "${blue}Invalid argument ${red}${1}!${nocolor}, \
+run \"$0 --help\" for help."
+		esac
+		shift
 done
 
 # Check that we are using a valid $arch
 for i in ${arches[@]}; do
-    if [[ ${arch} != ${i} ]]; then
-        invalid_arch=true
-    else
-        invalid_arch=false
-        break
-    fi
+	if [[ ${arch} != ${i} ]]; then
+		invalid_arch=true
+	else
+		invalid_arch=false
+		break
+	fi
 done
 
 ${invalid_arch} && { einfo "${red}${arch}${nocolor} arch is \
@@ -361,12 +360,12 @@ invalid, valid options are ${arches[*]}"; error "Exiting!!!"; }
 
 # Convert arch value for /etc/make.conf
 case ${arch} in
-    x86_64)
-        make_arch=x86-64
-        [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86 ~amd64"
-        ;;
-    i[4,5,6]86)
-        [[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86"
+	x86_64)
+		make_arch=x86-64
+		[[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86 ~amd64"
+		;;
+	i[4,5,6]86)
+		[[ ${ACCEPT_KEYWORDS} ]] || make_keywords="~x86"
 esac
 
 # Allow for user default $arch options i.e ~/.justboot/x86_64.conf
@@ -377,11 +376,11 @@ esac
 # always points to the correct arch path
 
 if [[ -h /var/tmp/justboot/${arch} && ! ${livedir} ]]; then
-    link=$(readlink /var/tmp/justboot/${arch})
-    livedir=${link/\/${arch}/}
-    data_dir=@datdir@
-    arch_dir=${livedir}/${arch}
-    excludes_dir=${livedir}/excludes/${arch}
+	link=$(readlink /var/tmp/justboot/${arch})
+	livedir=${link/\/${arch}/}
+	data_dir=@datdir@
+	arch_dir=${livedir}/${arch}
+	excludes_dir=${livedir}/excludes/${arch}
 fi
 
 # Source JustBOOT(tm) global configuration options
@@ -389,50 +388,50 @@ fi
 
 # Check if we previously set a package manager for compiles on $arch
 if [ ! -f @confdir@/${arch}-pms ]; then
-    pms="emerge -q"
+	pms="emerge -q"
 else
-    pms=$(<@confdir@/${arch}-pms)
+	pms=$(<@confdir@/${arch}-pms)
 fi
 
 # Remove old build directories (--purge/--delete-arch)
 if ${purge} || ${delete_arch}; then
-    [[ ! -h /var/tmp/justboot/${arch} && \
-        ! -d /var/tmp/justboot/${arch} ]] && { einfo "No arch to \
-            purge or remove! Exiting"; exit 1; }
+	[[ ! -h /var/tmp/justboot/${arch} && \
+! -d /var/tmp/justboot/${arch} ]] && { einfo "No arch to \
+purge or remove! Exiting"; exit 1; }
 
-    src=$(readlink /var/tmp/justboot/${arch})
-    einfo "${red}--purge or --delete-arch flag used.${nocolor} \
-        Removing ${red}${arch}${nocolor} sources."
+	src=$(readlink /var/tmp/justboot/${arch})
+	einfo "${red}--purge or --delete-arch flag used.${nocolor} \
+Removing ${red}${arch}${nocolor} sources."
 
-    if [[ -h /var/tmp/justboot/${arch} ]]; then
-        do_exec rm -rf $(readlink /var/tmp/justboot/excludes/${arch})
-        do_exec rm -rf $(readlink /var/tmp/justboot/${arch})
-        
-        for i in /var/tmp/justboot/excludes/${arch} \
-            /var/tmp/justboot/${arch}; do
-                do_exec unlink ${i}
-        done
+	if [[ -h /var/tmp/justboot/${arch} ]]; then
+		do_exec rm -rf $(readlink /var/tmp/justboot/excludes/${arch})
+		do_exec rm -rf $(readlink /var/tmp/justboot/${arch})
 
-    elif [ -d /var/tmp/justboot/${arch} ]; then
-        do_exec rm -rf /var/tmp/justboot/${arch} \
-            /var/tmp/justboot/excludes/${arch}
-    fi
+		for i in /var/tmp/justboot/excludes/${arch} \
+/var/tmp/justboot/${arch}; do
+			do_exec unlink ${i}
+		done
 
-    for i in i{4,5,6}86 x86_64; do
-        [[ ${i} = ${arch} ]] && continue 2
-        [[ -d ${src/${arch}/${i}} ]] && { removal=false; einfo \
-            "${red}${src/${arch}/${i}}${nocolor} arch found, deleting \
-            ${src} only"; break; }
-    done
+	elif [ -d /var/tmp/justboot/${arch} ]; then
+		do_exec rm -rf /var/tmp/justboot/${arch} \
+/var/tmp/justboot/excludes/${arch}
+	fi
 
-    if ${removal}; then
-        ewarn "Removing orphan build directory ${red}${src/\/${arch}}\
-            ${nocolor}"
-        do_exec rm -rf ${src/\/${arch}}
-    fi
+	for i in i{4,5,6}86 x86_64; do
+		[[ ${i} = ${arch} ]] && continue 2
+		[[ -d ${src/${arch}/${i}} ]] && { removal=false; einfo \
+"${red}${src/${arch}/${i}}${nocolor} arch found, deleting \
+${src} only"; break; }
+	done
 
-    ${delete_arch} && { einfo "All done ${arch} sources removed, \
-        exiting"; exit 0; }
+	if ${removal}; then
+		ewarn "Removing orphan build directory ${red}${src/\/${arch}}\
+${nocolor}"
+		do_exec rm -rf ${src/\/${arch}}
+	fi
+
+	${delete_arch} && { einfo "All done ${arch} sources removed, \
+exiting"; exit 0; }
 fi
 
 # The stage in which we umount all livecd build and copy any --ramfs
@@ -445,14 +444,14 @@ fi
 release_env() {
 einfo "Releasing livecd environment, please wait..."
 do_exec rm -rf ${arch}/tmp/*
-do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir} 
+do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir}
 
-# Was the /var/tmp/justboot/uclibc directory binded to 
+# Was the /var/tmp/justboot/uclibc directory binded to
 # ${arch_dir}?
-if ${uclibc_bind}; then 
-    do_exec umount ${arch_dir}/var/tmp/justboot/uclibc
+if ${uclibc_bind}; then
+	do_exec umount ${arch_dir}/var/tmp/justboot/uclibc
 else
-    do_exec mv ${arch_dir}/var/tmp/justboot/uclibc \
+	do_exec mv ${arch_dir}/var/tmp/justboot/uclibc \
 /var/tmp/justboot/
 fi
 
