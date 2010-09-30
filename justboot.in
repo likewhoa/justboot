@@ -97,7 +97,7 @@ if ${debug}; then
 elif ${verbose}; then
 	"${@}"
 else
-	"${@}" 2>/dev/null
+	"${@}" 
 fi
 }
 
@@ -1001,7 +1001,7 @@ if ${debug}; then
 elif ${verbose}; then
 	"\${@}"
 else
-	"\${@}" 2>/dev/null
+	"\${@}
 fi
 }
 
@@ -1297,7 +1297,7 @@ initramfs image"
 fi
 
 do_exec cd /usr/src/linux || error "Failed to switch to \
-	kernel source directory"
+kernel source directory"
 do_exec cp arch/\${arch}/boot/bzImage /boot/vmlinuz
 do_exec update-modules
 
@@ -1307,7 +1307,7 @@ do_exec ${pms} lvm2 1>/dev/null
 einfo "Done with \${red}\${arch}\${nocolor} kernel"
 if ${letmein}; then
 	einfo "letmein flag used. Type \${red}exit\${nocolor} when \
-		finished to continue with build."
+finished to continue with build."
 	exec /bin/bash -i
 fi
 }
@@ -1424,7 +1424,7 @@ on hardware."
 	while read ebuild; do
 		einfo "Compiling \${blue}\"\${ebuild}\"\${nocolor}"
 		do_exec ${pms} -1 "\${ebuild}" 1>/dev/null || \
-		echo "\${ebuild}" >>failed
+echo "\${ebuild}" >>failed
 		einfo "\${blue}\"\${ebuild}\"\${nocolor} compiled"
 		[[ \${ebuild} = dev-lang/python && "${pms}" = pmerge ]] && \
 python-updater &>/dev/null
