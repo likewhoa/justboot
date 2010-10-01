@@ -16,6 +16,7 @@ dm-mod
 dm-crypt
 ehci-hcd
 ohci-hcd
+uhci-hcd
 usb-storage
 usbhid
 lrw
