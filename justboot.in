@@ -97,7 +97,7 @@ if ${debug}; then
 elif ${verbose}; then
 	"${@}"
 else
-	"${@}" 
+	"${@}" 2>/dev/null
 fi
 }
 
@@ -1001,7 +1001,7 @@ if ${debug}; then
 elif ${verbose}; then
 	"\${@}"
 else
-	"\${@}"
+	"\${@}" 2>/dev/null
 fi
 }
 
@@ -1308,7 +1308,7 @@ einfo "Done with \${red}\${arch}\${nocolor} kernel"
 if ${letmein}; then
 	einfo "letmein flag used. Type \${red}exit\${nocolor} when \
 finished to continue with build."
-	exec /bin/bash -i
+	exec /bin/bash -i 2>&1
 fi
 }
 
