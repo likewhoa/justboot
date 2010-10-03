@@ -1001,7 +1001,7 @@ if ${debug}; then
 elif ${verbose}; then
 	"\${@}"
 else
-	"\${@}
+	"\${@}"
 fi
 }
 
