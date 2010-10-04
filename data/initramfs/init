@@ -39,7 +39,6 @@ mdev -s && echo "/sbin/mdev" > /proc/sys/kernel/hotplug
 
 do_modprobe_group boot
 
-mount -n -t tmpfs tmpfs ${new_root}
 for dir in ${root_dirs}; do
 	mkdir ${new_root}/${dir} && chmod 755 ${new_root}/${dir}
 done
