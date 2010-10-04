@@ -1,4 +1,1 @@
-tmpfs   /                               tmpfs   defaults        0 0
-tmpfs   /lib/firmware                   tmpfs   defaults        0 0
-tmpfs   /usr/portage                    tmpfs   defaults        0 0
-
+aufs	/	aufs	defaults	0 0

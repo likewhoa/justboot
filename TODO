@@ -1,15 +1,14 @@
-1. Automatic stage/snapshot builds
-2. HybridISO
-3. Support more kernel sources
-4. Encryption options for livecd
-5. Xorg support
-6. KVM image generator
-7. Burn to cd/dvd media option
-8. PPC,ARM support
-9. Gentoo ebuild
-10. Extra /init features
-11. Extend fetch_archive() to work with stage3 and portage snapshots
-12. Merge differences between user's old and new kernel configs when 
-user customizing default .configs
-13. Allow custom .config for kernels and busybox build
-14. Fix and merge changes in commit a5604dafed3d2a3953c6fcb7b0a6665be01fc555
+* Automatic stage/snapshot builds
+* Support more kernel sources
+* Encryption options for livecd
+* Xorg support
+* KVM image generator
+* Burn to cd/dvd media option
+* PPC,ARM support
+* Gentoo ebuild
+* Extra /init features
+* Extend fetch_archive() to work with stage3 and portage snapshots
+* Merge differences between user's old and new kernel configs when 
+User customizing default .configs
+* Allow custom .config for kernels and busybox build
+* Fix and merge changes in commit a5604dafed3d2a3953c6fcb7b0a6665be01fc555

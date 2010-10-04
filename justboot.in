@@ -46,9 +46,9 @@ verbose=false
 debug=false
 bash4=false
 
-# Check for =bash-4.* associated array support
-if ! declare -A &>/dev/null; then
-	echo "This script uses bash4 only features, consider upgrading"
+# Check for >=bash-4 associated array support
+if ! ((${BASH_VERSINFO[0]}>=4)); then
+	echo "This script uses >=bash-4 only features, consider upgrading"
 else
 	bash4=true
 	declare -A procs=( [i386]=M386 [i486]=M486 [i586]=M586
@@ -200,7 +200,7 @@ Use sys-apps/pkgcore for all livecd builds instead of portage
 
 Remove old sources (This deletes all livecd build for that arch)
 # justboot --arch=i586 --delete-arch
- 
+
 HELP
 exit 0
 }
@@ -209,7 +209,6 @@ einfo "${blue}JustBOOT(tm)${nocolor} initiated"
 
 # Parse Command Line Arguments
 while [ $# -gt 0 ]; do
-
 	case "$1" in
 		--arch=*)
 			arch="${1#*=}"
@@ -1137,6 +1136,12 @@ local initramfs_dir=/tmp/initramfs
 local kernel_src=\$(readlink /usr/src/linux)
 local kernel_module_src=\${kernel_src#*-}
 
+if ! grep "sys-fs/aufs2 kernel-patch" /etc/portage/package.use \
+1>/dev/null; then
+	echo "sys-fs/aufs2 kernel-patch">>/etc/portage/package.use
+fi
+do_exec ${pms} sys-fs/aufs2
+
 [[ -d \${initramfs_dir} ]] && do_exec rm -rf \${initramfs_dir}
 do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
 ./applets/install.sh \${initramfs_dir} --symlinks 1>/dev/null
@@ -1147,6 +1152,9 @@ mnt/livecd/{static,dynamic,image} lib/modules
 
 do_exec cp -a ${data_dir}/initramfs/etc .
 do_exec cp ${data_dir}/initramfs/init .
+
+do_exec cp -a /usr/bin/{auchk,aubrsync} usr/bin
+do_exec cp -a /sbin/{mount.aufs,umount.aufs,auplink} sbin
 
 do_exec chmod 755 init
 do_exec mknod dev/console c 5 1
@@ -1234,7 +1242,7 @@ ${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
 	do_kernel_compile
 
 	einfo "Compiling \${blue}\${arch}\${nocolor} kernel image"
-	if declare -A &>/dev/null; then
+	if ${bash4}; then
 		if ${coprocessor}; then
 			do_exec prepare_kernel_opts \${arch}
 			do_exec mv ${data_dir}/kernel/\${arch}/.config \
@@ -1269,7 +1277,7 @@ fi
 
 	einfo "Compiling \${red}\${arch}\${nocolor} kernel image"
 
-	if declare -A &>/dev/null; then
+	if ${bash4}; then
 		if ${coprocessor}; then
 			do_exec prepare_kernel_opts \${arch}
 			do_exec mv ${data_dir}/kernel/\${arch}/.config \

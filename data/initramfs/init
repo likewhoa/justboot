@@ -3,8 +3,8 @@
 PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 new_root=/new-root
 console=/dev/console
-root_links="bin sbin lib lib32 lib64 boot usr opt"
-root_trees="etc root home var"
+root_dirs="dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp \
+mnt/livecd/dynamic mnt/livecd/static"
 
 do_modprobe_group() {
 local var_group="/etc/modules/$1"
@@ -40,8 +40,7 @@ mdev -s && echo "/sbin/mdev" > /proc/sys/kernel/hotplug
 do_modprobe_group boot
 
 mount -n -t tmpfs tmpfs ${new_root}
-for dir in dev mnt mnt/cdrom mnt/livecd mnt/livecd/image tmp \
-mnt/gentoo sys proc; do
+for dir in ${root_dirs}; do
 	mkdir ${new_root}/${dir} && chmod 755 ${new_root}/${dir}
 done
 
@@ -63,31 +62,15 @@ for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
 	mknod ${new_root}/dev/$node
 done
 
-mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs \
-${new_root}/mnt/livecd
+mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs /mnt/livecd/static
+mount -t tmpfs -o size=420M none /mnt/livecd/dynamic
+mount -t aufs -o dirs=/mnt/livecd/dynamic=rw:/mnt/livecd/static=ro aufs ${new_root}
 
-( 
-cd ${new_root}/mnt/livecd
-echo "Copying squashfs data..." && cp -a ${root_trees} ${new_root}
-cd ${new_root}
-for dir in ${root_links}; do ln -s mnt/livecd/$dir $dir; done
-)
- 
->/proc/sys/kernel/hotplug && umount /proc /sys
+>/proc/sys/kernel/hotplug
+umount /sys /proc
 
 echo "Starting init"
-exec switch_root -c ${console} ${new_root} /sbin/init 
-
-# AUFS method - zen-sources only    
-#  mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs  /mnt/livecd/static
-#  mount -t tmpfs -o size=300M none /mnt/livecd/dynamic
-#  mount -t aufs -o dirs=/mnt/livecd/dynamic=rw:/mnt/livecd/static=ro aufs /new-root
-
-#  >/proc/sys/kernel/hotplug
-#  umount /sys /dev /proc
-
-#  echo "Starting init"
-#  exec switch_root /new-root /sbin/init
+exec switch_root -c ${console} ${new_root} /sbin/init
 
 echo "Failed to switch root!!"
 echo "Dropping to minimal shell"
