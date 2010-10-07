@@ -55,6 +55,14 @@ if [ "${cdrom}" == "" ]; then
 	exit
 fi
 
+while [ $# -gt 0 ]; do
+	case ${1} in
+		aufs_mem=*) aufs_mem="${1#*=}";;
+		console=*) console="${1#*=}"		
+	esac
+	shift
+done
+
 echo "LiveCD found in ${cdrom}"
 
 for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
@@ -62,7 +70,7 @@ for node in "null c 1 3" "console c 5 1" "tty1 c 4 1"; do
 done
 
 mount -t squashfs -o loop,ro /mnt/livecd/image/livecd.squashfs /mnt/livecd/static
-mount -t tmpfs -o size=420M none /mnt/livecd/dynamic
+mount -t tmpfs -o size=${aufs_mem:-420}M none /mnt/livecd/dynamic
 mount -t aufs -o dirs=/mnt/livecd/dynamic=rw:/mnt/livecd/static=ro aufs ${new_root}
 
 >/proc/sys/kernel/hotplug

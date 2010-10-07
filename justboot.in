@@ -86,7 +86,7 @@ error() {
 	echo -e "\a${red}.: "${@}" :.${nocolor}"
 	exit 1
 }
-exec_chkdir() {
+chkdir() {
 	local dir="${1}"
 	[[ ! -d ${dir} ]] && mkdir -p ${dir}
 }
@@ -454,6 +454,11 @@ else
 /var/tmp/justboot/
 fi
 
+if (shopt -s nullglob dotglob; f=(${livedir}/targets/${arch}/\
+usr/portage/!(.keep));(( ${#f[@]} ))); then
+	do_exec umount ${livedir}/targets/${arch}/usr/portage
+fi
+
 if ${ramfs}; then
 	for x in "${livecd_excludes[@]}"; do
 		for y in "${ramfs_dir[@]}"; do
@@ -538,7 +543,7 @@ please wait..."
 			do_exec unlink ${i}
 		done
 
-		exec_chkdir ${livedir}/excludes
+		do_exec chkdir ${livedir}/excludes
 		do_exec mv ${real_arch_dir} ${arch_dir}
 		do_exec mv ${real_excludes_dir} ${excludes_dir}
 
@@ -571,7 +576,7 @@ ${real_arch_dir}${nocolor}"
 justboot/${arch}${nocolor} to ${red}${livedir}/${arch}\
 .${nocolor} please wait..."
 
-			exec_chkdir ${livedir}/excludes
+			do_exec chkdir ${livedir}/excludes
 			do_exec mv /var/tmp/justboot/${arch} ${arch_dir}
 			do_exec mv /var/tmp/justboot/excludes/${arch} ${excludes_dir}
 
@@ -603,7 +608,7 @@ latest-stage3.txt
 latest-stage3.txt)
 	do_exec rm latest-stage3.txt
 
-	exec_chkdir ${arch_dir} 
+	do_exec chkdir ${arch_dir} 
 	do_exec cd ${arch_dir} || error "Failed to switch to ${arch_dir}"
 
 	einfo "Fetching gentoo ${gentoo_stage#*/} autobuild stage"
@@ -621,11 +626,11 @@ latest-stage3.txt)
 	do_exec tar xjpf portage-latest.tar.bz2 -C usr/
 	do_exec rm portage-latest.tar.bz2
 
-	exec_chkdir ${excludes_dir}
-	exec_chkdir /var/tmp/justboot/excludes
+	do_exec chkdir ${excludes_dir}
+	do_exec chkdir /var/tmp/justboot/excludes
 
 	for i in "${livecd_excludes[@]}"; do
-		exec_chkdir ${excludes_dir}/${i//\//:}
+		do_exec chkdir ${excludes_dir}/${i//\//:}
 		do_exec mv ${i}/* ${excludes_dir}/${i//\//:} &>/dev/null
 	done
 
@@ -648,8 +653,8 @@ do_exec prepare_env
 # start the chroot process and compile packages
 prepare_env() {
 cd ${livedir}
-exec_chkdir ${arch_dir}${data_dir}
-exec_chkdir ${arch_dir}/mnt/gentoo
+do_exec chkdir ${arch_dir}${data_dir}
+do_exec chkdir ${arch_dir}/mnt/gentoo
 
 do_exec mount -o bind /proc ${arch}/proc
 do_exec mount -o bind /dev ${arch}/dev
@@ -658,7 +663,7 @@ do_exec mount -o bind ${data_dir} ${arch}${data_dir}
 if [ -d /var/tmp/justboot/uclibc ]; then
 	einfo "Previous uclibc build directory found, binding to
 ${arch_dir}/var/tmp/justboot/uclibc"
-	exec_chkdir ${arch_dir}/var/tmp/justboot/uclibc
+	do_exec chkdir ${arch_dir}/var/tmp/justboot/uclibc
 	do_exec mount -o bind /var/tmp/justboot/uclibc \
 ${arch_dir}/var/tmp/justboot/uclibc
 	uclibc_bind=true
@@ -670,7 +675,7 @@ for x in "${livecd_excludes[@]}"; do
 		einfo "Detected newly added ${blue}${x}${nocolor} for livecd \
 excludes, moving build to ${red}${excludes_dir}/${x//\//:}\
 .${nocolor} please wait..."
-		exec_chkdir ${excludes_dir}/${x//\//:}
+		do_exec chkdir ${excludes_dir}/${x//\//:}
 		do_exec mv ${arch}/${x}/* ${excludes_dir}/${x//\//:} &>/dev/null
 		do_exec rm -rf ${arch}/${x}/*
 	fi
@@ -685,7 +690,7 @@ please wait..."
 				do_exec mount -t ramfs ${x} ${arch}/${x} 1>/dev/null
 
 				[[ ! -d ${excludes_dir}/${x//\//:} ]] && \
-exec_chkdir ${excludes_dir}/${x//\//:}
+do_exec chkdir ${excludes_dir}/${x//\//:}
 				do_exec rsync -caq ${excludes_dir}/${x//\//:}/* \
 ${arch}/${x} &>/dev/null
 
@@ -705,7 +710,7 @@ ${arch}/${x} 1>/dev/null
 
 		if (shopt -s nullglob dotglob; f=(${arch}/${x}/!(.keep));\
 (( ${#f[@]} ))); then
-			exec_chkdir ${excludes_dir}/${x//\//:}
+			do_exec chkdir ${excludes_dir}/${x//\//:}
 			einfo "${blue}${arch}/${x}${nocolor} is not empty, moving \
 build to ${red}${excludes_dir}/${x//\//:}.${nocolor} \
 please wait..."
@@ -714,7 +719,7 @@ please wait..."
 		else
 
 			for i in ${arch}/${x} ${excludes_dir}/${x//\//:}; do
-				exec_chkdir ${i}
+				do_exec chkdir ${i}
 			done
 		fi
 
@@ -800,6 +805,7 @@ prepare_bootloader() {
 # Always a fresh isolinux.cfg, eventually justboot will parse for changes
 # then update. We will also populate the isolinux directory with the
 # required files for isolinux.
+do_exec chkdir ${livedir}/targets/boot/isolinux
 do_exec cp /usr/share/syslinux/isolinux.bin ${livedir}/targets/boot/isolinux
 do_exec mv ${livedir}/targets/boot/vmlinuz ${livedir}/targets/boot/isolinux
 do_exec mv \
@@ -807,13 +813,19 @@ ${livedir}/targets/boot/${arch}-initramfs_data.cpio.${init_compression} \
 ${livedir}/targets/boot/isolinux/${arch}-initramfs_data.${init_compression}
 
 cat >> ${livedir}/targets/boot/isolinux/boot.msg << BOOTMSG
-Welcome to the JustBOOT livecd...
+Welcome to the JustBOOT-@VERSION@ Gentoo Linux livecd.
 BOOTMSG
+
+cat >>${livedir}/targets/boot/isolinux/kernels.msg << KERNELS
+Available kernels:
+${kernel_sources%-*}
+${kernel_sources%-*}-nofb
+KERNELS
 
 cat >> ${livedir}/targets/boot/isolinux/isolinux.cfg << ISOLINUX
 default ${kernel_sources%-*} 
-timeout 10
-prompt 5
+timeout 150
+prompt 1
 display boot.msg
 F1 kernels.msg
 
@@ -839,20 +851,21 @@ clean_env() {
 local target=${livedir}/targets/${arch}
 local cleanup_script=$(mktemp /tmp/XXX)
 
-[ -d ${target} ] && do_exec rm -rf ${target}/*
-[ -d ${livedir}/boot ] && do_exec rm -rf ${livedir}/targets/boot
-
-for i in "${target}" "${livedir}/targets/boot/isolinux"; do
-	exec_chkdir ${i}
+for i in "${target}/usr/portage" "${livedir}/targets/boot"; do
+	do_exec chkdir ${i}
 done
 
 einfo "Performing livecd cleanup. please wait as this can take a while..."
-do_exec cp -a ${arch_dir}/* ${target}
+
+do_exec mount -o bind ${arch_dir}/usr/portage ${target}/usr/portage
+do_exec rsync -caq --exclude=usr/portage --delete-before ${arch_dir}/ ${target}
 
 if [ -d ${excludes_dir}/boot ]; then
-	do_exec cp -a ${excludes_dir}/boot ${livedir}/targets
+	do_exec rsync -caq --delete-before ${excludes_dir}/boot/ ${livedir}/\
+targets/boot
 else
-	do_exec cp -a ${arch_dir}/boot ${livedir}/targets
+	do_exec rsync -caq --delete-before ${arch_dir}/boot/ ${livedir}/\
+targets/boot
 fi
 
 for i in "${livecd_excludes[@]}"; do
@@ -860,8 +873,8 @@ for i in "${livecd_excludes[@]}"; do
 (( ${#f[@]} ))); then
 		einfo "Copying ${blue}${i}${nocolor} to ${red}${target}/\
 ${i}.${nocolor} please wait..."
-		do_exec cp -a ${excludes_dir}/${i//\//:}/* ${target}/${i} \
-&>/dev/null  
+		do_exec rsync -caq --delete-before ${excludes_dir}/${i//\//:}/* ${target}/${i} \
+&>/dev/null
 	fi
 done
 
@@ -875,7 +888,7 @@ if ${ramfs}; then
 (( ${#f[@]} ))); then
 		einfo "Copying ${blue}${x}${nocolor} to ${red}${target}/\
 ${x}.${nocolor} please wait..."
-		do_exec cp -a ${excludes_dir}/${x//\//:}/* ${target}/\
+		do_exec rsync -caq --delete-before ${excludes_dir}/${x//\//:}/* ${target}/\
 ${x} &>/dev/null
 	fi
 	done
@@ -889,12 +902,10 @@ trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
 echo "Entering livecd environment"
 env-update 1>/dev/null && source /etc/profile
 
-for i in ${remove_packages[@]}; do
-	echo "Removing \${i} from livecd"
-	${pms} -C \${i} &>/dev/null
-done
+echo "Removing ${#remove_packages[@]} packages from livecd"
+${pms} -C \${remove_packages[@]} &>/dev/null
 
-echo -e "${red}${#remove_packages[@]}${nocolor} Packages removed"
+echo -e "${red}${#remove_packages[@]}${nocolor} packages removed"
 exit
 CLEANUP
 
@@ -903,20 +914,25 @@ do_exec chmod +x ${cleanup_script} && \
 
 if [[ ${arch} =~ ^i[4-6]86$ ]]; then
 	do_exec linux32 chroot ${target} ${cleanup_script}
+	exit_stats=$?
 else
 	do_exec linux64 chroot ${target} ${cleanup_script}
+	exit_stats=$?
 fi
 
-[[ $? =~ ^(1|13)$ ]] && do_exec release_env now
-
-do_exec cd ${target}
-do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
+if [[ ${exit_stats} =~ ^(1|13)$ ]]; then
+	do_exec release_env now
+else
+	do_exec umount ${target}/usr/portage
+	do_exec cd ${target}
+	do_exec rm -rf ${remove_files[@]} ${livecd_excludes[@]}
+fi
 
 if ${ramfs}; then do_exec umount ${ramfs_dir[@]}; fi
 
 for i in boot var/run/dbus var/lock/subsys var/cache/edb/deb \
 	var/cache/hald var/log root var/log; do
-	do_exec exec_chkdir ${i}
+	do_exec chkdir ${i}
 done
 
 >etc/mtab
@@ -957,8 +973,6 @@ md5sum ${archive}.iso>>${archive}.iso.DIGESTS
 echo "# SHA1 HASH">>${archive}.iso.DIGESTS
 sha1sum ${archive}.iso>>${archive}.iso.DIGESTS
 
-do_exec rm -rf targets/{${arch},boot}
-
 einfo "All Done. ${arch} livecd located at ${livedir}/${archive}.iso"
 }
 
@@ -992,6 +1006,10 @@ ewarn() {
 error() { 
 	echo -e "\a\${red}.: "\${@}" :.\${nocolor}"
 	exit 1
+}
+chkdir() {
+	local dir="\${1}"
+	[[ ! -d \${dir} ]] && mkdir -p \${dir}
 }
 do_exec() {
 if ${debug}; then
@@ -1147,8 +1165,10 @@ do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
 ./applets/install.sh \${initramfs_dir} --symlinks 1>/dev/null
 
 do_exec cd \${initramfs_dir}
-do_exec mkdir -p proc sys dev mnt new-root lib mnt/livecd \
-mnt/livecd/{static,dynamic,image} lib/modules
+for i in proc sys dev mnt new-root lib mnt/livecd \
+mnt/livecd/{static,dynamic,image} usr/bin lib/modules; do
+	do_exec chkdir \${i}
+done
 
 do_exec cp -a ${data_dir}/initramfs/etc .
 do_exec cp ${data_dir}/initramfs/init .
@@ -1474,7 +1494,7 @@ do_exec prepare_kernel
 CHROOT
 
 # Lets go already!
-[[ ! -d ${livedir} ]] && exec_chkdir ${livedir}
+do_exec chkdir ${livedir}
 do_exec cd ${livedir} || error "Failed to switch to livecd build \
 directory! Exiting."
 do_exec check_deps && do_exec prepare_stage
