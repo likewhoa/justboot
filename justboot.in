@@ -1154,12 +1154,6 @@ local initramfs_dir=/tmp/initramfs
 local kernel_src=\$(readlink /usr/src/linux)
 local kernel_module_src=\${kernel_src#*-}
 
-if ! grep "sys-fs/aufs2 kernel-patch" /etc/portage/package.use \
-1>/dev/null; then
-	echo "sys-fs/aufs2 kernel-patch">>/etc/portage/package.use
-fi
-do_exec ${pms} sys-fs/aufs2
-
 [[ -d \${initramfs_dir} ]] && do_exec rm -rf \${initramfs_dir}
 do_exec mkdir \${initramfs_dir} && do_exec cd \${uclibc}/\${busybox}
 ./applets/install.sh \${initramfs_dir} --symlinks 1>/dev/null
@@ -1275,6 +1269,12 @@ ${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
 
 	do_exec cd /usr/src/linux || error "Failed to switch to \
 kernel source directory"
+
+	if ! grep "sys-fs/aufs2 kernel-patch" /etc/portage/package.use \
+1>/dev/null; then
+    	echo "sys-fs/aufs2 kernel-patch">>/etc/portage/package.use
+	fi
+	do_exec ${pms} sys-fs/aufs2
 
 	if ${menuconfig}; then
 		do_exec make menuconfig
