@@ -1459,13 +1459,14 @@ python-updater &>/dev/null
 	done < <(emerge -ep --columns --color=n system | grep ebuild | \
 awk '{print\$4}' | egrep -v "(glibc|/portage|binutils|gcc|linux-h)")
 
-	while read ebuild; do
-		einfo "Compiling \${blue}\"\${ebuild}\"\${nocolor}"
-		do_exec ${pms} -1 "\${ebuild}" 1>/dev/null
-		einfo "\${blue}\"\${ebuild}\"\${nocolor} compiled"
-	done <failed
-	do_exec rm failed
-
+	if [ -f failed ]; then
+		while read ebuild; do
+			einfo "Compiling \${blue}\"\${ebuild}\"\${nocolor}"
+			do_exec ${pms} -1 "\${ebuild}" 1>/dev/null
+			einfo "\${blue}\"\${ebuild}\"\${nocolor} compiled"
+		done <failed
+		do_exec rm failed
+	fi
 	einfo "Toolchain build completed"
 else
 	einfo "Toolchain built skipped"
