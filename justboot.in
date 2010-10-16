@@ -235,7 +235,7 @@ make.conf"
 			;;
 		--ramfs)
 			ram_limit=4194304
-			ram_size=$(sed -n 2p /proc/meminfo | awk '{print$2}')
+			ram_size=$(sed -n 4p /proc/meminfo | awk '{print$2}')
 
 			if [[ $ram_size > $ram_limit ]]; then
 				einfo "${red}ramfs${nocolor} compiles enabled!!!"
@@ -443,6 +443,7 @@ fi
 release_env() {
 einfo "Releasing livecd environment, please wait..."
 do_exec rm -rf ${arch}/tmp/*
+sleep 2
 do_exec umount ${arch_dir}/{proc,dev} ${arch}${data_dir}
 
 # Was the /var/tmp/justboot/uclibc directory binded to
@@ -978,6 +979,8 @@ einfo "All Done. ${arch} livecd located at ${livedir}/${archive}.iso"
 
 cat >> ${chroot_script} << CHROOT
 #!/bin/bash
+env-update 1>/dev/null && source /etc/profile
+
 arch=${arch}
 uclibc="/var/tmp/justboot/uclibc"
 uclibc_script=\$(mktemp /tmp/XXX)
@@ -994,8 +997,6 @@ nocolor="\$(tput setaf 9)"
 
 trap 'echo "User interrupted, Exiting"; exit $USER_INTERRUPT' TERM INT
 # Cleans up the environment if script interrupted by control-c.
-
-env-update 1>/dev/null && source /etc/profile
 
 einfo() {
 	echo -e ".: "\${@}" :."
@@ -1032,8 +1033,10 @@ if [[ "${pms/ -q/}" = pmerge ]]; then
 fi
 
 # Check for initramfs compression tools
-local -a compression_tools=( 'lzma:app-arch/xz-utils'
-	'lzop:app-arch/lzop' ) 
+local -a compression_tools=( 'lzma:app-arch/xz-utils' \
+'lzop:app-arch/lzop' )
+
+if ! hash lzop &>/dev/null; then do_exec ${pms} lzop; fi
 
 for i in \${compression_tools[@]}; do
 	if [ ${init_compression} = \${i/:*/} ]; then
@@ -1117,26 +1120,33 @@ while [ \$# -gt 0 ]; do
 
 			einfo "Extracting Busybox sources"
 			do_exec tar xjpf \${busybox_archive}
-			;;
+			do_exec touch \${uclibc}/\${busybox}/build
+		;;
 		uclibc)
 			einfo "Fetching Gentoo UCLIBC stage3 tarball"
 			do_exec wget -q \${uclibc_src_uri}
 
 			einfo "Extracting Gentoo uclibc stage3 tarball"
 			do_exec tar xjpf stage*
+			do_exec touch \${uclibc}/build
 		esac
 		shift
 done
 }
 
 prepare_busybox() {
-if [ ! -d \${uclibc} ]; then
-	do_exec mkdir -p \${uclibc}
+if [ ! -f \${uclibc}/build ]; then
+	do_exec rm -rf \${uclibc}/{bin,boot,dev,etc,home,lib,mnt,opt,\
+proc,root,sbin,sys,tmp,usr,var}
+	do_exec chkdir \${uclibc}
 	do_exec cd \${uclibc}
 
 	do_exec fetch_archive uclibc busybox
-elif  [[ ! -d \${uclibc}/\${busybox} ]]; then
-	do_exec cd \${uclibc} && do_exec fetch_archive busybox
+fi
+if [ ! -f \${uclibc}/\${busybox}/build ]; then
+	do_exec rm -rf \${busybox}*
+	do_exec cd \${uclibc}
+	do_exec fetch_archive busybox
 fi
 
 do_exec cp -a ${data_dir}/busybox/.config \${uclibc}/\${busybox}
@@ -1274,8 +1284,9 @@ kernel source directory"
 1>/dev/null; then
     	echo "sys-fs/aufs2 kernel-patch">>/etc/portage/package.use
 	fi
-	do_exec ${pms} sys-fs/aufs2
+	do_exec make modules_prepare && do_exec ${pms} sys-fs/aufs2
 
+	einfo "Compiling \${blue}${kernel_sources}\${blue}\${nocolor}."
 	if ${menuconfig}; then
 		do_exec make menuconfig
 		do_exec make ${MAKEOPTS} 1>/dev/null
@@ -1294,7 +1305,6 @@ else
 		do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\
 ${kernel_sources}-\${date}
 fi
-
 	einfo "Compiling \${red}\${arch}\${nocolor} kernel image"
 
 	if ${bash4}; then
@@ -1311,6 +1321,9 @@ fi
 	do_exec cd /usr/src/linux || error "Failed to switch to \
 kernel source directory"
 
+	do_exec make modules_prepare && do_exec ${pms} sys-fs/aufs2
+
+	einfo "Compiling \${blue}${kernel_sources}\${blue}\${nocolor}."
 	if ${menuconfig}; then
 		do_exec make menuconfig
 		do_exec make ${MAKEOPTS} 1>/dev/null
