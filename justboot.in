@@ -1284,7 +1284,7 @@ kernel source directory"
 1>/dev/null; then
     	echo "sys-fs/aufs2 kernel-patch">>/etc/portage/package.use
 	fi
-	do_exec make modules_prepare && do_exec ${pms} sys-fs/aufs2
+	do_exec make ${MAKEOPTS} 1>/dev/null && do_exec ${pms} sys-fs/aufs2
 
 	einfo "Compiling \${blue}${kernel_sources}\${blue}\${nocolor}."
 	if ${menuconfig}; then
