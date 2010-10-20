@@ -1235,7 +1235,7 @@ if ! grep "sys-kernel/${kernel_sources} symlink" \
 package.use
 fi
 
-do_exec emerge ${kernel_sources} 1>/dev/null || error "Failed to emerge \
+do_exec ${pms} ${kernel_sources} 1>/dev/null || error "Failed to emerge \
 ${kernel_sources}!!!"
 }
 
@@ -1265,7 +1265,6 @@ ${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
 	einfo "Compiling \${blue}${kernel_sources}\${nocolor}."
 	do_kernel_compile
 
-	einfo "Compiling \${blue}\${arch}\${nocolor} kernel image"
 	if ${bash4}; then
 		if ${coprocessor}; then
 			do_exec prepare_kernel_opts \${arch}
@@ -1280,11 +1279,12 @@ ${kernel_sources}-[0-9]* 2>/dev/null) ]]; then
 	do_exec cd /usr/src/linux || error "Failed to switch to \
 kernel source directory"
 
-    if ! grep "sys-fs/aufs2 kernel-patch" /etc/portage/package.use \
+	if ! grep "sys-fs/aufs2 kernel-patch" /etc/portage/package.use \
 1>/dev/null; then
-	        do_exec echo "sys-fs/aufs2 kernel-patch">>/etc/portage/package.use
+		do_exec echo "sys-fs/aufs2 kernel-patch">>/etc/portage/package.use
 	fi
-	do_exec make modules_prepare && do_exec ${pms} sys-fs/aufs2 -1
+	do_exec make modules_prepare && do_exec make oldconfig
+	do_exec ${pms} sys-fs/aufs2 -1
 
 	einfo "Compiling \${blue}${kernel_sources}\${blue}\${nocolor}."
 	if ${menuconfig}; then
@@ -1304,8 +1304,7 @@ else
 .config.\${date}\${nocolor}"
 		do_exec cp /usr/src/linux/.config /usr/src/linux/.config.\
 ${kernel_sources}-\${date}
-fi
-	einfo "Compiling \${red}\${arch}\${nocolor} kernel image"
+	fi
 
 	if ${bash4}; then
 		if ${coprocessor}; then
@@ -1316,7 +1315,7 @@ fi
 			do_exec cp ${data_dir}/kernel/\${arch}/${kernel_sources} \
 /usr/src/linux/.config
 		fi
-fi
+	fi
 
 	do_exec cd /usr/src/linux || error "Failed to switch to \
 kernel source directory"
