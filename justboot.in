@@ -661,7 +661,7 @@ do_exec mount -o bind /proc ${arch}/proc
 do_exec mount -o bind /dev ${arch}/dev
 do_exec mount -o bind ${data_dir} ${arch}${data_dir}
 
-if [ -d /var/tmp/justboot/uclibc ]; then
+if [ -f /var/tmp/justboot/uclibc/build ]; then
 	einfo "Previous uclibc build directory found, binding to
 ${arch_dir}/var/tmp/justboot/uclibc"
 	do_exec chkdir ${arch_dir}/var/tmp/justboot/uclibc
