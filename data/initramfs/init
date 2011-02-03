@@ -44,7 +44,7 @@ for dir in ${root_dirs}; do
 done
 
 sleep 5 # allow usb to settle out at startup - needed for liveUSB
-for x in /dev/sr* /dev/sd*; do
+for x in /dev/sr* /dev/sd??; do
 	mount -t iso9660 ${x} /mnt/livecd/image
 	if [ "$?" == "0" ]; then cdrom=${x}; break; fi
 done
