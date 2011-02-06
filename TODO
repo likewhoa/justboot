@@ -13,3 +13,4 @@ User customizing default .configs
 * Allow custom .config for kernels and busybox build
 * Fix and merge changes in commit a5604dafed3d2a3953c6fcb7b0a6665be01fc555
 * Slim down the image
+* Parallel ARCH built support
