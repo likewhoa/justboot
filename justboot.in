@@ -45,6 +45,8 @@ uclibc_bind=false
 verbose=false
 debug=false
 bash4=false
+part_volume_size_M=false
+part_volume_fs=false
 
 # Check for >=bash-4 associated array support
 if ! ((${BASH_VERSINFO[0]}>=4)); then
