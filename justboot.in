@@ -45,6 +45,8 @@ uclibc_bind=false
 verbose=false
 debug=false
 bash4=false
+part_volume_size_M=false
+part_volume_fs=false
 
 # Check for >=bash-4 associated array support
 if ! ((${BASH_VERSINFO[0]}>=4)); then
@@ -127,6 +129,9 @@ Arguments:
 --purge					- Purge old build and start fresh
 --delete-arch			- Like --purge but exits script after
 --debug					- Turn on debugging
+
+--part=					- specify the size (in M) of a RW partition to be added to the hybrid, --part=500
+--partfs=				- specify the filesystem type (fat,ext2,ext3. FS support must be enabled in the kernel)
 
 Gentoo make.conf options:
 
@@ -335,6 +340,8 @@ to override delete @confdir@/${arch}-pms"
 				exit 0
 			fi
 			;;
+		--part) part_volume_size_M="${1#*=}";;
+		--partfs) part_volume_fs="${1#*=}";;
 		--verbose) verbose=true;;
 		--debug|-db) debug=true; einfo "Running in debug mode";;
 		--help|-h) print_help;;
@@ -973,6 +980,33 @@ md5sum ${archive}.iso>>${archive}.iso.DIGESTS
 
 echo "# SHA1 HASH">>${archive}.iso.DIGESTS
 sha1sum ${archive}.iso>>${archive}.iso.DIGESTS
+
+if "$part_volume_size_M"; then
+	tmpdir="$(mktemp -d)"
+	part_img="$tmpdir/img"
+	case "$part_volume_fs" in
+		msdos) mkfs.msdos -n "JustBoot" -C "$part_img"  $(eval $part_volume_size_M \* 1024)
+		;;
+	esac
+	cat "$part_img" >> ${livedir}/${archive}.iso
+	rm -r "$tmpdir"
+	(
+	echo x # expert mode
+	echo c # set num cylinders
+	echo 32 # isohybrid uses 32
+	echo r # return to menu
+	echo n # new partition
+	echo p # primary 
+	echo 2 # 2nd partition
+	echo  # accept default 1st sector
+	echo # accept default last sector
+	echo t # change partition type menu
+	echo 2 # change partition #2 type 
+	echo 1 # set to FAT12
+	
+	echo w # write partition table
+	) | fdisk ${livedir}/${archive}.iso
+
 
 einfo "All Done. ${arch} livecd located at ${livedir}/${archive}.iso"
 }

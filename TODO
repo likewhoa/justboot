@@ -13,4 +13,11 @@ User customizing default .configs
 * Allow custom .config for kernels and busybox build
 * Fix and merge changes in commit a5604dafed3d2a3953c6fcb7b0a6665be01fc555
 * Slim down the image
+<<<<<<< HEAD
 * Parallel ARCH built support
+=======
+* Partitions
+  - initial partition support added
+  - VFAT only, easily extended via CASE option
+  - need to add checks w.r.t. unable to make partition image
+>>>>>>> 4aa9e56fd500cb93ba79b09125eed7992435591a
