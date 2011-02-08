@@ -340,8 +340,8 @@ to override delete @confdir@/${arch}-pms"
 				exit 0
 			fi
 			;;
-		--part) part_volume_size_M="${1#*=}";;
-		--partfs) part_volume_fs="${1#*=}";;
+		--part=*) part_volume_size_M="${1#*=}";;
+		--partfs=*) part_volume_fs="${1#*=}";;
 		--verbose) verbose=true;;
 		--debug|-db) debug=true; einfo "Running in debug mode";;
 		--help|-h) print_help;;
