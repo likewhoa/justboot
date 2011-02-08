@@ -128,6 +128,9 @@ Arguments:
 --delete-arch			- Like --purge but exits script after
 --debug					- Turn on debugging
 
+--part=					- specify the size (in M) of a RW partition to be added to the hybrid, --part=500
+--partfs=				- specify the filesystem type (fat,ext2,ext3. FS support must be enabled in the kernel)
+
 Gentoo make.conf options:
 
 --cflags				- Compiler FLAGS
