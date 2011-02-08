@@ -981,6 +981,33 @@ md5sum ${archive}.iso>>${archive}.iso.DIGESTS
 echo "# SHA1 HASH">>${archive}.iso.DIGESTS
 sha1sum ${archive}.iso>>${archive}.iso.DIGESTS
 
+if "$part_volume_size_M"; then
+	tmpdir="$(mktemp -d)"
+	part_img="$tmpdir/img"
+	case "$part_volume_fs" in
+		msdos) mkfs.msdos -n "JustBoot" -C "$part_img"  $(eval $part_volume_size_M \* 1024)
+		;;
+	esac
+	cat "$part_img" >> ${livedir}/${archive}.iso
+	rm -r "$tmpdir"
+	(
+	echo x # expert mode
+	echo c # set num cylinders
+	echo 32 # isohybrid uses 32
+	echo r # return to menu
+	echo n # new partition
+	echo p # primary 
+	echo 2 # 2nd partition
+	echo  # accept default 1st sector
+	echo # accept default last sector
+	echo t # change partition type menu
+	echo 2 # change partition #2 type 
+	echo 1 # set to FAT12
+	
+	echo w # write partition table
+	) | fdisk ${livedir}/${archive}.iso
+
+
 einfo "All Done. ${arch} livecd located at ${livedir}/${archive}.iso"
 }
 
